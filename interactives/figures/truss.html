@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forces in a truss</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .tc { color: var(--blue); font-weight: 650; } .cc { color: var(--verm); font-weight: 650; }
+  .mats { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+  .warn { color: var(--verm); font-weight: 650; }
+  .bars { display: grid; gap: 4px; margin: 6px 0 0; }
+  .bar { display: grid; grid-template-columns: 2.2em 1fr 6.5em; gap: 8px; align-items: center; font-size: 13px; }
+  .bar .track { position: relative; height: 14px; background: var(--grid); border-radius: 3px; }
+  .bar .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--axis); }
+  .bar .fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+  .bar .val { font-family: var(--mono); text-align: right; font-size: 12.5px; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Forces in a triangular truss</h1>
+    <p>The load <span class="v">P</span> pushes down on joint 2. Drag the top joint (or use the sliders) and watch the three bar forces, which come from solving <span class="v">E f</span> = <b>p</b>.</p>
+  </header>
+
+  <div class="layout">
+    <div>
+      <div class="stage"><svg id="pl" role="img" aria-label="Triangular truss with a load at the top joint"></svg></div>
+      <p class="note" style="margin:6px 2px 0"><span class="tc">Blue, T</span> = tension (bar is pulled, <span class="v">f</span> &gt; 0). <span class="cc">Vermilion, C</span> = compression (bar is pushed, <span class="v">f</span> &lt; 0). Thickness shows the size of the force.</p>
+    </div>
+    <div class="stack">
+      <div class="card readout" id="readout"></div>
+      <div class="card stack" id="ctl"></div>
+    </div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Choose the <em>Text example</em> (30&deg;, 60&deg;, <span class="v">P</span> = 10 kN). Compare <span class="v">f</span><sub>1</sub>, <span class="v">f</span><sub>2</sub>, <span class="v">f</span><sub>3</sub> with your own solution of the exercise.</li>
+      <li>Choose <em>Symmetric 45&deg;</em>, then lower both angles with the sliders. What happens to the force in the upper bars? Watch det <span class="v">E</span>.</li>
+      <li>Double <span class="v">P</span>. Which numbers double? Why is that to be expected from a linear system <span class="v">E f</span> = <b>p</b>?</li>
+      <li>Drag the top joint far to the left, so that <span class="v">&theta;</span><sub>1</sub> is large and <span class="v">&theta;</span><sub>2</sub> small. Which upper bar now carries the larger force? Does the closed form <span class="v">f</span><sub>1</sub> = &minus;<span class="v">P</span> cos <span class="v">&theta;</span><sub>2</sub> / sin(<span class="v">&theta;</span><sub>1</sub>+<span class="v">&theta;</span><sub>2</sub>) agree?</li>
+      <li>Why is the bottom bar always in tension, whatever the angles?</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, $ = KAI.$, Mx = KAI.M;
+  var SPAN = 4, AMIN = 2, AMAX = 70;
+  var st = { t1: 30, t2: 60, P: 10 };
+  var L = KAI.plane($('#pl'), { x: [-1.1, 5.1], y: [-1.5, 5.6], labels: false, grid: false, axisNames: false, pad: { l: 6, b: 6 } });
+
+  function sol() {
+    var a = KAI.rad(st.t1), b = KAI.rad(st.t2);
+    var E = [[-Math.cos(a), Math.cos(b), 0], [Math.sin(a), Math.sin(b), 0], [0, Math.cos(b), 1]];
+    var p = [0, -st.P, 0];
+    var f = KAI.solve(E, p);
+    return { E: E, p: p, f: f, det: -Math.sin(a + b), a: a, b: b };
+  }
+  function apex() {
+    var ta = Math.tan(KAI.rad(st.t1)), tb = Math.tan(KAI.rad(st.t2)), x = SPAN * tb / (ta + tb);
+    return [x, x * ta];
+  }
+
+  /* ---------- controls ---------- */
+  var s1 = KAI.slider({ label: 'angle <span class="v">&theta;</span><sub>1</sub> at joint 1', min: AMIN, max: AMAX, step: 1, value: st.t1, unit: '&deg;', digits: 0, onInput: function (v) { st.t1 = v; refresh(); } });
+  var s2 = KAI.slider({ label: 'angle <span class="v">&theta;</span><sub>2</sub> at joint 3', min: AMIN, max: AMAX, step: 1, value: st.t2, unit: '&deg;', digits: 0, onInput: function (v) { st.t2 = v; refresh(); } });
+  var sP = KAI.slider({ label: 'load <span class="v">P</span> (kN)', min: 1, max: 30, step: 1, value: st.P, digits: 0, onInput: function (v) { st.P = v; refresh(); } });
+  function preset(a, b, P) { return function () { st.t1 = a; st.t2 = b; if (P) st.P = P; refresh(); }; }
+  $('#ctl').append(s1.el, s2.el, sP.el,
+    h('div', { class: 'row' }, KAI.button({ label: 'Text example', onClick: preset(30, 60, 10) }), KAI.button({ label: 'Symmetric 45&deg;', onClick: preset(45, 45) }), KAI.button({ label: 'Flat truss', onClick: preset(6, 6) })));
+
+  var hd = KAI.handle(L, { pos: apex(), color: 'var(--orange)', r: 9,
+    constrain: function (p) {
+      var x = KAI.clamp(p[0], 0.05, SPAN - 0.05), y = Math.max(0.01, p[1]);
+      var t1 = KAI.clamp(Math.round(KAI.deg(Math.atan2(y, x))), AMIN, AMAX), t2 = KAI.clamp(Math.round(KAI.deg(Math.atan2(y, SPAN - x))), AMIN, AMAX);
+      st.t1 = t1; st.t2 = t2;
+      return apex();
+    },
+    label: function () { return 'Top joint, angles ' + st.t1 + ' and ' + st.t2 + ' degrees'; }, step: 0.1,
+    onMove: function () { refresh('handle'); } });
+
+  /* ---------- drawing ---------- */
+  function draw() {
+    var S = sol(), A = [0, 0], B = apex(), C = [SPAN, 0], g = L.content, t = L.top, i;
+    KAI.clear(g); KAI.clear(t);
+    // ground, pin and roller
+    var gy = -0.62;
+    L.poly(g, [[-0.7, gy], [0.7, gy], [0.7, gy - 0.2], [-0.7, gy - 0.2]], { fill: 'var(--grid)', stroke: 'none' });
+    L.poly(g, [[SPAN - 0.7, gy], [SPAN + 0.7, gy], [SPAN + 0.7, gy - 0.2], [SPAN - 0.7, gy - 0.2]], { fill: 'var(--grid)', stroke: 'none' });
+    L.line(g, [-0.7, gy], [0.7, gy], { stroke: 'var(--ink)', 'stroke-width': 2 });
+    L.line(g, [SPAN - 0.7, gy], [SPAN + 0.7, gy], { stroke: 'var(--ink)', 'stroke-width': 2 });
+    L.poly(g, [A, [-0.42, gy], [0.42, gy]], { fill: 'var(--bg)', stroke: 'var(--ink)', 'stroke-width': 2, 'stroke-linejoin': 'round' });
+    L.poly(g, [C, [SPAN - 0.42, -0.4], [SPAN + 0.42, -0.4]], { fill: 'var(--bg)', stroke: 'var(--ink)', 'stroke-width': 2, 'stroke-linejoin': 'round' });
+    L.dot(g, [SPAN - 0.2, -0.5], L.sx * 0.09, { fill: 'var(--bg)', stroke: 'var(--ink)', 'stroke-width': 2 });
+    L.dot(g, [SPAN + 0.2, -0.5], L.sx * 0.09, { fill: 'var(--bg)', stroke: 'var(--ink)', 'stroke-width': 2 });
+    // bars
+    var bars = [[A, B, 'f₁', S.f[0], [-0.28, 0.2]], [B, C, 'f₂', S.f[1], [0.28, 0.2]], [A, C, 'f₃', S.f[2], [0, 0]]];
+    var fscale = Math.max(1, st.P * 3);
+    bars.forEach(function (b) {
+      var f = b[3], zero = Math.abs(f) < 1e-6, col = zero ? 'var(--axis)' : f > 0 ? 'var(--blue)' : 'var(--verm)';
+      var w = 3 + 11 * Math.min(1, Math.abs(f) / fscale);
+      L.line(g, b[0], b[1], { stroke: col, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-dasharray': f < -1e-6 ? null : null });
+      var mid = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2];
+      var tag = (zero ? '0' : (f > 0 ? 'T ' : 'C ')) + b[2] + ' = ' + fmt(f, 2);
+      var tx = L.text(t, [mid[0] + b[4][0], mid[1] + b[4][1]], tag, { fill: col, class: 'lbl', 'text-anchor': b === bars[0] ? 'end' : b === bars[1] ? 'start' : 'middle', 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 4 });
+      if (b === bars[2]) { tx.setAttribute('dy', 28); }
+      else tx.setAttribute('dy', -4);
+    });
+    // load
+    var top = [B[0], B[1] + 1.25];
+    L.arrow(t, top, [B[0], B[1] + 0.2], { stroke: 'var(--ink)', width: 3 });
+    L.text(t, [B[0], B[1] + 1.4], 'P = ' + fmt(st.P, 0) + ' kN', { dx: 0, dy: -4, 'text-anchor': 'middle', fill: 'var(--ink)', class: 'lbl' });
+    // angles
+    function arc(c, r, a0, a1, lab, anchor) {
+      var pts = [], n = 16;
+      for (var k = 0; k <= n; k++) { var a = a0 + (a1 - a0) * k / n; pts.push([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]); }
+      L.polyline(t, pts, { stroke: 'var(--muted)', 'stroke-width': 1.4 });
+      var am = (a0 + a1) / 2;
+      L.text(t, [c[0] + (r + 0.35) * Math.cos(am), c[1] + (r + 0.35) * Math.sin(am)], lab, { 'text-anchor': 'middle', dy: 4, class: 'lbl sm', fill: 'var(--muted)' });
+    }
+    arc(A, 0.8, 0, S.a, 'θ₁', 'start');
+    arc(C, 0.8, Math.PI, Math.PI - S.b, 'θ₂', 'end');
+    // joints
+    [[A, '1'], [B, '2'], [C, '3']].forEach(function (j) {
+      var c = L.dot(t, j[0], 11, { fill: 'var(--bg)', stroke: 'var(--ink)', 'stroke-width': 2 });
+      var tx = L.text(t, j[0], j[1], { 'text-anchor': 'middle', dy: 4, class: 'lbl sm', fill: 'var(--ink)' });
+    });
+  }
+  L.grid.style.display = 'none';
+  L.onResize(draw);
+
+  /* ---------- readout ---------- */
+  function barRow(name, f, scale) {
+    var col = Math.abs(f) < 1e-6 ? 'var(--axis)' : f > 0 ? 'var(--blue)' : 'var(--verm)', w = Math.min(50, 50 * Math.abs(f) / scale);
+    var fill = h('span', { class: 'fill', style: { background: col, width: w + '%', left: f >= 0 ? '50%' : (50 - w) + '%' } });
+    return h('div', { class: 'bar' }, h('span', { class: 'v', html: name }), h('span', { class: 'track' }, h('span', { class: 'mid' }), fill), h('span', { class: 'val', text: fmt(f, 2) + ' kN' }));
+  }
+  function readout() {
+    var S = sol(), box = KAI.clear($('#readout'));
+    box.appendChild(h('div', { class: 'mats' },
+      h('span', { class: 'eq' }, h('span', { class: 'v', text: 'E' }), ' = ', KAI.matEl(S.E, { class: 'big', name: 'E', digits: 2 })),
+      h('span', { class: 'eq' }, h('b', { text: 'p' }), ' = ', KAI.matEl(S.p.map(function (v) { return [v]; }), { class: 'big', name: 'p', digits: 1 }))));
+    box.appendChild(h('div', { class: 'eq', style: { margin: '6px 0 2px' } }, h('b', { text: 'f' }), ' = ', h('span', { class: 'v', html: 'E<sup>−1</sup>' }), h('b', { text: 'p' }), ' = ', KAI.matEl(S.f.map(function (v) { return [v]; }), { class: 'big', name: 'f', digits: 2 })));
+    var scale = Math.max(1e-9, Math.max.apply(null, S.f.map(Math.abs)), st.P);
+    box.appendChild(h('div', { class: 'bars' }, barRow('f<sub>1</sub>', S.f[0], scale), barRow('f<sub>2</sub>', S.f[1], scale), barRow('f<sub>3</sub>', S.f[2], scale)));
+    var big = Math.max(Math.abs(S.f[0]), Math.abs(S.f[1])) / st.P;
+    box.appendChild(h('p', { html: 'det <i>E</i> = −sin(<i>θ</i><sub>1</sub> + <i>θ</i><sub>2</sub>) = <b>' + fmt(S.det, 3) + '</b>' }));
+    var msg = big > 5 ? 'The determinant is near 0 (the matrix is nearly singular), so the forces are many times larger than the load: ' + fmt(big, 1) + '× P.' : 'The largest upper-bar force is ' + fmt(big, 2) + ' × P.';
+    box.appendChild(h('p', { class: big > 5 ? 'warn' : 'note', text: msg }));
+    box.appendChild(h('p', { class: 'note', text: 'Upper bars: ' + (S.f[0] < 0 ? 'bar 1 compressed' : 'bar 1 in tension') + ', ' + (S.f[1] < 0 ? 'bar 2 compressed' : 'bar 2 in tension') + '. Bottom bar: ' + (S.f[2] > 1e-6 ? 'tension' : S.f[2] < -1e-6 ? 'compression' : 'no force') + '.' }));
+    KAI.live('Angles ' + st.t1 + ' and ' + st.t2 + ' degrees, load ' + st.P + '. f1 ' + fmt(S.f[0], 2) + ', f2 ' + fmt(S.f[1], 2) + ', f3 ' + fmt(S.f[2], 2) + '.');
+  }
+
+  function refresh(src) {
+    if (src !== 'slider') { s1.set(st.t1); s2.set(st.t2); sP.set(st.P); }
+    if (src !== 'handle') hd.set(apex());
+    draw(); readout();
+  }
+  refresh();
+  window.FIG = { st: st, sol: sol, apex: apex, refresh: refresh };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

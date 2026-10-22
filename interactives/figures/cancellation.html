@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why AB = AC does not give B = C</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 700px) { .pair { grid-template-columns: minmax(0, 1fr); } }
+  .pair h2 { font-size: 13px; margin: 0 0 4px; color: var(--ink); text-transform: none; letter-spacing: 0; }
+  .cc { color: var(--purple); font-weight: 650; } .bb { color: var(--blue); font-weight: 650; }
+  .mats { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Why <span class="v">AB</span> = <span class="v">AC</span> does not give <span class="v">B</span> = <span class="v">C</span></h1>
+    <p>Drag the tips of the columns of <b class="bb">B</b> (blue) and <b class="cc">C</b> (purple). When <span class="v">A</span> flattens the plane, two different matrices can give the same result.</p>
+  </header>
+
+  <div class="pair">
+    <div><h2>1. Two different matrices <span class="bb">B</span> and <span class="cc">C</span></h2><div class="stage"><svg id="p1" role="img" aria-label="Images of the unit square under B and under C"></svg></div></div>
+    <div><h2>2. The same picture after applying <span class="v">A</span></h2><div class="stage"><svg id="p2" role="img" aria-label="Images of the unit square under AB and under AC"></svg></div></div>
+  </div>
+
+  <div class="layout" style="margin-top:12px">
+    <div class="card readout" id="readout"></div>
+    <div class="card stack" id="controls"></div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Drag a purple tip along its dashed line. What happens to the left picture? What happens to the right one?</li>
+      <li>Change the angle of the line that <span class="v">A</span> projects onto. In which direction can <span class="v">C</span> differ from <span class="v">B</span>, and how is that direction related to the line?</li>
+      <li>Switch to the invertible map. Can you still find a <span class="v">C</span> different from <span class="v">B</span> with <span class="v">AB</span> = <span class="v">AC</span>?</li>
+      <li>Set the angle to 0&deg;. Then <span class="v">A</span> is the matrix of Problem 2 in the text. Which entries of <span class="v">B</span> and <span class="v">C</span> are free to differ?</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, Mx = KAI.M, $ = KAI.$;
+  var R = { x: [-3, 5], y: [-2.5, 4.5] };
+  var P1 = KAI.plane($('#p1'), R), P2 = KAI.plane($('#p2'), R);
+  var AINV = [[1.2, 0.4], [-0.3, 0.9]];
+  var st = { mode: 'proj', phi: 0, B: [[1, 2], [0.5, 1.5]], s: [1, -1], snap: true };
+
+  function u() { var t = KAI.rad(st.phi); return [Math.cos(t), Math.sin(t)]; }
+  function nv() { var t = KAI.rad(st.phi); return [-Math.sin(t), Math.cos(t)]; }
+  function Amat() { if (st.mode === 'inv') return AINV; var c = u(); return [[c[0] * c[0], c[0] * c[1]], [c[0] * c[1], c[1] * c[1]]]; }
+  function seff() { return st.mode === 'proj' ? st.s : [0, 0]; }
+  function bcol(k) { return [st.B[0][k], st.B[1][k]]; }
+  function ccol(k) { var n = nv(), e = seff()[k]; return [st.B[0][k] + e * n[0], st.B[1][k] + e * n[1]]; }
+  function Cmat() { var c1 = ccol(0), c2 = ccol(1); return [[c1[0], c2[0]], [c1[1], c2[1]]]; }
+
+  /* ---------- controls ---------- */
+  var ctl = $('#controls');
+  var modeSeg = KAI.seg({ legend: 'The map <span class="v">A</span>', name: 'mode', value: 'proj',
+    options: [{ value: 'proj', label: 'Projection onto a line' }, { value: 'inv', label: 'Invertible map' }],
+    onChange: function (v) { st.mode = v; phiSl.disable(v !== 'proj'); s1.disable(v !== 'proj'); s2.disable(v !== 'proj'); refresh(); } });
+  var phiSl = KAI.slider({ label: 'line <span class="v">A</span> projects onto, angle &phi;', min: 0, max: 175, step: 5, value: 0, unit: '&deg;', digits: 0, onInput: function (v) { st.phi = v; refresh(); } });
+  var s1 = KAI.slider({ label: 'how far <span class="cc">c</span><sub>1</sub> is moved from <span class="bb">b</span><sub>1</sub>', min: -3, max: 3, step: 0.1, value: 1, digits: 1, onInput: function (v) { st.s[0] = v; refresh(); } });
+  var s2 = KAI.slider({ label: 'how far <span class="cc">c</span><sub>2</sub> is moved from <span class="bb">b</span><sub>2</sub>', min: -3, max: 3, step: 0.1, value: -1, digits: 1, onInput: function (v) { st.s[1] = v; refresh(); } });
+  var snapChk = KAI.check({ label: 'Snap the tips to a half-unit grid', checked: true, onChange: function (v) { st.snap = v; } });
+  ctl.append(modeSeg.el, phiSl.el, s1.el, s2.el, snapChk.el);
+
+  /* ---------- handles ---------- */
+  function snap(p, how) { return (how === 'pointer' && st.snap) ? [Math.round(p[0] * 2) / 2 + 0, Math.round(p[1] * 2) / 2 + 0] : [Math.round(p[0] * 100) / 100 + 0, Math.round(p[1] * 100) / 100 + 0]; }
+  function bHandle(k, color) {
+    return KAI.handle(P1, { pos: bcol(k), color: color, r: 8, constrain: snap,
+      label: function (p) { return 'Column ' + (k + 1) + ' of B at (' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; },
+      onMove: function (p) { st.B[0][k] = p[0]; st.B[1][k] = p[1]; refresh('b'); } });
+  }
+  function cHandle(k) {
+    return KAI.handle(P1, { pos: ccol(k), color: 'var(--purple)', r: 7,
+      constrain: function (p, how) {
+        var n = nv(), b = bcol(k), t = (p[0] - b[0]) * n[0] + (p[1] - b[1]) * n[1];
+        t = KAI.clamp(t, -3, 3);
+        if (how === 'pointer' && st.snap) t = Math.round(t * 2) / 2;
+        return [b[0] + t * n[0], b[1] + t * n[1]];
+      },
+      label: function (p) { return 'Column ' + (k + 1) + ' of C at (' + fmt(p[0]) + ', ' + fmt(p[1]) + '). It can only slide along the dashed line'; },
+      step: 0.1,
+      onMove: function (p) { var n = nv(), b = bcol(k); st.s[k] = Math.round(((p[0] - b[0]) * n[0] + (p[1] - b[1]) * n[1]) * 1000) / 1000 + 0; refresh('c'); } });
+  }
+  var hb = [bHandle(0, 'var(--blue)'), bHandle(1, 'var(--blue)')], hc = [cHandle(0), cHandle(1)];
+
+  /* ---------- drawing ---------- */
+  function draw1() {
+    var P = P1, B = st.B, C = Cmat(), n = nv(), k;
+    KAI.clear(P.content); KAI.clear(P.top);
+    if (st.mode === 'proj') {
+      P.line(P.content, [-n[0] * 12, -n[1] * 12], [n[0] * 12, n[1] * 12], { stroke: 'var(--purple)', 'stroke-width': 1.6, 'stroke-dasharray': '2 5', 'stroke-opacity': 0.9 });
+      for (k = 0; k < 2; k++) { var b = bcol(k); P.line(P.content, [b[0] - n[0] * 12, b[1] - n[1] * 12], [b[0] + n[0] * 12, b[1] + n[1] * 12], { stroke: 'var(--purple)', 'stroke-width': 1.2, 'stroke-dasharray': '6 5', 'stroke-opacity': 0.5 }); }
+    }
+    P.poly(P.content, KAI.imgPts(C, KAI.UNIT), { fill: 'var(--purple-t)', stroke: 'var(--purple)', 'stroke-width': 2, 'stroke-dasharray': '7 4', 'stroke-linejoin': 'round' });
+    P.poly(P.content, KAI.imgPts(B, KAI.UNIT), { fill: 'var(--blue-t)', stroke: 'var(--blue)', 'stroke-width': 2, 'stroke-linejoin': 'round' });
+    for (k = 0; k < 2; k++) {
+      P.arrow(P.top, [0, 0], bcol(k), { stroke: 'var(--blue)', width: 2.6, dash: k ? '6 4' : null });
+      if (st.mode === 'proj') P.arrow(P.top, [0, 0], ccol(k), { stroke: 'var(--purple)', width: 2, dash: k ? '6 4' : null, opacity: 0.9 });
+      P.text(P.top, bcol(k), 'b' + (k + 1), { dx: -22, dy: -8, fill: 'var(--blue)' });
+      if (st.mode === 'proj') P.text(P.top, ccol(k), 'c' + (k + 1), { dx: 12, dy: -8, fill: 'var(--purple)' });
+    }
+    if (st.mode === 'proj') P.text(P.top, [n[0] * 3.1, n[1] * 3.1], 'null space of A', { dx: 8, dy: 4, class: 'lbl sm', fill: 'var(--purple)' });
+    P.dot(P.top, [0, 0], 3.5, { fill: 'var(--ink)' });
+  }
+  function draw2() {
+    var P = P2, A = Amat(), AB = Mx.mul(A, st.B), AC = Mx.mul(A, Cmat()), k;
+    KAI.clear(P.content); KAI.clear(P.top);
+    if (st.mode === 'proj') {
+      var c = u();
+      P.line(P.content, [-c[0] * 12, -c[1] * 12], [c[0] * 12, c[1] * 12], { stroke: 'var(--axis)', 'stroke-width': 1.2, 'stroke-dasharray': '2 5' });
+      P.text(P.top, [R.x[0] + 0.12, R.y[0] + 0.28], 'A flattens everything onto the dotted line', { class: 'lbl sm', 'text-anchor': 'start' });
+    }
+    var pb = KAI.imgPts(AB, KAI.UNIT), pc = KAI.imgPts(AC, KAI.UNIT);
+    P.poly(P.content, pb, { fill: 'var(--blue-t)', stroke: 'var(--blue)', 'stroke-width': st.mode === 'proj' ? 6 : 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+    P.poly(P.content, pc, { fill: 'none', stroke: 'var(--purple)', 'stroke-width': 2, 'stroke-dasharray': '7 4', 'stroke-linejoin': 'round' });
+    for (k = 0; k < 2; k++) {
+      var ab = [AB[0][k], AB[1][k]], ac = [AC[0][k], AC[1][k]];
+      P.arrow(P.top, [0, 0], ab, { stroke: 'var(--blue)', width: 2.6, dash: k ? '6 4' : null });
+      P.arrow(P.top, [0, 0], ac, { stroke: 'var(--purple)', width: 1.6, dash: k ? '6 4' : null });
+      P.text(P.top, ab, 'Ab' + (k + 1) + ' = Ac' + (k + 1), { dx: 0, dy: k ? 24 : -14, class: 'lbl sm', 'text-anchor': 'middle' });
+    }
+    P.dot(P.top, [0, 0], 3.5, { fill: 'var(--ink)' });
+  }
+
+  /* ---------- readout ---------- */
+  function readout() {
+    var A = Amat(), B = st.B, C = Cmat(), AB = Mx.mul(A, B), AC = Mx.mul(A, C), D = Mx.sub(B, C);
+    var eqAB = Mx.near(AB, AC, 1e-9), sameBC = Mx.near(B, C, 1e-9);
+    var box = KAI.clear($('#readout')), mats = h('div', { class: 'mats' });
+    [['A', A, ''], ['B', B, 'bb'], ['C', C, 'cc'], ['AB', AB, 'bb'], ['AC', AC, 'cc']].forEach(function (t) {
+      mats.appendChild(h('span', { class: 'eq' }, h('span', { class: 'v ' + t[2], text: t[0] }), ' = ', KAI.matEl(t[1], { class: 'big', name: t[0] })));
+    });
+    box.appendChild(mats);
+    box.appendChild(h('p', { class: eqAB ? 'ok' : 'bad', text: eqAB ? 'AB = AC' : 'AB ≠ AC' }));
+    var msg;
+    if (st.mode === 'inv') msg = 'A is invertible, so AB = AC forces B = C (multiply both sides by the inverse of A, see Chapter 2). Cancellation works here.';
+    else if (sameBC) msg = 'Right now B = C, so there is nothing to cancel. Drag a purple tip along its dashed line.';
+    else msg = 'B ≠ C, yet AB = AC. A throws away everything along its null line (dotted), so it cannot see the difference between b and c.';
+    box.appendChild(h('p', { text: msg }));
+    if (!sameBC) {
+      box.appendChild(h('div', { class: 'eq' }, h('span', { class: 'v', text: 'B − C' }), ' = ', KAI.matEl(D, { class: 'big', name: 'B minus C' }), h('span', { text: ' ≠ O,   ' }), h('span', { class: 'v', text: 'A(B − C)' }), ' = ', KAI.matEl(Mx.mul(A, D), { class: 'big', name: 'A times B minus C' })));
+    }
+    KAI.live((eqAB ? 'AB equals AC. ' : 'AB does not equal AC. ') + (sameBC ? 'B equals C.' : 'B does not equal C.'));
+  }
+
+  function refresh(src) {
+    if (src !== 'b') { hb[0].set(bcol(0)); hb[1].set(bcol(1)); }
+    hc[0].set(ccol(0)); hc[1].set(ccol(1));
+    hc.forEach(function (g) { g.show(st.mode === 'proj'); });
+    if (src !== 'slider') { s1.set(st.s[0]); s2.set(st.s[1]); }
+    draw1(); draw2(); readout();
+  }
+  P1.onResize(draw1); P2.onResize(draw2);
+  refresh();
+  window.FIG = { st: st, Amat: Amat, Cmat: Cmat, refresh: refresh };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A matrix moves the plane</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>A matrix moves the plane</h1>
+    <p>Drag the two arrow tips (the columns of <span class="v">A</span>) and watch the unit square, the letter F and the whole grid follow.</p>
+  </header>
+
+  <div class="layout">
+    <div class="stack">
+      <div class="stage"><svg id="plot" role="img" aria-label="Plane showing the unit square, an F shape and a grid, and their images under the matrix A."></svg></div>
+      <div class="card readout" id="readout"></div>
+    </div>
+
+    <div class="side">
+      <div class="card stack" id="presetCard"></div>
+      <div class="card stack">
+        <h2>The matrix <span class="v">A</span></h2>
+        <div class="row" id="matrixEditor" role="group" aria-label="Entries of A"></div>
+        <div class="stack" id="options"></div>
+      </div>
+    </div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Drag the blue tip to (2, 0) and the orange tip to (0, 2). By what factor did the area grow? Compare with det <span class="v">A</span>.</li>
+      <li>Make the two columns point along the same line. What happens to the square? Is there any way back?</li>
+      <li>Swap the two columns (blue to (0, 1), orange to (1, 0)). The F is mirrored. What is the sign of the determinant?</li>
+      <li>Choose <em>Rotation</em> and set 90&deg;. Where do <span class="v">i</span> and <span class="v">j</span> go? Compare with the matrix in the text.</li>
+      <li>Drag the green point <span class="v">x</span> and follow the path: <span class="v">Ax</span> is always <span class="v">x</span><sub>1</sub>(first column) + <span class="v">x</span><sub>2</sub>(second column).</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, Mx = KAI.M, $ = KAI.$;
+  var svg = $('#plot');
+  var P = KAI.plane(svg, { x: [-3.5, 3.5], y: [-2.6, 2.6] });
+
+  var PRESETS = {
+    identity: { label: 'Identity', params: [], build: function () { return [[1, 0], [0, 1]]; } },
+    rotate: { label: 'Rotation', params: [{ k: 'th', label: 'angle &theta;', min: -180, max: 180, step: 5, val: 30, unit: '&deg;', digits: 0 }],
+      build: function (p) { return Mx.rot(p.th); } },
+    scale: { label: 'Scaling', params: [{ k: 'sx', label: 'x-factor', min: -3, max: 3, step: 0.1, val: 2 }, { k: 'sy', label: 'y-factor', min: -3, max: 3, step: 0.1, val: 0.5 }],
+      build: function (p) { return [[p.sx, 0], [0, p.sy]]; } },
+    shear: { label: 'Shear', params: [{ k: 'k', label: 'shear <i>k</i>', min: -3, max: 3, step: 0.1, val: 1 }],
+      build: function (p) { return [[1, p.k], [0, 1]]; } },
+    reflect: { label: 'Reflection', params: [{ k: 'ph', label: 'mirror line at angle &phi;', min: 0, max: 175, step: 5, val: 0, unit: '&deg;', digits: 0 }],
+      build: function (p) { var t = 2 * KAI.rad(p.ph); return [[Math.cos(t), Math.sin(t)], [Math.sin(t), -Math.cos(t)]]; } },
+    project: { label: 'Projection', params: [{ k: 'ph', label: 'onto the line at angle &phi;', min: 0, max: 175, step: 5, val: 0, unit: '&deg;', digits: 0 }],
+      build: function (p) { var c = Math.cos(KAI.rad(p.ph)), s = Math.sin(KAI.rad(p.ph)); return [[c * c, c * s], [c * s, s * s]]; } },
+    singular: { label: 'Singular', params: [], build: function () { return [[1, 2], [0.5, 1]]; } }
+  };
+
+  var state = { M: [[1, 1], [0, 1]], x: [1.5, 0.5], preset: 'shear', params: {}, snap: true, showX: true, showCons: true, showGrid: true, anim: null };
+
+  /* ---------- controls ---------- */
+  var presetSeg = KAI.seg({
+    legend: 'Start from a standard map', name: 'preset', value: state.preset,
+    options: Object.keys(PRESETS).map(function (k) { return { value: k, label: PRESETS[k].label }; }),
+    onChange: function (k) { choose(k); }
+  });
+  var paramBox = h('div', { class: 'stack' });
+  var customNote = h('p', { class: 'note', style: { margin: 0 }, text: '' });
+  $('#presetCard').append(presetSeg.el, paramBox, customNote);
+
+  function choose(k) {
+    state.preset = k;
+    var def = PRESETS[k];
+    KAI.clear(paramBox);
+    state.params = {};
+    def.params.forEach(function (q) {
+      state.params[q.k] = q.val;
+      var sl = KAI.slider({ label: q.label, min: q.min, max: q.max, step: q.step, value: q.val, unit: q.unit || '', digits: q.digits === undefined ? 1 : q.digits,
+        onInput: function (v) { state.params[q.k] = v; state.M = def.build(state.params); sync(); } });
+      paramBox.appendChild(sl.el);
+    });
+    state.M = def.build(state.params);
+    sync();
+  }
+  function setCustom() {
+    if (state.preset !== 'custom') { state.preset = 'custom'; presetSeg.set(null); KAI.clear(paramBox); }
+  }
+
+  var inputs = [[null, null], [null, null]];
+  var ed = $('#matrixEditor');
+  var grid = h('div', { style: { display: 'grid', 'grid-template-columns': 'repeat(2, auto)', gap: '6px 8px' } });
+  [0, 1].forEach(function (i) { [0, 1].forEach(function (j) {
+    inputs[i][j] = KAI.numin({ value: state.M[i][j], aria: 'entry in row ' + (i + 1) + ', column ' + (j + 1), step: 0.1,
+      onInput: function (v) { state.M[i][j] = v; setCustom(); sync('input'); } });
+    inputs[i][j].style.color = j === 0 ? 'var(--blue)' : 'var(--verm)';
+    grid.appendChild(inputs[i][j]);
+  }); });
+  ed.appendChild(grid);
+
+  var opt = $('#options');
+  var snapChk = KAI.check({ label: 'Snap the tips to a half-unit grid', checked: true, onChange: function (v) { state.snap = v; } });
+  var xChk = KAI.check({ label: 'Show the test vector <span class="v">x</span> and <span class="v">Ax</span>', checked: true, onChange: function (v) { state.showX = v; hX.show(v); consChk.input.disabled = !v; render(); } });
+  var consChk = KAI.check({ label: 'Show <span class="v">Ax</span> built from the columns', checked: true, onChange: function (v) { state.showCons = v; render(); } });
+  var gridChk = KAI.check({ label: 'Show the transformed grid', checked: true, onChange: function (v) { state.showGrid = v; render(); } });
+  var replayBtn = KAI.button({ label: '&#9654; Replay from the identity', onClick: replay, title: 'Animate the plane from the identity map to the current matrix' });
+  opt.append(snapChk.el, xChk.el, consChk.el, gridChk.el);
+  if (!KAI.reducedMotion) opt.appendChild(replayBtn);
+
+  /* ---------- handles ---------- */
+  function snapper(p, how) {
+    if (how === 'pointer' && state.snap) return [Math.round(p[0] * 2) / 2 + 0, Math.round(p[1] * 2) / 2 + 0];
+    return [Math.round(p[0] * 100) / 100 + 0, Math.round(p[1] * 100) / 100 + 0];
+  }
+  var hI = KAI.handle(P, { pos: [1, 0], color: 'var(--blue)', r: 8, constrain: snapper,
+    label: function (p) { return 'Image of i, the first column of A, at (' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; },
+    onMove: function (p) { state.M[0][0] = p[0]; state.M[1][0] = p[1]; setCustom(); sync('handle'); } });
+  var hJ = KAI.handle(P, { pos: [0, 1], color: 'var(--verm)', r: 8, constrain: snapper,
+    label: function (p) { return 'Image of j, the second column of A, at (' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; },
+    onMove: function (p) { state.M[0][1] = p[0]; state.M[1][1] = p[1]; setCustom(); sync('handle'); } });
+  var hX = KAI.handle(P, { pos: state.x, color: 'var(--green)', r: 7, constrain: snapper,
+    label: function (p) { return 'Test vector x at (' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; },
+    onMove: function (p) { state.x = p; sync('handle'); } });
+
+  /* ---------- drawing ---------- */
+  function curM() { return state.anim === null ? state.M : Mx.lerp(Mx.I(), state.M, state.anim); }
+
+  function render() {
+    var A = curM();
+    KAI.clear(P.content); KAI.clear(P.top);
+    KAI.drawMap(P, P.content, A, { grid: state.showGrid });
+    var c1 = [A[0][0], A[1][0]], c2 = [A[0][1], A[1][1]];
+    var x = state.x, Ax = Mx.apply(A, x);
+    if (state.showX && state.showCons) {
+      var mid = [x[0] * c1[0], x[0] * c1[1]];
+      P.polyline(P.top, [[0, 0], mid], { stroke: 'var(--blue)', 'stroke-width': 7, 'stroke-opacity': 0.28, 'stroke-linecap': 'round' });
+      P.polyline(P.top, [mid, Ax], { stroke: 'var(--verm)', 'stroke-width': 7, 'stroke-opacity': 0.28, 'stroke-linecap': 'round' });
+    }
+    P.arrow(P.top, [0, 0], c1, { stroke: 'var(--blue)', width: 3 });
+    P.arrow(P.top, [0, 0], c2, { stroke: 'var(--verm)', width: 3, dash: '7 5' });
+    P.text(P.top, c1, 'Ai', { dx: 12, dy: -12 });
+    P.text(P.top, c2, 'Aj', { dx: 12, dy: -12 });
+    if (state.showX) {
+      P.arrow(P.top, [0, 0], x, { stroke: 'var(--green)', width: 2.2, opacity: 0.9 });
+      P.text(P.top, x, 'x', { dx: 10, dy: 16 });
+      P.arrow(P.top, [0, 0], Ax, { stroke: 'var(--purple)', width: 3 });
+      P.text(P.top, Ax, 'Ax', { dx: 12, dy: -12 });
+    }
+    P.dot(P.top, [0, 0], 3.5, { fill: 'var(--ink)' });
+  }
+
+  /* ---------- readout ---------- */
+  function readout() {
+    var A = state.M, d = Mx.det2(A), x = state.x, Ax = Mx.apply(A, x), rk = Mx.rank2(A, 1e-6);
+    var singular = Math.abs(d) < 1e-6;
+    var box = KAI.clear($('#readout'));
+    var matA = KAI.matEl(A, { class: 'big', cls: function (i, j) { return j ? 'c2' : 'c1'; }, name: 'A' });
+    box.appendChild(h('div', { class: 'eq' }, h('span', { class: 'v', text: 'A' }), ' = ', matA));
+    var a = A[0][0], b = A[0][1], c = A[1][0], dd = A[1][1];
+    box.appendChild(h('p', null, 'det ', h('span', { class: 'v', text: 'A' }), ' = (' + fmt(a) + ')(' + fmt(dd) + ') − (' + fmt(b) + ')(' + fmt(c) + ') = ', h('b', { text: fmt(d) })));
+    var msg, cls = '';
+    if (singular) { msg = 'The unit square is flattened onto a line (or a point), so area becomes 0. Different inputs land on the same output: the map cannot be undone.'; cls = 'bad'; }
+    else if (d > 0) { msg = 'Area is multiplied by ' + fmt(Math.abs(d)) + ' and orientation is kept: the F still reads correctly.'; cls = 'ok'; }
+    else { msg = 'Area is multiplied by ' + fmt(Math.abs(d)) + ' and orientation is flipped: the F is mirrored.'; cls = 'ok'; }
+    box.appendChild(h('p', { class: cls, text: msg }));
+    box.appendChild(h('p', { class: 'note', text: 'rank ' + rk + (rk === 2 ? ' (the image is the whole plane)' : rk === 1 ? ' (the image is a line)' : ' (the image is a point)') }));
+    if (state.showX) {
+      box.appendChild(h('p', null, h('span', { class: 'v', text: 'x' }), ' = (' + fmt(x[0]) + ', ' + fmt(x[1]) + ')'));
+      box.appendChild(h('p', { class: 'num' },
+        h('span', { class: 'v', text: 'Ax' }), ' = ' + fmt(x[0]) + '·(' + fmt(a) + ', ' + fmt(c) + ') + ' + fmt(x[1]) + '·(' + fmt(b) + ', ' + fmt(dd) + ') = ',
+        h('b', { class: 'purple', text: '(' + fmt(Ax[0]) + ', ' + fmt(Ax[1]) + ')' })));
+    }
+    var summary = 'Matrix with rows (' + fmt(a) + ', ' + fmt(b) + ') and (' + fmt(c) + ', ' + fmt(dd) + '). Determinant ' + fmt(d) + '. ' + msg;
+    svg.setAttribute('aria-label', 'Plane showing the unit square, an F shape and a grid and their images under the matrix. ' + summary);
+    KAI.live(summary);
+    customNote.textContent = state.preset === 'custom' ? 'Custom matrix: you moved a tip or typed an entry.' : '';
+  }
+
+  function sync(src) {
+    var A = state.M;
+    if (src !== 'handle') { hI.set(A[0][0], A[1][0]); hJ.set(A[0][1], A[1][1]); }
+    if (src !== 'input') [0, 1].forEach(function (i) { [0, 1].forEach(function (j) { if (document.activeElement !== inputs[i][j]) inputs[i][j].value = fmt(A[i][j], 2).replace('−', '-'); }); });
+    hX.set(state.x);
+    render(); readout();
+  }
+
+  /* ---------- animation ---------- */
+  function replay() {
+    var t0 = performance.now(), dur = 1300;
+    [hI, hJ, hX].forEach(function (g) { g.show(false); });
+    function step(now) {
+      var u = (now - t0) / dur;
+      if (u >= 1) { state.anim = null; [hI, hJ].forEach(function (g) { g.show(true); }); hX.show(state.showX); render(); return; }
+      state.anim = u * u * (3 - 2 * u);
+      render();
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  P.onResize(render);
+  choose('shear');
+  window.FIG = { state: state, sync: sync, render: render, choose: choose };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

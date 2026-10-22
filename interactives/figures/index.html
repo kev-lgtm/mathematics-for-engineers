@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive figures: Matrix Algebra</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; margin-top: 14px; }
+  .item { border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 12px 14px 14px; display: grid; gap: 8px; align-content: start; }
+  .item h2 { margin: 0; font-size: 16px; line-height: 1.3; }
+  .item .num { color: var(--muted); font-weight: 400; font-size: 12px; display: block; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 2px; }
+  .item p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .item .where { font-size: 12px; }
+  .item .try { font-size: 13px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+  .item .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+  .item a.btn { text-decoration: none; display: inline-block; }
+  .item iframe { width: 100%; border: 0; border-radius: 8px; background: var(--bg); }
+  .top { max-width: 70ch; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig" style="max-width:1100px">
+  <header class="fig-head">
+    <h1 style="font-size:22px">Interactive figures: Chapter 1, Matrix Algebra</h1>
+    <p class="top">Nine small pages, each one idea. Every figure is a single HTML file that works offline, on a phone, and in light or dark mode. Drag the round handles, use the sliders, or press the arrow keys when a handle is focused.</p>
+  </header>
+  <div class="gal" id="gal"></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai-host.js"></script>
+<script>
+(function () {
+  var F = [
+    ['transformations', 'A matrix moves the plane', 'Drag the images of i and j and watch the whole plane follow. Presets: rotation, shear, reflection, projection, singular.', 'Make the determinant zero. What happens to the grid?', '§ Matrices as Transformations of the Plane', 620],
+    ['composition', 'Order matters: AB versus BA', 'Two machines A and B, run in both orders side by side, with the matrices AB and BA below.', 'Find two maps that do commute.', '§ Real Numbers vs. Matrix Operations', 700],
+    ['cancellation', 'Why AB = AC does not give B = C', 'Two different matrices B and C that A cannot tell apart, because A flattens the plane.', 'Switch to an invertible A: can you still find C ≠ B?', '§ Real Numbers vs. Matrix Operations', 720],
+    ['matrix-product', 'Matrix product, term by term', 'Side-by-side and Falk layouts, step by step, with the dot product of each row and column.', 'Make the inner sizes disagree and see why AB is undefined.', '§ Matrix Multiplication, after Falk’s scheme', 900],
+    ['matrix-image', 'A picture is a matrix', 'The 6×6 picture from the text; scale it, blend two pictures, see where the numbers are clipped.', 'Set k = 2. Which pixels saturate?', '§ Introduction (next to the pixel figure) and Scalar Multiplication', 900],
+    ['symmetric-skew', 'Symmetric + skew split', 'Edit A and see S and K appear, with mirror entries highlighted; for 2×2 also x, Sx, Kx and Ax.', 'Why is Kx always perpendicular to x?', '§ Special Types of Square Matrices, after the theorem box', 820],
+    ['truss', 'Forces in a truss', 'Drag the top joint; compression and tension update from E f = p. Watch det E fall for flat trusses.', 'Make the truss flat. What happens to the forces?', '§ Statics: Forces in a Truss', 760],
+    ['springs', 'Masses and springs', 'K x = F made visible: forces push the masses, springs hold them, the stiffness matrix is built live.', 'Check x = (0.1, 0.2) m in the text example.', '§ Mechanics: Coupled Springs', 900],
+    ['robot-arm', 'Two-link robot arm', 'Joint angles in, tip position out through rotation matrices. Drag the elbow or the tip.', 'Compare with the exercise L₁ = 2, L₂ = 1, 60°, −30°.', '§ Rotations and Robot Arms', 760]
+  ];
+  var g = document.getElementById('gal');
+  F.forEach(function (f, i) {
+    var item = KAI.h('div', { class: 'item' },
+      KAI.h('h2', {}, KAI.h('span', { class: 'num', text: 'Figure ' + (i + 1) }), f[1]),
+      KAI.h('p', { text: f[2] }),
+      KAI.h('div', { class: 'try', html: '<b>Try:</b> ' + f[3] }),
+      KAI.h('p', { class: 'where', text: 'Belongs in: ' + f[4] }));
+    var box = KAI.h('div'), a = KAI.h('div', { class: 'acts' });
+    var prev = KAI.h('button', { type: 'button', class: 'btn', text: 'Preview here' });
+    prev.addEventListener('click', function () {
+      if (box.firstChild) { box.innerHTML = ''; prev.textContent = 'Preview here'; return; }
+      box.appendChild(KAI.h('iframe', { src: f[0] + '.html?title=0', title: f[1], loading: 'lazy', height: 420 }));
+      prev.textContent = 'Close preview';
+    });
+    a.append(prev, KAI.h('a', { class: 'btn', href: f[0] + '.html', text: 'Open full page' }));
+    item.append(a, box);
+    g.appendChild(item);
+  });
+})();
+</script>
+</body>
+</html>

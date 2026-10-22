@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The order of two maps matters</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .machines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 620px) { .machines { grid-template-columns: minmax(0, 1fr); } }
+  .rowhead { margin: 14px auto 6px; font-size: 14px; max-width: 760px; }
+  .flow { max-width: 760px; margin-left: auto; margin-right: auto; display: grid; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr) 16px minmax(0, 1fr); align-items: center; gap: 0 4px; }
+  .flow .arrow { text-align: center; color: var(--muted); font-size: 18px; }
+  .panel { margin: 0; min-width: 0; }
+  .panel figcaption { font-size: 12.5px; text-align: center; margin-top: 4px; color: var(--muted); }
+  .panel.final .stage { border-width: 2px; }
+  .panel.final.a .stage { border-color: var(--purple); }
+  .panel.final.b .stage { border-color: var(--green); }
+  .pa { color: var(--purple); font-weight: 650; } .pb { color: var(--green); font-weight: 650; }
+  .mats { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+  @media (max-width: 520px) { .flow { grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr) 10px minmax(0, 1fr); } .flow .arrow { font-size: 14px; } }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>The order of two maps matters</h1>
+    <p>Build two machines <b class="pa">A</b> and <b class="pb">B</b>. The top row applies <b class="pb">B</b> first and then <b class="pa">A</b> (the product <span class="v">AB</span>); the bottom row does it the other way round (<span class="v">BA</span>).</p>
+  </header>
+
+  <div class="machines" id="machines"></div>
+  <div class="row" style="margin-top:10px" id="buttons"></div>
+
+  <h2 class="rowhead" id="h1row"></h2>
+  <div class="flow" id="row1"></div>
+  <h2 class="rowhead" id="h2row"></h2>
+  <div class="flow" id="row2"></div>
+
+  <div class="card readout" style="margin-top:14px" id="readout"></div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Start from the text example: <span class="pa">A</span> is a quarter turn, <span class="pb">B</span> is a shear. Compare the two final pictures. Which entries of <span class="v">AB</span> and <span class="v">BA</span> differ?</li>
+      <li>Make both machines rotations. Do the final pictures agree? Why would you expect that?</li>
+      <li>Make one machine a scaling with equal factors in <span class="v">x</span> and <span class="v">y</span>. Does it commute with everything? Why?</li>
+      <li>Try a horizontal shear and a vertical shear. Then two horizontal shears.</li>
+      <li>Make <span class="pb">B</span> a projection. Can you still tell which matrix produced a flat picture?</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, Mx = KAI.M, $ = KAI.$;
+
+  var TYPES = {
+    rot: { label: 'Rotation', params: [{ k: 'th', label: 'angle &theta;', min: -180, max: 180, step: 5, val: 90, unit: '&deg;', digits: 0 }],
+      build: function (p) { return Mx.rot(p.th); } },
+    shear: { label: 'Horizontal shear', params: [{ k: 'k', label: 'shear <i>k</i>', min: -2, max: 2, step: 0.1, val: 1 }],
+      build: function (p) { return [[1, p.k], [0, 1]]; } },
+    shearv: { label: 'Vertical shear', params: [{ k: 'k', label: 'shear <i>k</i>', min: -2, max: 2, step: 0.1, val: 1 }],
+      build: function (p) { return [[1, 0], [p.k, 1]]; } },
+    scale: { label: 'Scaling', params: [{ k: 'sx', label: 'x-factor', min: -2, max: 2, step: 0.1, val: 2 }, { k: 'sy', label: 'y-factor', min: -2, max: 2, step: 0.1, val: 0.5 }],
+      build: function (p) { return [[p.sx, 0], [0, p.sy]]; } },
+    reflect: { label: 'Reflection', params: [{ k: 'ph', label: 'mirror line at angle &phi;', min: 0, max: 175, step: 5, val: 0, unit: '&deg;', digits: 0 }],
+      build: function (p) { var t = 2 * KAI.rad(p.ph); return [[Math.cos(t), Math.sin(t)], [Math.sin(t), -Math.cos(t)]]; } },
+    project: { label: 'Projection', params: [{ k: 'ph', label: 'onto the line at angle &phi;', min: 0, max: 175, step: 5, val: 0, unit: '&deg;', digits: 0 }],
+      build: function (p) { var c = Math.cos(KAI.rad(p.ph)), s = Math.sin(KAI.rad(p.ph)); return [[c * c, c * s], [c * s, s * s]]; } }
+  };
+  function defaults(type) { var o = {}; TYPES[type].params.forEach(function (q) { o[q.k] = q.val; }); return o; }
+  var mach = {
+    A: { name: 'A', type: 'rot', params: defaults('rot') },
+    B: { name: 'B', type: 'shear', params: defaults('shear') }
+  };
+  function matrixOf(m) { return TYPES[m.type].build(m.params); }
+
+  /* ---------- machine controls ---------- */
+  var ui = {};
+  function buildMachine(key) {
+    var m = mach[key], cls = key === 'A' ? 'pa' : 'pb';
+    var card = h('div', { class: 'card stack' }), pbox = h('div', { class: 'stack' });
+    card.appendChild(h('h2', { html: 'Machine <span class="' + cls + '">' + key + '</span>' }));
+    var sel = KAI.select({ label: 'Type of map', value: m.type, options: Object.keys(TYPES).map(function (t) { return { value: t, label: TYPES[t].label }; }),
+      onChange: function (t) { m.type = t; m.params = defaults(t); params(); update(); } });
+    function params() {
+      KAI.clear(pbox);
+      TYPES[m.type].params.forEach(function (q) {
+        var sl = KAI.slider({ label: q.label, min: q.min, max: q.max, step: q.step, value: m.params[q.k], unit: q.unit || '', digits: q.digits === undefined ? 1 : q.digits,
+          onInput: function (v) { m.params[q.k] = v; update(); } });
+        pbox.appendChild(sl.el);
+      });
+    }
+    card.append(sel.el, pbox);
+    $('#machines').appendChild(card);
+    ui[key] = { sel: sel, params: params };
+    params();
+  }
+  buildMachine('A'); buildMachine('B');
+
+  $('#buttons').append(
+    KAI.button({ label: '&#8644; Swap A and B', onClick: function () {
+      var t = mach.A; mach.A = mach.B; mach.B = t; mach.A.name = 'A'; mach.B.name = 'B';
+      ['A', 'B'].forEach(function (k) { ui[k].sel.set(mach[k].type); ui[k].params(); }); update();
+    } }),
+    KAI.button({ label: 'Reset to the text example', onClick: function () {
+      mach.A.type = 'rot'; mach.A.params = defaults('rot'); mach.B.type = 'shear'; mach.B.params = defaults('shear');
+      ['A', 'B'].forEach(function (k) { ui[k].sel.set(mach[k].type); ui[k].params(); }); update();
+    } }));
+
+  /* ---------- panels ---------- */
+  var panels = [];
+  function makePanel(parent, cls) {
+    var fig = h('figure', { class: 'panel ' + (cls || '') }), box = h('div', { class: 'stage' });
+    var svg = KAI.s('svg', { role: 'img', 'aria-label': 'Plane' });
+    box.appendChild(svg);
+    var cap = h('figcaption');
+    fig.append(box, cap); parent.appendChild(fig);
+    var P = KAI.plane(svg, { x: [-3, 3], y: [-3, 3], labels: false, grid: false, axisNames: false, minW: 80 });
+    P.onResize(renderAll);
+    var pn = { P: P, svg: svg, cap: cap, A: Mx.I(), name: '' };
+    panels.push(pn);
+    return pn;
+  }
+  function arrow(parent) { parent.appendChild(h('div', { class: 'arrow', 'aria-hidden': 'true', text: '→' })); }
+  var r1 = $('#row1'), r2 = $('#row2');
+  var p11 = makePanel(r1), a1 = arrow(r1), p12 = makePanel(r1), a2 = arrow(r1), p13 = makePanel(r1, 'final a');
+  var p21 = makePanel(r2), b1 = arrow(r2), p22 = makePanel(r2), b2 = arrow(r2), p23 = makePanel(r2, 'final b');
+
+  function drawPanel(pn) {
+    var P = pn.P, A = pn.A;
+    KAI.clear(P.content); KAI.clear(P.top);
+    KAI.drawMap(P, P.content, A, { N: 7, grid: P.W >= 200 });
+    P.arrow(P.top, [0, 0], [A[0][0], A[1][0]], { stroke: 'var(--blue)', width: 2.4, head: 8 });
+    P.arrow(P.top, [0, 0], [A[0][1], A[1][1]], { stroke: 'var(--verm)', width: 2.4, head: 8, dash: '5 4' });
+    pn.svg.setAttribute('aria-label', pn.name + ': the unit square and F under the matrix with rows (' + fmt(A[0][0]) + ', ' + fmt(A[0][1]) + ') and (' + fmt(A[1][0]) + ', ' + fmt(A[1][1]) + ')');
+  }
+  function renderAll() { panels.forEach(drawPanel); }
+
+  var lastSummary = '';
+  function update() {
+    var A = matrixOf(mach.A), B = matrixOf(mach.B), AB = Mx.mul(A, B), BA = Mx.mul(B, A), I = Mx.I();
+    $('#h1row').innerHTML = '<span class="v">AB</span>: apply <span class="pb">B</span> first, then <span class="pa">A</span>';
+    $('#h2row').innerHTML = '<span class="v">BA</span>: apply <span class="pa">A</span> first, then <span class="pb">B</span>';
+    var same = Mx.near(AB, BA, 1e-9);
+    var set = function (pn, M, name, cap) { pn.A = M; pn.name = name; pn.cap.innerHTML = cap; };
+    set(p11, I, 'Start', 'start'); set(p12, B, 'After B', 'after <span class="pb">B</span>'); set(p13, AB, 'After B then A', 'after <span class="pa">A</span>: <b class="v">AB</b>');
+    set(p21, I, 'Start', 'start'); set(p22, A, 'After A', 'after <span class="pa">A</span>'); set(p23, BA, 'After A then B', 'after <span class="pb">B</span>: <b class="v">BA</b>');
+    renderAll();
+
+    var box = KAI.clear($('#readout'));
+    var mats = h('div', { class: 'mats' });
+    [['A', A, 'pa'], ['B', B, 'pb'], ['AB', AB, ''], ['BA', BA, '']].forEach(function (t) {
+      mats.appendChild(h('span', { class: 'eq' }, h('span', { class: 'v ' + t[2], text: t[0] }), ' = ', KAI.matEl(t[1], { class: 'big', name: t[0] })));
+    });
+    box.appendChild(mats);
+    var D = Mx.sub(AB, BA);
+    box.appendChild(h('p', { class: same ? 'ok' : 'bad' }, same ? 'AB = BA: for these two maps the order does not matter (they commute).' : 'AB ≠ BA: the two final pictures are different.'));
+    if (!same) box.appendChild(h('div', { class: 'eq' }, h('span', { class: 'v', text: 'AB − BA' }), ' = ', KAI.matEl(D, { class: 'big', name: 'AB minus BA' })));
+    var msg = same ? 'AB equals BA.' : 'AB is not equal to BA.';
+    KAI.live(msg + ' AB has rows (' + fmt(AB[0][0]) + ', ' + fmt(AB[0][1]) + ') and (' + fmt(AB[1][0]) + ', ' + fmt(AB[1][1]) + '); BA has rows (' + fmt(BA[0][0]) + ', ' + fmt(BA[0][1]) + ') and (' + fmt(BA[1][0]) + ', ' + fmt(BA[1][1]) + ').');
+  }
+
+  update();
+  window.FIG = { mach: mach, update: update, matrixOf: matrixOf };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

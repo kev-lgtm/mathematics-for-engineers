@@ -1,0 +1,11 @@
+% kaifigure.tex -- paste into kainotes.sty (after \dynlink) or \input it.
+% \kaifigure[height-in-px]{file-id}{accessible title}{link text in the PDF}
+%   HTML (make4ht): an <iframe> pointing to figures/<file-id>.html
+%   PDF:            QR code + link to <base URL><file-id>.html
+\providecommand{\kaibaseurl}{https://YOURNAME.github.io/YOURREPO/figures/}
+\newcommand{\kaifigure}[4][560]{%
+  \ifdefined\HCode
+    \HCode{<div class="kai-embed"><iframe src="figures/#2.html" title="#3" loading="lazy" height="#1"></iframe></div>}%
+  \else
+    \dynlink{\kaibaseurl#2.html}{#4}%
+  \fi}

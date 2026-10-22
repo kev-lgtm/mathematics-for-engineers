@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive tools — Linear Algebra, Chapter 1 · Mathematics for Engineers</title>
+<meta name="description" content="Interactive tools for the Linear Algebra notes, Chapter 1 (Matrix Algebra): nine quick demos and nine interactive figures. Works offline.">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+
+<style>
+:root {
+  --bg: #F5F6FB;
+  --surface: #FFFFFF;
+  --ink: #14173A;
+  --muted: #5B607F;
+  --line: #D9DCEC;
+  --accent: #3B3FD8;
+  --accent2: #E8457C;
+  --oi-blue: #0072B2;
+  --oi-green: #00785A;
+  --oi-verm: #B34700;
+  --oi-orange: #E69F00;
+  --oi-sky: #56B4E9;
+  --title: #19196E;
+  --grad: linear-gradient(120deg, var(--accent), var(--accent2));
+  --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --display: "Big Shoulders Display", "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --row-color: #F4A261;
+  --col-color: #56B4E9;
+  --cell-color: #2A9D8F;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F1226; --surface: #171B38; --ink: #EEF0FF; --muted: #9AA0C4;
+    --line: #262B52; --accent: #8C93FF; --accent2: #FF7AA8; --title: #B8C0FF;
+    --row-color: #E9C46A; --col-color: #7EC8E3; --cell-color: #2A9D8F;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 1.05rem/1.6 var(--sans); -webkit-font-smoothing: antialiased;
+}
+a { color: var(--oi-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 20px;
+}
+.topbar-in {
+  max-width: 880px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; gap: 12px 20px;
+  align-items: center; justify-content: space-between;
+}
+.brand {
+  font-family: var(--display); font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  font-size: 1.05rem; color: var(--ink);
+}
+.topbar nav { display: flex; flex-wrap: wrap; gap: 12px; font-size: .88rem; font-weight: 500; color: var(--muted); }
+.topbar nav a { color: inherit; }
+.topbar nav a:hover { color: var(--accent); }
+
+h1 {
+  font-family: var(--display); font-weight: 600;
+  font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.15;
+  color: var(--title); margin: 1.4em 0 .3em;
+}
+h2 {
+  font-family: var(--display); font-weight: 600;
+  font-size: 1.45rem; color: var(--title); margin: 2.2em 0 .5em;
+  border-bottom: 2px solid var(--line); padding-bottom: .25em;
+}
+h2 .num { color: var(--accent); margin-right: .35em; }
+.lead { color: var(--muted); font-size: 1.05rem; max-width: 42ch; margin: 0 0 1.5em; }
+
+/* Interactive card */
+.interactive {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px 20px;
+  margin: 1.2em 0 2em;
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.interactive .box-label {
+  font-size: .75rem; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 6px;
+}
+.interactive .hint {
+  font-size: .95rem; color: var(--muted); margin: 0 0 14px;
+}
+
+/* Matrix grid (shared) */
+.matrix-grid {
+  display: inline-grid;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: .95rem;
+  user-select: none;
+}
+.matrix-grid .cell {
+  width: 52px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.matrix-grid .cell:hover { border-color: var(--accent); }
+.matrix-grid .cell.row-hl { background: color-mix(in srgb, var(--row-color) 28%, var(--bg)); }
+.matrix-grid .cell.col-hl { background: color-mix(in srgb, var(--col-color) 28%, var(--bg)); }
+.matrix-grid .cell.both-hl {
+  background: color-mix(in srgb, var(--cell-color) 40%, var(--bg));
+  border-color: var(--cell-color);
+  font-weight: 600;
+  color: var(--cell-color);
+}
+.matrix-grid .cell.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Editable number inputs inside matrices */
+.matrix-grid input.cell-in {
+  width: 52px; height: 40px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: .95rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0;
+}
+.matrix-grid input.cell-in:focus {
+  outline: 2px solid var(--accent);
+  border-color: transparent;
+}
+
+/* Controls */
+.controls {
+  display: flex; flex-wrap: wrap; gap: 8px 12px;
+  align-items: center; margin: 12px 0;
+}
+.controls button, .btn {
+  font-family: var(--sans);
+  font-size: .88rem; font-weight: 500;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.controls button:hover, .btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.controls button.active, .btn.active {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.controls label { font-size: .9rem; color: var(--muted); }
+.controls input[type="range"] {
+  width: 140px; accent-color: var(--accent); cursor: pointer;
+}
+.out {
+  font-family: var(--mono);
+  font-size: .95rem;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  margin-top: 10px;
+  min-height: 1.4em;
+}
+.out strong { color: var(--accent); }
+.warn { color: var(--oi-verm); font-weight: 500; }
+
+/* SVG canvases */
+.svg-wrap {
+  width: 100%;
+  max-width: 420px;
+  margin: 12px auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.svg-wrap svg { display: block; width: 100%; height: auto; }
+
+/* Two-column layouts */
+.pair {
+  display: flex; flex-wrap: wrap; gap: 20px;
+  align-items: flex-start; justify-content: center;
+  margin: 12px 0;
+}
+.pair > div { text-align: center; }
+.pair .caption {
+  font-size: .85rem; color: var(--muted); margin-top: 6px;
+}
+
+/* Legend chips */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px 16px;
+  font-size: .85rem; color: var(--muted); margin: 8px 0 4px;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.leg-row::before { background: var(--row-color); }
+.leg-col::before { background: var(--col-color); }
+.leg-cell::before { background: var(--cell-color); }
+
+footer {
+  max-width: 880px; margin: 0 auto;
+  padding: 28px 20px 48px;
+  border-top: 1px solid var(--line);
+  color: var(--muted); font-size: .9rem;
+}
+.toc-mini {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 16px 20px; margin: 1.5em 0;
+}
+.toc-mini ol { margin: 0; padding-left: 1.3em; }
+.toc-mini li { margin: .3em 0; }
+.toc-mini a { color: var(--ink); }
+.toc-mini a:hover { color: var(--accent); }
+
+@media (max-width: 600px) {
+  .wrap { padding: 0 14px 60px; }
+  .matrix-grid .cell, .matrix-grid input.cell-in { width: 44px; height: 36px; font-size: .88rem; }
+}
+
+/* ===== hub additions ===== */
+.jump{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 1.4em}
+.jump a{display:inline-block;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:.9rem;font-weight:500}
+.jump a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+h2.part{font-size:1.75rem;margin-top:2.2em;border-bottom:3px solid var(--accent)}
+h2.part .num{color:var(--muted);font-size:.8em}
+.part-note{color:var(--muted);max-width:62ch;margin:0 0 1em}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin:1.2em 0 2em}
+.fcard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--oi-green);border-radius:14px;padding:14px 16px 16px;display:grid;gap:8px;align-content:start;min-width:0}
+.fcard h3{margin:0;font-size:1.05rem;line-height:1.3}
+.fcard .fnum{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:2px}
+.fcard p{margin:0;font-size:.92rem;color:var(--muted);line-height:1.5}
+.fcard .try{color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.fcard .where{font-size:.8rem}
+.fcard .facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.fcard .btn{text-decoration:none;display:inline-block;cursor:pointer}
+.fbox iframe{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-top:6px}
+.fcard.open{grid-column:1/-1}
+.license{font-size:.82rem;color:var(--muted);max-width:70ch;margin:.6em auto 0}
+footer{text-align:center;padding:28px 20px 40px;font-size:.9rem;color:var(--muted)}
+footer p{margin:.3em 0}
+@media print{.topbar,.jump,.fbox{display:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="../linear-algebra.html">Linear Algebra · Interactive tools</a>
+    <nav aria-label="Site">
+      <a href="../index.html">Home</a>
+      <a href="../linear-algebra.html">Notes</a>
+      <a href="#quick">Quick demos</a>
+      <a href="#figures">Figures</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Interactive tools</h1>
+  <p class="lead">Live tools for the Linear Algebra notes, Chapter 1 (Matrix Algebra). Nothing to install and no internet needed: edit the numbers, drag the handles, and watch.</p>
+  <nav class="jump" aria-label="Sections of this page">
+    <a href="#quick">Part 1 · Quick demos (9)</a>
+    <a href="#figures">Part 2 · Interactive figures (9)</a>
+  </nav>
+  <p class="part-note">Chapters 2 (Determinants and Inverses) and 3 (Systems of Linear Equations) will get their own tools later.</p>
+
+  <h2 class="part" id="quick"><span class="num">Part 1</span> Quick demos</h2>
+  <p class="part-note">Nine small tools that follow the order of the notes.</p>
+
+  <nav class="toc-mini" aria-label="Interactives">
+    <ol>
+      <li><a href="#int1">Anatomy of a matrix</a></li>
+      <li><a href="#int2">Sales matrix explorer</a></li>
+      <li><a href="#int3">Transpose toggle</a></li>
+      <li><a href="#int4">Addition &amp; scalar multiplication</a></li>
+      <li><a href="#int5">Transformations of the plane</a></li>
+      <li><a href="#int6">Matrix multiplication (Falk scheme)</a></li>
+      <li><a href="#int7">Commutativity: AB ≠ BA</a></li>
+      <li><a href="#int8">Special matrices gallery</a></li>
+      <li><a href="#int9">Truss force balance</a></li>
+    </ol>
+  </nav>
+
+  <!-- ========== 1. ANATOMY ========== -->
+  <h2 id="int1"><span class="num">1</span> Anatomy of a matrix</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.1.1</div>
+    <p class="hint">Hover or click any entry. Row <em>i</em> turns orange, column <em>j</em> turns blue, the entry <em>a<sub>ij</sub></em> turns green.</p>
+    <div class="legend">
+      <span class="leg-row">row i</span>
+      <span class="leg-col">column j</span>
+      <span class="leg-cell">entry a<sub>ij</sub></span>
+    </div>
+    <div id="anatomy-grid" class="matrix-grid" style="grid-template-columns: repeat(4, auto); margin: 12px 0;"></div>
+    <div class="out" id="anatomy-out">Hover a cell…</div>
+  </section>
+
+  <!-- ========== 2. SALES MATRIX ========== -->
+  <h2 id="int2"><span class="num">2</span> Sales matrix explorer</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.1</div>
+    <p class="hint">Click a cell to read its meaning. Use the buttons to sum a row or a column — the same operations used in the notes.</p>
+    <div style="overflow-x:auto;">
+      <table style="border-collapse:collapse; font-family:var(--mono); font-size:.92rem; margin:10px 0;">
+        <thead>
+          <tr style="color:var(--muted); font-size:.8rem;">
+            <th style="padding:4px 10px;"></th>
+            <th style="padding:4px 10px;">A (laptops)</th>
+            <th style="padding:4px 10px;">B (tablets)</th>
+            <th style="padding:4px 10px;">C (phones)</th>
+          </tr>
+        </thead>
+        <tbody id="sales-body"></tbody>
+      </table>
+    </div>
+    <div class="controls">
+      <button type="button" data-sum="row" data-i="2">Sum Month 3</button>
+      <button type="button" data-sum="col" data-j="2">Sum Product C</button>
+      <button type="button" data-sum="all">Grand total</button>
+    </div>
+    <div class="out" id="sales-out">Click a cell or a button.</div>
+  </section>
+
+  <!-- ========== 3. TRANSPOSE ========== -->
+  <h2 id="int3"><span class="num">3</span> Transpose toggle</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.2.3</div>
+    <p class="hint">Rows become columns. Press the button to flip <em>A</em> into <em>A<sup>T</sup></em>.</p>
+    <div class="pair">
+      <div>
+        <div id="trans-A" class="matrix-grid" style="grid-template-columns: repeat(3, auto);"></div>
+        <div class="caption" id="trans-label-A">A (2×3)</div>
+      </div>
+      <div style="align-self:center; font-size:1.4rem; color:var(--muted);">⇄</div>
+      <div>
+        <div id="trans-AT" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+        <div class="caption" id="trans-label-AT">A<sup>T</sup> (3×2)</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button type="button" id="trans-btn" class="active">Show A<sup>T</sup></button>
+      <button type="button" id="trans-reset">Reset</button>
+    </div>
+  </section>
+
+  <!-- ========== 4. ADDITION + SCALAR ========== -->
+  <h2 id="int4"><span class="num">4</span> Addition &amp; scalar multiplication</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.2.1–1.2.2</div>
+    <p class="hint">Edit the entries of <em>A</em> and <em>B</em>. Change the scalar <em>k</em>. Results update live. Sizes must match for addition.</p>
+    <div class="pair">
+      <div>
+        <div style="font-size:.85rem; color:var(--muted); margin-bottom:4px;">A</div>
+        <div id="add-A" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+      </div>
+      <div>
+        <div style="font-size:.85rem; color:var(--muted); margin-bottom:4px;">B</div>
+        <div id="add-B" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <label for="scalar-k">k = <span id="k-val">2</span></label>
+      <input id="scalar-k" type="range" min="-3" max="5" step="0.5" value="2">
+    </div>
+    <div class="pair">
+      <div>
+        <div style="font-size:.85rem; color:var(--muted); margin-bottom:4px;">A + B</div>
+        <div id="add-sum" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+      </div>
+      <div>
+        <div style="font-size:.85rem; color:var(--muted); margin-bottom:4px;">kA</div>
+        <div id="add-scale" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+      </div>
+    </div>
+    <div class="out" id="add-out"></div>
+  </section>
+
+  <!-- ========== 5. TRANSFORMATIONS ========== -->
+  <h2 id="int5"><span class="num">5</span> Transformations of the plane</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.2.5</div>
+    <p class="hint">A 2×2 matrix sends the unit square (and basis vectors <strong>i</strong>, <strong>j</strong>) to a new parallelogram. Choose a preset or edit the matrix.</p>
+    <div class="controls" id="xform-presets">
+      <button type="button" data-m="1,0,0,1" class="active">Identity</button>
+      <button type="button" data-m="2,0,0,1">Stretch</button>
+      <button type="button" data-m="1,1,0,1">Shear</button>
+      <button type="button" data-m="0,-1,1,0">Rotate 90°</button>
+      <button type="button" data-m="1,0,0,-1">Reflect</button>
+      <button type="button" data-m="1,2,2,4">Singular</button>
+    </div>
+    <div class="pair">
+      <div>
+        <div style="font-size:.85rem; color:var(--muted); margin-bottom:4px;">Matrix A</div>
+        <div id="xform-mat" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+      </div>
+      <div class="svg-wrap" style="max-width:320px;">
+        <svg id="xform-svg" viewBox="-1.2 -1.2 4.4 4.4" aria-label="Unit square transformed by matrix"></svg>
+      </div>
+    </div>
+    <div class="out" id="xform-out">A maps i → first column, j → second column.</div>
+  </section>
+
+  <!-- ========== 6. FALK MULTIPLICATION ========== -->
+  <h2 id="int6"><span class="num">6</span> Matrix multiplication (Falk scheme)</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.2.4</div>
+    <p class="hint">Click an entry of the product <em>C = AB</em>. The matching row of <em>A</em> and column of <em>B</em> light up, and the inner product is shown.</p>
+    <div class="pair" style="align-items:center;">
+      <div>
+        <div style="font-size:.85rem; color:var(--muted);">A (2×3)</div>
+        <div id="falk-A" class="matrix-grid" style="grid-template-columns: repeat(3, auto);"></div>
+      </div>
+      <div style="font-size:1.2rem; color:var(--muted);">×</div>
+      <div>
+        <div style="font-size:.85rem; color:var(--muted);">B (3×2)</div>
+        <div id="falk-B" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+      </div>
+      <div style="font-size:1.2rem; color:var(--muted);">=</div>
+      <div>
+        <div style="font-size:.85rem; color:var(--muted);">C (2×2) — click a cell</div>
+        <div id="falk-C" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+      </div>
+    </div>
+    <div class="out" id="falk-out">Click an entry of C to see how it is computed.</div>
+  </section>
+
+  <!-- ========== 7. COMMUTATIVITY ========== -->
+  <h2 id="int7"><span class="num">7</span> Commutativity: AB ≠ BA</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.3</div>
+    <p class="hint">Shear <em>S</em> then rotate <em>R</em>, versus rotate then shear. The final shapes differ — so <em>SR ≠ RS</em>.</p>
+    <div class="controls">
+      <button type="button" id="comm-order-sr" class="active">S then R (SR)</button>
+      <button type="button" id="comm-order-rs">R then S (RS)</button>
+    </div>
+    <div class="pair">
+      <div class="svg-wrap" style="max-width:280px;">
+        <svg id="comm-svg" viewBox="-1.5 -1.5 5 5" aria-label="Composition of shear and rotation"></svg>
+      </div>
+      <div>
+        <div style="font-size:.85rem; color:var(--muted); margin-bottom:6px;">Result matrix</div>
+        <div id="comm-mat" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
+        <div class="out" id="comm-out" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 8. SPECIAL MATRICES ========== -->
+  <h2 id="int8"><span class="num">8</span> Special matrices gallery</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.4</div>
+    <p class="hint">Choose a type. Forced zeros are grey; free entries stay editable. Symmetric forces <em>a<sub>ji</sub> = a<sub>ij</sub></em>.</p>
+    <div class="controls" id="spec-types">
+      <button type="button" data-type="full" class="active">Full</button>
+      <button type="button" data-type="diag">Diagonal</button>
+      <button type="button" data-type="upper">Upper triangular</button>
+      <button type="button" data-type="sym">Symmetric</button>
+      <button type="button" data-type="skew">Skew-symmetric</button>
+    </div>
+    <div id="spec-grid" class="matrix-grid" style="grid-template-columns: repeat(3, auto); margin: 12px 0;"></div>
+    <div class="out" id="spec-out">A general 3×3 matrix — every entry free.</div>
+  </section>
+
+  <!-- ========== 9. TRUSS ========== -->
+  <h2 id="int9"><span class="num">9</span> Truss force balance</h2>
+  <section class="interactive">
+    <div class="box-label">Interactive · §1.5.1</div>
+    <p class="hint">A symmetric triangular truss carries load <em>P</em> at the top joint. Change the angle <em>θ</em> and watch the bar forces grow as the truss flattens.</p>
+    <div class="controls">
+      <label for="truss-theta">θ = <span id="theta-val">45</span>°</label>
+      <input id="truss-theta" type="range" min="15" max="75" step="1" value="45">
+    </div>
+    <div class="pair">
+      <div class="svg-wrap" style="max-width:340px;">
+        <svg id="truss-svg" viewBox="0 0 320 220" aria-label="Triangular truss with load P"></svg>
+      </div>
+      <div style="min-width:180px;">
+        <div class="out" id="truss-out"></div>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="part" id="figures"><span class="num">Part 2</span> Interactive figures</h2>
+  <p class="part-note">Nine figures of the book made interactive. Each one is a single page that also works on its own: use <b>Preview here</b> to try it on this page, or <b>Open full page</b> for the full-size version. Handles can be dragged, or focused with Tab and moved with the arrow keys (Shift = larger steps).</p>
+  <div class="gal">
+    <article class="fcard" id="fig-transformations">
+      <h3><span class="fnum">Figure 1</span>A matrix moves the plane</h3>
+      <p>Drag the images of i and j and watch the whole plane follow. Presets: rotation, shear, reflection, projection, singular.</p>
+      <p class="try"><b>Try:</b> Make the determinant zero. What happens to the grid?</p>
+      <p class="where">Belongs in: § Matrices as Transformations of the Plane</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/transformations.html?title=0" data-title="A matrix moves the plane">Preview here</button> <a class="btn" href="figures/transformations.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-composition">
+      <h3><span class="fnum">Figure 2</span>Order matters: AB versus BA</h3>
+      <p>Two machines A and B, run in both orders side by side, with the matrices AB and BA below.</p>
+      <p class="try"><b>Try:</b> Find two maps that do commute.</p>
+      <p class="where">Belongs in: § Real Numbers vs. Matrix Operations</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/composition.html?title=0" data-title="Order matters: AB versus BA">Preview here</button> <a class="btn" href="figures/composition.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-cancellation">
+      <h3><span class="fnum">Figure 3</span>Why AB = AC does not give B = C</h3>
+      <p>Two different matrices B and C that A cannot tell apart, because A flattens the plane.</p>
+      <p class="try"><b>Try:</b> Switch to an invertible A: can you still find C ≠ B?</p>
+      <p class="where">Belongs in: § Real Numbers vs. Matrix Operations</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/cancellation.html?title=0" data-title="Why AB = AC does not give B = C">Preview here</button> <a class="btn" href="figures/cancellation.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-matrix-product">
+      <h3><span class="fnum">Figure 4</span>Matrix product, term by term</h3>
+      <p>Side-by-side and Falk layouts, step by step, with the dot product of each row and column.</p>
+      <p class="try"><b>Try:</b> Make the inner sizes disagree and see why AB is undefined.</p>
+      <p class="where">Belongs in: § Matrix Multiplication, after Falk’s scheme</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/matrix-product.html?title=0" data-title="Matrix product, term by term">Preview here</button> <a class="btn" href="figures/matrix-product.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-matrix-image">
+      <h3><span class="fnum">Figure 5</span>A picture is a matrix</h3>
+      <p>The 6×6 picture from the text; scale it, blend two pictures, see where the numbers are clipped.</p>
+      <p class="try"><b>Try:</b> Set k = 2. Which pixels saturate?</p>
+      <p class="where">Belongs in: § Introduction (next to the pixel figure) and Scalar Multiplication</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/matrix-image.html?title=0" data-title="A picture is a matrix">Preview here</button> <a class="btn" href="figures/matrix-image.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-symmetric-skew">
+      <h3><span class="fnum">Figure 6</span>Symmetric + skew split</h3>
+      <p>Edit A and see S and K appear, with mirror entries highlighted; for 2×2 also x, Sx, Kx and Ax.</p>
+      <p class="try"><b>Try:</b> Why is Kx always perpendicular to x?</p>
+      <p class="where">Belongs in: § Special Types of Square Matrices, after the theorem box</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/symmetric-skew.html?title=0" data-title="Symmetric + skew split">Preview here</button> <a class="btn" href="figures/symmetric-skew.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-truss">
+      <h3><span class="fnum">Figure 7</span>Forces in a truss</h3>
+      <p>Drag the top joint; compression and tension update from E f = p. Watch det E fall for flat trusses.</p>
+      <p class="try"><b>Try:</b> Make the truss flat. What happens to the forces?</p>
+      <p class="where">Belongs in: § Statics: Forces in a Truss</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/truss.html?title=0" data-title="Forces in a truss">Preview here</button> <a class="btn" href="figures/truss.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-springs">
+      <h3><span class="fnum">Figure 8</span>Masses and springs</h3>
+      <p>K x = F made visible: forces push the masses, springs hold them, the stiffness matrix is built live.</p>
+      <p class="try"><b>Try:</b> Check x = (0.1, 0.2) m in the text example.</p>
+      <p class="where">Belongs in: § Mechanics: Coupled Springs</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/springs.html?title=0" data-title="Masses and springs">Preview here</button> <a class="btn" href="figures/springs.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-robot-arm">
+      <h3><span class="fnum">Figure 9</span>Two-link robot arm</h3>
+      <p>Joint angles in, tip position out through rotation matrices. Drag the elbow or the tip.</p>
+      <p class="try"><b>Try:</b> Compare with the exercise L₁ = 2, L₂ = 1, 60°, −30°.</p>
+      <p class="where">Belongs in: § Rotations and Robot Arms</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/robot-arm.html?title=0" data-title="Two-link robot arm">Preview here</button> <a class="btn" href="figures/robot-arm.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+
+</main>
+
+<footer>
+  <p><a href="../linear-algebra.html">← Back to the Linear Algebra notes</a> · <a href="../index.html">Home</a></p>
+  <p class="license">© 2026 Kaveh Eftekharinasab, Higher Mathematics Department, Kyiv Aviation Institute. Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>: you may share and adapt this material with attribution, under the same license.</p>
+</footer>
+<script src="figures/assets/kai-host.js"></script>
+<script>
+document.querySelectorAll('.fprev').forEach(function(b){{
+  b.addEventListener('click',function(){{
+    var card=b.closest('.fcard'), box=card.querySelector('.fbox');
+    if(box.firstChild){{box.innerHTML='';b.textContent='Preview here';card.classList.remove('open');return;}}
+    var f=document.createElement('iframe'); f.src=b.dataset.src; f.title=b.dataset.title; f.loading='lazy'; f.height=480;
+    box.appendChild(f); b.textContent='Close preview'; card.classList.add('open');
+  }});
+}});
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =========================================================
+     Helpers
+     ========================================================= */
+  function el(tag, attrs, children) {
+    var n = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === "className") n.className = attrs[k];
+        else if (k === "text") n.textContent = attrs[k];
+        else if (k.slice(0, 2) === "on") n.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
+        else n.setAttribute(k, attrs[k]);
+      });
+    }
+    (children || []).forEach(function (c) {
+      if (c != null) n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+    return n;
+  }
+
+  function clear(node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function fmt(x) {
+    if (typeof x !== "number" || !isFinite(x)) return String(x);
+    var r = Math.round(x * 1000) / 1000;
+    return (Object.is(r, -0) ? 0 : r).toString();
+  }
+
+  /* =========================================================
+     1. ANATOMY OF A MATRIX
+     ========================================================= */
+  (function initAnatomy() {
+    var data = [
+      [1, -3, 5, 2],
+      [0, 4, 2, 7],
+      [3, 1, -1, 0]
+    ];
+    var rows = data.length, cols = data[0].length;
+    var grid = document.getElementById("anatomy-grid");
+    var out = document.getElementById("anatomy-out");
+    var cells = [];
+
+    for (var i = 0; i < rows; i++) {
+      cells[i] = [];
+      for (var j = 0; j < cols; j++) {
+        (function (i, j) {
+          var c = el("div", {
+            className: "cell",
+            text: String(data[i][j]),
+            onMouseenter: function () { highlight(i, j); },
+            onMouseleave: function () { highlight(-1, -1); },
+            onClick: function () { highlight(i, j); }
+          });
+          grid.appendChild(c);
+          cells[i][j] = c;
+        })(i, j);
+      }
+    }
+
+    function highlight(ri, cj) {
+      for (var i = 0; i < rows; i++) {
+        for (var j = 0; j < cols; j++) {
+          var c = cells[i][j];
+          c.className = "cell";
+          if (ri >= 0 && cj >= 0) {
+            if (i === ri && j === cj) c.classList.add("both-hl");
+            else if (i === ri) c.classList.add("row-hl");
+            else if (j === cj) c.classList.add("col-hl");
+          }
+        }
+      }
+      if (ri >= 0 && cj >= 0) {
+        out.innerHTML = "Row <strong>" + (ri + 1) + "</strong>, column <strong>" + (cj + 1) +
+          "</strong> → entry <strong>a<sub>" + (ri + 1) + (cj + 1) + "</sub> = " + data[ri][cj] + "</strong>";
+      } else {
+        out.textContent = "Hover a cell…";
+      }
+    }
+  })();
+
+  /* =========================================================
+     2. SALES MATRIX
+     ========================================================= */
+  (function initSales() {
+    var S = [
+      [100, 150, 200],
+      [120, 140, 180],
+      [110, 160, 190],
+      [130, 170, 210]
+    ];
+    var months = ["Month 1", "Month 2", "Month 3", "Month 4"];
+    var products = ["A (laptops)", "B (tablets)", "C (phones)"];
+    var body = document.getElementById("sales-body");
+    var out = document.getElementById("sales-out");
+    var cellRefs = [];
+
+    for (var i = 0; i < 4; i++) {
+      cellRefs[i] = [];
+      var tr = el("tr");
+      tr.appendChild(el("td", {
+        text: months[i],
+        style: "padding:4px 10px; color:var(--muted); font-size:.8rem; white-space:nowrap;"
+      }));
+      for (var j = 0; j < 3; j++) {
+        (function (i, j) {
+          var td = el("td", { style: "padding:2px;" });
+          var c = el("div", {
+            className: "cell",
+            text: String(S[i][j]),
+            style: "width:64px; margin:0 auto;",
+            onClick: function () {
+              clearHL();
+              c.classList.add("selected", "both-hl");
+              out.innerHTML = "<strong>s<sub>" + (i + 1) + (j + 1) + "</sub> = " + S[i][j] +
+                "</strong> — " + months[i] + ", product " + products[j];
+            }
+          });
+          td.appendChild(c);
+          tr.appendChild(td);
+          cellRefs[i][j] = c;
+        })(i, j);
+      }
+      body.appendChild(tr);
+    }
+
+    function clearHL() {
+      cellRefs.forEach(function (row) {
+        row.forEach(function (c) { c.className = "cell"; c.style.width = "64px"; c.style.margin = "0 auto"; });
+      });
+    }
+
+    document.querySelectorAll("[data-sum]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        clearHL();
+        var kind = btn.getAttribute("data-sum");
+        if (kind === "row") {
+          var i = +btn.getAttribute("data-i");
+          var sum = 0;
+          for (var j = 0; j < 3; j++) {
+            sum += S[i][j];
+            cellRefs[i][j].classList.add("row-hl");
+          }
+          out.innerHTML = "Sum of " + months[i] + " (row " + (i + 1) + "): <strong>" + sum + "</strong> units";
+        } else if (kind === "col") {
+          var j = +btn.getAttribute("data-j");
+          var sum = 0;
+          for (var i = 0; i < 4; i++) {
+            sum += S[i][j];
+            cellRefs[i][j].classList.add("col-hl");
+          }
+          out.innerHTML = "Sum of " + products[j] + " (column " + (j + 1) + "): <strong>" + sum + "</strong> units";
+        } else {
+          var total = 0;
+          for (var i = 0; i < 4; i++)
+            for (var j = 0; j < 3; j++) {
+              total += S[i][j];
+              cellRefs[i][j].classList.add("both-hl");
+            }
+          out.innerHTML = "Grand total: <strong>" + total + "</strong> units";
+        }
+      });
+    });
+  })();
+
+  /* =========================================================
+     3. TRANSPOSE
+     ========================================================= */
+  (function initTranspose() {
+    var A = [[1, -3, 5], [0, 4, 2]];
+    var showT = true;
+    var boxA = document.getElementById("trans-A");
+    var boxAT = document.getElementById("trans-AT");
+
+    function render() {
+      clear(boxA);
+      clear(boxAT);
+      A.forEach(function (row) {
+        row.forEach(function (v) {
+          boxA.appendChild(el("div", { className: "cell", text: String(v) }));
+        });
+      });
+      // A^T
+      for (var j = 0; j < 3; j++) {
+        for (var i = 0; i < 2; i++) {
+          var cell = el("div", { className: "cell", text: String(A[i][j]) });
+          if (showT) cell.classList.add("both-hl");
+          boxAT.appendChild(cell);
+        }
+      }
+      boxAT.style.opacity = showT ? "1" : "0.35";
+    }
+
+    document.getElementById("trans-btn").addEventListener("click", function () {
+      showT = true;
+      this.classList.add("active");
+      render();
+    });
+    document.getElementById("trans-reset").addEventListener("click", function () {
+      showT = false;
+      document.getElementById("trans-btn").classList.remove("active");
+      render();
+    });
+    render();
+  })();
+
+  /* =========================================================
+     4. ADDITION + SCALAR
+     ========================================================= */
+  (function initAddScale() {
+    var A = [[1, 2], [3, 4]];
+    var B = [[5, 6], [7, 8]];
+    var k = 2;
+    var boxA = document.getElementById("add-A");
+    var boxB = document.getElementById("add-B");
+    var boxSum = document.getElementById("add-sum");
+    var boxScale = document.getElementById("add-scale");
+    var out = document.getElementById("add-out");
+    var inputsA = [], inputsB = [];
+
+    function buildEditable(box, M, store) {
+      clear(box);
+      store.length = 0;
+      for (var i = 0; i < 2; i++) {
+        store[i] = [];
+        for (var j = 0; j < 2; j++) {
+          (function (i, j) {
+            var inp = el("input", {
+              className: "cell-in",
+              type: "number",
+              value: String(M[i][j]),
+              step: "1",
+              onInput: function () {
+                M[i][j] = parseFloat(inp.value) || 0;
+                update();
+              }
+            });
+            box.appendChild(inp);
+            store[i][j] = inp;
+          })(i, j);
+        }
+      }
+    }
+
+    function showResult(box, M) {
+      clear(box);
+      for (var i = 0; i < 2; i++)
+        for (var j = 0; j < 2; j++)
+          box.appendChild(el("div", { className: "cell both-hl", text: fmt(M[i][j]) }));
+    }
+
+    function update() {
+      var sum = [[A[0][0] + B[0][0], A[0][1] + B[0][1]], [A[1][0] + B[1][0], A[1][1] + B[1][1]]];
+      var sc = [[k * A[0][0], k * A[0][1]], [k * A[1][0], k * A[1][1]]];
+      showResult(boxSum, sum);
+      showResult(boxScale, sc);
+      out.innerHTML = "A + B and kA are computed entry by entry. " +
+        "Sizes match (both 2×2), so addition is defined.";
+    }
+
+    buildEditable(boxA, A, inputsA);
+    buildEditable(boxB, B, inputsB);
+    document.getElementById("scalar-k").addEventListener("input", function () {
+      k = parseFloat(this.value);
+      document.getElementById("k-val").textContent = fmt(k);
+      update();
+    });
+    update();
+  })();
+
+  /* =========================================================
+     5. TRANSFORMATIONS OF THE PLANE
+     ========================================================= */
+  (function initXform() {
+    // Matrix stored as [a, c, b, d] so columns are (a,b) and (c,d)
+    // Display: [[a,c],[b,d]]
+    var a = 1, b = 0, c = 0, d = 1;
+    var svg = document.getElementById("xform-svg");
+    var matBox = document.getElementById("xform-mat");
+    var out = document.getElementById("xform-out");
+    var inputs = [];
+
+    function draw() {
+      clear(svg);
+      var ns = "http://www.w3.org/2000/svg";
+
+      function line(x1, y1, x2, y2, stroke, width, dash) {
+        var L = document.createElementNS(ns, "line");
+        L.setAttribute("x1", x1); L.setAttribute("y1", -y1);
+        L.setAttribute("x2", x2); L.setAttribute("y2", -y2);
+        L.setAttribute("stroke", stroke);
+        L.setAttribute("stroke-width", width || 0.03);
+        if (dash) L.setAttribute("stroke-dasharray", dash);
+        svg.appendChild(L);
+      }
+      function poly(pts, fill, stroke, width) {
+        var P = document.createElementNS(ns, "polygon");
+        P.setAttribute("points", pts.map(function (p) { return p[0] + "," + (-p[1]); }).join(" "));
+        P.setAttribute("fill", fill);
+        P.setAttribute("stroke", stroke);
+        P.setAttribute("stroke-width", width || 0.04);
+        svg.appendChild(P);
+      }
+      function arrow(x0, y0, x1, y1, color) {
+        line(x0, y0, x1, y1, color, 0.05);
+        // simple arrowhead
+        var dx = x1 - x0, dy = y1 - y0;
+        var len = Math.hypot(dx, dy) || 1;
+        var ux = dx / len, uy = dy / len;
+        var hx = x1 - 0.18 * ux, hy = y1 - 0.18 * uy;
+        poly([[x1, y1], [hx - 0.1 * uy, hy + 0.1 * ux], [hx + 0.1 * uy, hy - 0.1 * ux]], color, color, 0.01);
+      }
+
+      // grid
+      for (var g = -1; g <= 3; g++) {
+        line(g, -1.2, g, 3.2, "var(--line)", 0.02);
+        line(-1.2, g, 3.2, g, "var(--line)", 0.02);
+      }
+      // axes
+      line(-1.2, 0, 3.2, 0, "var(--muted)", 0.03);
+      line(0, -1.2, 0, 3.2, "var(--muted)", 0.03);
+
+      // original unit square (dashed)
+      poly([[0, 0], [1, 0], [1, 1], [0, 1]], "transparent", "var(--muted)", 0.035);
+      // original basis (light)
+      arrow(0, 0, 1, 0, "var(--muted)");
+      arrow(0, 0, 0, 1, "var(--muted)");
+
+      // transformed: columns of A
+      var i1 = a, i2 = b; // A * [1,0] = first column
+      var j1 = c, j2 = d; // A * [0,1] = second column
+      poly([[0, 0], [i1, i2], [i1 + j1, i2 + j2], [j1, j2]],
+        "color-mix(in srgb, var(--accent) 18%, transparent)", "var(--accent)", 0.05);
+      arrow(0, 0, i1, i2, "var(--oi-blue)");
+      arrow(0, 0, j1, j2, "var(--oi-verm)");
+
+      out.innerHTML = "A<strong>i</strong> = (" + fmt(i1) + ", " + fmt(i2) + ") — first column (blue). " +
+        "A<strong>j</strong> = (" + fmt(j1) + ", " + fmt(j2) + ") — second column (orange). " +
+        (Math.abs(a * d - b * c) < 1e-9 ? "<span class='warn'>det A = 0 → collapses to a line.</span>" : "det A = " + fmt(a * d - b * c) + ".");
+    }
+
+    function buildMat() {
+      clear(matBox);
+      inputs = [];
+      // display [[a,c],[b,d]]
+      var vals = [a, c, b, d];
+      for (var idx = 0; idx < 4; idx++) {
+        (function (idx) {
+          var inp = el("input", {
+            className: "cell-in",
+            type: "number",
+            value: String(vals[idx]),
+            step: "0.5",
+            onInput: function () {
+              var v = parseFloat(inp.value);
+              if (!isFinite(v)) return;
+              if (idx === 0) a = v;
+              if (idx === 1) c = v;
+              if (idx === 2) b = v;
+              if (idx === 3) d = v;
+              draw();
+            }
+          });
+          matBox.appendChild(inp);
+          inputs.push(inp);
+        })(idx);
+      }
+    }
+
+    document.querySelectorAll("#xform-presets button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#xform-presets button").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        var p = btn.getAttribute("data-m").split(",").map(Number);
+        // data-m is a,b,c,d in column order? We stored "a,c,b,d" display order in data-m as a,b,c,d meaning [[a,b],[c,d]]
+        // Our internal: first col (a,b), second col (c,d)
+        // Preset strings: "1,0,0,1" means [[1,0],[0,1]] → a=1,c=0,b=0,d=1
+        a = p[0]; c = p[1]; b = p[2]; d = p[3];
+        // Wait: "2,0,0,1" stretch should be [[2,0],[0,1]] → first col (2,0), second (0,1)
+        // So a=2, b=0, c=0, d=1. That means data-m = a,c,b,d = 2,0,0,1. Good.
+        // "0,-1,1,0" rotate: [[0,-1],[1,0]] → a=0, c=-1, b=1, d=0 → data-m = 0,-1,1,0. Good.
+        buildMat();
+        draw();
+      });
+    });
+
+    // Fix preset interpretation: data-m="a,c,b,d" where matrix is [[a,c],[b,d]]
+    // Identity 1,0,0,1 → a=1,c=0,b=0,d=1 ✓
+    // Stretch 2,0,0,1 → [[2,0],[0,1]] ✓
+    // Shear 1,1,0,1 → [[1,1],[0,1]] → a=1,c=1,b=0,d=1 ✓
+    // Rotate 0,-1,1,0 → [[0,-1],[1,0]] ✓
+    // Reflect 1,0,0,-1 → [[1,0],[0,-1]] ✓
+    // Singular 1,2,2,4 → [[1,2],[2,4]] ✓
+
+    buildMat();
+    draw();
+  })();
+
+  /* =========================================================
+     6. FALK MULTIPLICATION
+     ========================================================= */
+  (function initFalk() {
+    var A = [[1, 2, 0], [3, -1, 4]];
+    var B = [[2, 1], [0, 3], [-1, 2]];
+    // C = AB is 2×2
+    function mul() {
+      var C = [[0, 0], [0, 0]];
+      for (var i = 0; i < 2; i++)
+        for (var j = 0; j < 2; j++) {
+          var s = 0;
+          for (var k = 0; k < 3; k++) s += A[i][k] * B[k][j];
+          C[i][j] = s;
+        }
+      return C;
+    }
+    var C = mul();
+    var boxA = document.getElementById("falk-A");
+    var boxB = document.getElementById("falk-B");
+    var boxC = document.getElementById("falk-C");
+    var out = document.getElementById("falk-out");
+    var cellsA = [], cellsB = [], cellsC = [];
+
+    function fill(box, M, store, clickable) {
+      clear(box);
+      store.length = 0;
+      for (var i = 0; i < M.length; i++) {
+        store[i] = [];
+        for (var j = 0; j < M[0].length; j++) {
+          (function (i, j) {
+            var c = el("div", {
+              className: "cell",
+              text: String(M[i][j])
+            });
+            if (clickable) {
+              c.style.cursor = "pointer";
+              c.addEventListener("click", function () { select(i, j); });
+            }
+            box.appendChild(c);
+            store[i][j] = c;
+          })(i, j);
+        }
+      }
+    }
+
+    function clearHL() {
+      cellsA.forEach(function (r) { r.forEach(function (c) { c.className = "cell"; }); });
+      cellsB.forEach(function (r) { r.forEach(function (c) { c.className = "cell"; }); });
+      cellsC.forEach(function (r) { r.forEach(function (c) { c.className = "cell"; }); });
+    }
+
+    function select(i, j) {
+      clearHL();
+      cellsC[i][j].classList.add("both-hl", "selected");
+      for (var k = 0; k < 3; k++) {
+        cellsA[i][k].classList.add("row-hl");
+        cellsB[k][j].classList.add("col-hl");
+      }
+      var parts = [];
+      for (var k = 0; k < 3; k++) {
+        parts.push(A[i][k] + "·" + B[k][j]);
+      }
+      out.innerHTML = "c<sub>" + (i + 1) + (j + 1) + "</sub> = row " + (i + 1) + " of A · column " + (j + 1) +
+        " of B = " + parts.join(" + ") + " = <strong>" + C[i][j] + "</strong>";
+    }
+
+    fill(boxA, A, cellsA, false);
+    fill(boxB, B, cellsB, false);
+    fill(boxC, C, cellsC, true);
+  })();
+
+  /* =========================================================
+     7. COMMUTATIVITY
+     ========================================================= */
+  (function initComm() {
+    // S = shear [[1,1],[0,1]], R = rotate 90° [[0,-1],[1,0]]
+    var S = [[1, 1], [0, 1]];
+    var R = [[0, -1], [1, 0]];
+    var order = "sr"; // SR or RS
+    var svg = document.getElementById("comm-svg");
+    var matBox = document.getElementById("comm-mat");
+    var out = document.getElementById("comm-out");
+
+    function matMul(P, Q) {
+      return [
+        [P[0][0] * Q[0][0] + P[0][1] * Q[1][0], P[0][0] * Q[0][1] + P[0][1] * Q[1][1]],
+        [P[1][0] * Q[0][0] + P[1][1] * Q[1][0], P[1][0] * Q[0][1] + P[1][1] * Q[1][1]]
+      ];
+    }
+
+    function draw(M) {
+      clear(svg);
+      var ns = "http://www.w3.org/2000/svg";
+      function line(x1, y1, x2, y2, stroke, w) {
+        var L = document.createElementNS(ns, "line");
+        L.setAttribute("x1", x1); L.setAttribute("y1", -y1);
+        L.setAttribute("x2", x2); L.setAttribute("y2", -y2);
+        L.setAttribute("stroke", stroke);
+        L.setAttribute("stroke-width", w || 0.04);
+        svg.appendChild(L);
+      }
+      function poly(pts, fill, stroke) {
+        var P = document.createElementNS(ns, "polygon");
+        P.setAttribute("points", pts.map(function (p) { return p[0] + "," + (-p[1]); }).join(" "));
+        P.setAttribute("fill", fill);
+        P.setAttribute("stroke", stroke);
+        P.setAttribute("stroke-width", 0.05);
+        svg.appendChild(P);
+      }
+      function arrow(x0, y0, x1, y1, color) {
+        line(x0, y0, x1, y1, color, 0.06);
+        var dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1;
+        var ux = dx / len, uy = dy / len;
+        var hx = x1 - 0.2 * ux, hy = y1 - 0.2 * uy;
+        poly([[x1, y1], [hx - 0.12 * uy, hy + 0.12 * ux], [hx + 0.12 * uy, hy - 0.12 * ux]], color, color);
+      }
+      for (var g = -1; g <= 3; g++) {
+        line(g, -1.2, g, 3.2, "var(--line)", 0.025);
+        line(-1.2, g, 3.2, g, "var(--line)", 0.025);
+      }
+      line(-1.2, 0, 3.2, 0, "var(--muted)", 0.03);
+      line(0, -1.2, 0, 3.2, "var(--muted)", 0.03);
+      poly([[0, 0], [1, 0], [1, 1], [0, 1]], "transparent", "var(--muted)");
+      var i1 = M[0][0], i2 = M[1][0], j1 = M[0][1], j2 = M[1][1];
+      poly([[0, 0], [i1, i2], [i1 + j1, i2 + j2], [j1, j2]],
+        "color-mix(in srgb, var(--accent) 20%, transparent)", "var(--accent)");
+      arrow(0, 0, i1, i2, "var(--oi-blue)");
+      arrow(0, 0, j1, j2, "var(--oi-verm)");
+    }
+
+    function showMat(M) {
+      clear(matBox);
+      for (var i = 0; i < 2; i++)
+        for (var j = 0; j < 2; j++)
+          matBox.appendChild(el("div", { className: "cell both-hl", text: fmt(M[i][j]) }));
+    }
+
+    function update() {
+      var M = order === "sr" ? matMul(S, R) : matMul(R, S);
+      // Wait: SR means apply R first then S, which is S*(R*x) = (S R) x
+      // In matrix multiplication notation AB means apply B first.
+      // "S then R" in the UI label meant shear first then rotate = R S
+      // Let me align with labels:
+      // Button "S then R (SR)" — if SR means matrix product S*R, that applies R first.
+      // For teaching, show product matrix clearly.
+      draw(M);
+      showMat(M);
+      out.innerHTML = order === "sr"
+        ? "Product <strong>SR</strong> = S × R. Apply rotation first, then shear."
+        : "Product <strong>RS</strong> = R × S. Apply shear first, then rotation. Different shape!";
+    }
+
+    document.getElementById("comm-order-sr").addEventListener("click", function () {
+      order = "sr";
+      this.classList.add("active");
+      document.getElementById("comm-order-rs").classList.remove("active");
+      update();
+    });
+    document.getElementById("comm-order-rs").addEventListener("click", function () {
+      order = "rs";
+      this.classList.add("active");
+      document.getElementById("comm-order-sr").classList.remove("active");
+      update();
+    });
+    update();
+  })();
+
+  /* =========================================================
+     8. SPECIAL MATRICES
+     ========================================================= */
+  (function initSpecial() {
+    var type = "full";
+    var M = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    var box = document.getElementById("spec-grid");
+    var out = document.getElementById("spec-out");
+    var inputs = [];
+
+    var descriptions = {
+      full: "A general 3×3 matrix — every entry free.",
+      diag: "Diagonal: only a<sub>11</sub>, a<sub>22</sub>, a<sub>33</sub> may be nonzero.",
+      upper: "Upper triangular: zeros strictly below the diagonal.",
+      sym: "Symmetric: a<sub>ji</sub> = a<sub>ij</sub>. Edit upper triangle; lower mirrors.",
+      skew: "Skew-symmetric: a<sub>ji</sub> = −a<sub>ij</sub>, diagonal must be 0."
+    };
+
+    function forced(i, j) {
+      if (type === "diag") return i !== j;
+      if (type === "upper") return i > j;
+      if (type === "skew" && i === j) return true;
+      return false;
+    }
+
+    function mirror(i, j, v) {
+      if (type === "sym" && i !== j) {
+        M[j][i] = v;
+        if (inputs[j] && inputs[j][i]) inputs[j][i].value = fmt(v);
+      }
+      if (type === "skew" && i !== j) {
+        M[j][i] = -v;
+        if (inputs[j] && inputs[j][i]) inputs[j][i].value = fmt(-v);
+      }
+    }
+
+    function render() {
+      clear(box);
+      inputs = [];
+      for (var i = 0; i < 3; i++) {
+        inputs[i] = [];
+        for (var j = 0; j < 3; j++) {
+          (function (i, j) {
+            if (forced(i, j)) {
+              M[i][j] = 0;
+              var c = el("div", {
+                className: "cell",
+                text: "0",
+                style: "opacity:0.45; cursor:default;"
+              });
+              box.appendChild(c);
+              inputs[i][j] = null;
+            } else {
+              var inp = el("input", {
+                className: "cell-in",
+                type: "number",
+                value: String(M[i][j]),
+                step: "1",
+                onInput: function () {
+                  var v = parseFloat(inp.value) || 0;
+                  M[i][j] = v;
+                  mirror(i, j, v);
+                }
+              });
+              // For symmetric/skew, only allow editing upper triangle freely
+              if ((type === "sym" || type === "skew") && i > j) {
+                inp.readOnly = true;
+                inp.style.opacity = "0.7";
+              }
+              box.appendChild(inp);
+              inputs[i][j] = inp;
+            }
+          })(i, j);
+        }
+      }
+      out.innerHTML = descriptions[type];
+    }
+
+    document.querySelectorAll("#spec-types button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#spec-types button").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        type = btn.getAttribute("data-type");
+        // reset to a nice example
+        if (type === "diag") M = [[3, 0, 0], [0, -1, 0], [0, 0, 2]];
+        else if (type === "upper") M = [[1, 4, 2], [0, 3, -1], [0, 0, 5]];
+        else if (type === "sym") M = [[2, 1, -3], [1, 0, 4], [-3, 4, 5]];
+        else if (type === "skew") M = [[0, 2, -1], [-2, 0, 3], [1, -3, 0]];
+        else M = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+        render();
+      });
+    });
+    render();
+  })();
+
+  /* =========================================================
+     9. TRUSS FORCE BALANCE
+     ========================================================= */
+  (function initTruss() {
+    var svg = document.getElementById("truss-svg");
+    var out = document.getElementById("truss-out");
+    var slider = document.getElementById("truss-theta");
+
+    function draw(thetaDeg) {
+      var theta = thetaDeg * Math.PI / 180;
+      var P = 1; // unit load
+      // |f1| = |f2| = P / (2 sin θ)  for symmetric truss
+      var force = P / (2 * Math.sin(theta));
+      // compression (negative if we draw tension arrows)
+      var fMag = force;
+
+      clear(svg);
+      var ns = "http://www.w3.org/2000/svg";
+      var W = 320, H = 220;
+      var baseY = 180, apexY = 180 - 110 * Math.sin(theta);
+      // Keep apex height visual based on angle with fixed base
+      var halfBase = 110;
+      apexY = 180 - halfBase * Math.tan(theta);
+      if (apexY < 30) apexY = 30;
+      var left = 160 - halfBase, right = 160 + halfBase, apexX = 160;
+
+      function line(x1, y1, x2, y2, stroke, w) {
+        var L = document.createElementNS(ns, "line");
+        L.setAttribute("x1", x1); L.setAttribute("y1", y1);
+        L.setAttribute("x2", x2); L.setAttribute("y2", y2);
+        L.setAttribute("stroke", stroke);
+        L.setAttribute("stroke-width", w || 3);
+        L.setAttribute("stroke-linecap", "round");
+        svg.appendChild(L);
+      }
+      function circle(cx, cy, r, fill) {
+        var C = document.createElementNS(ns, "circle");
+        C.setAttribute("cx", cx); C.setAttribute("cy", cy);
+        C.setAttribute("r", r); C.setAttribute("fill", fill);
+        svg.appendChild(C);
+      }
+      function text(x, y, str, anchor) {
+        var T = document.createElementNS(ns, "text");
+        T.setAttribute("x", x); T.setAttribute("y", y);
+        T.setAttribute("fill", "var(--ink)");
+        T.setAttribute("font-size", "13");
+        T.setAttribute("font-family", "var(--mono)");
+        T.setAttribute("text-anchor", anchor || "middle");
+        T.textContent = str;
+        svg.appendChild(T);
+      }
+
+      // ground
+      line(40, baseY + 8, 280, baseY + 8, "var(--line)", 2);
+      // bars — thickness scales mildly with force
+      var thick = Math.min(8, 2 + fMag * 1.5);
+      line(left, baseY, apexX, apexY, "var(--oi-verm)", thick);   // left bar (compression)
+      line(right, baseY, apexX, apexY, "var(--oi-verm)", thick);  // right bar
+      line(left, baseY, right, baseY, "var(--oi-blue)", 3);       // base
+
+      // joints
+      circle(left, baseY, 6, "var(--accent)");
+      circle(right, baseY, 6, "var(--accent)");
+      circle(apexX, apexY, 6, "var(--accent)");
+
+      // load arrow P downward
+      line(apexX, apexY - 8, apexX, apexY - 48, "var(--ink)", 2.5);
+      // arrowhead
+      var ah = document.createElementNS(ns, "polygon");
+      ah.setAttribute("points", apexX + "," + (apexY - 4) + " " + (apexX - 6) + "," + (apexY - 16) + " " + (apexX + 6) + "," + (apexY - 16));
+      ah.setAttribute("fill", "var(--ink)");
+      svg.appendChild(ah);
+      text(apexX + 16, apexY - 36, "P", "start");
+
+      // angle arc label
+      text(left + 28, baseY - 12, "θ", "middle");
+
+      // pin / roller labels
+      text(left, baseY + 24, "pin", "middle");
+      text(right, baseY + 24, "roller", "middle");
+
+      document.getElementById("theta-val").textContent = String(thetaDeg);
+      out.innerHTML =
+        "|f<sub>1</sub>| = |f<sub>2</sub>| = P / (2 sin θ)<br>" +
+        "= <strong>" + fmt(fMag) + " P</strong><br><br>" +
+        (thetaDeg < 30
+          ? "<span class='warn'>Flat truss → forces become very large.</span>"
+          : "Upper bars are in <strong>compression</strong>.");
+    }
+
+    slider.addEventListener("input", function () {
+      draw(+slider.value);
+    });
+    draw(45);
+  })();
+
+})();
+</script>
+</body>
+</html>

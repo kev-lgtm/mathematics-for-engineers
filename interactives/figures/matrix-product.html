@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matrix multiplication, term by term</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .ctrl { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); align-items: start; }
+  .board { position: relative; overflow-x: auto; padding: 16px 10px 14px; display: grid; gap: 22px 26px; justify-content: center; align-items: center; --cw: 46px; }
+  .board.side { grid-template-columns: auto auto auto auto auto; grid-template-areas: "A op1 B op2 C"; }
+  .board.falk { grid-template-columns: auto auto; grid-template-areas: ". B" "A C"; justify-items: center; }
+  .slotA { grid-area: A; } .slotB { grid-area: B; } .slotC { grid-area: C; }
+  .op { font: 600 22px var(--serif); color: var(--muted); }
+  .op1 { grid-area: op1; } .op2 { grid-area: op2; }
+  .board.falk .op { display: none; }
+  .mwrap { display: grid; justify-items: center; gap: 5px; }
+  .mtitle { font: 14px var(--serif); }
+  .mtitle b { font-style: italic; font-size: 16px; }
+  .mtitle .dim { font: 12px var(--mono); color: var(--muted); margin-left: 6px; }
+  .mgrid { display: grid; grid-template-columns: repeat(var(--cols), var(--cw)); gap: 4px; position: relative; padding: 5px 12px; }
+  .mgrid::before, .mgrid::after { content: ""; position: absolute; top: 0; bottom: 0; width: 7px; border: 2px solid var(--ink); }
+  .mgrid::before { left: 0; border-right: 0; } .mgrid::after { right: 0; border-left: 0; }
+  .cell { width: var(--cw); height: calc(var(--cw) * .8); display: flex; align-items: center; justify-content: center; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); font: 600 calc(var(--cw) * .33) var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); text-align: center; padding: 0; margin: 0; min-width: 0; }
+  input.cell { -moz-appearance: textfield; appearance: textfield; }
+  input.cell::-webkit-outer-spin-button, input.cell::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .A .cell.row { background: var(--blue-t); border-color: var(--blue); }
+  .B .cell.col { background: var(--verm-t); border-color: var(--verm); }
+  .A .cell.act { background: var(--blue); color: var(--on-accent); border-color: var(--blue); outline: 2px solid var(--blue); outline-offset: 1px; }
+  .B .cell.act { background: var(--verm); color: #fff; border-color: var(--verm); outline: 2px solid var(--verm); outline-offset: 1px; }
+  :root[data-theme="dark"] .B .cell.act { color: #0b1220; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .B .cell.act { color: #0b1220; } }
+  .C .cell { background: var(--card); }
+  .C .cell.done { background: var(--orange-t); border-color: var(--orange); }
+  .C .cell.cur { background: var(--orange); border-color: var(--orange); color: #14213d; outline: 2px solid var(--orange); outline-offset: 1px; }
+  .C .cell.empty { color: var(--muted); font-weight: 400; }
+  .flow { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 0; }
+  .mwrap, .undef { position: relative; z-index: 1; }
+  .undef { border: 2px dashed var(--verm); color: var(--verm); border-radius: 10px; padding: 14px 16px; font-weight: 650; max-width: 220px; text-align: center; }
+  .t { color: var(--muted); } .t.on { color: var(--ink); } .t.cur { color: var(--verm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .rule { font: 15px var(--serif); }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Matrix multiplication, term by term</h1>
+    <p class="rule">Each entry is a row of <span class="v">A</span> times a column of <span class="v">B</span>: <i>c</i><sub><i>ij</i></sub> = &sum;<sub><i>k</i></sub> <i>a</i><sub><i>ik</i></sub><i>b</i><sub><i>kj</i></sub>. Click any entry of <span class="v">A</span> or <span class="v">B</span> to change it.</p>
+  </header>
+
+  <div class="stack">
+    <div class="stage"><div class="board side" id="board" role="group" aria-label="The matrices A, B and the product C"></div></div>
+    <div class="card readout" id="readout"></div>
+    <div class="card ctrl" id="ctrl"></div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Press Step and follow one entry of <span class="v">C</span> from start to finish. How many products does it need?</li>
+      <li>Choose the 1&times;3 times 3&times;1 preset. What is the size of the result, and what is it called?</li>
+      <li>Switch to Falk&rsquo;s scheme. Why does the highlighted row of <span class="v">A</span> always meet the highlighted column of <span class="v">B</span> exactly at the entry being computed?</li>
+      <li>Tick &ldquo;Make the inner sizes disagree&rdquo;. Which two numbers must be equal for the product to exist?</li>
+      <li>Type a 1 in one entry of <span class="v">A</span> and 0 elsewhere. What does the product do to <span class="v">B</span>?</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, s = KAI.s, fmt = KAI.fmt, Mx = KAI.M, $ = KAI.$;
+
+  var poolA = [[1, 2, 1, 0], [3, 4, 2, 1], [0, 1, 2, 3], [2, 1, 0, 1]];
+  var poolB = [[5, 6, 1, 2], [7, 8, 0, 1], [2, 1, 3, 0], [1, 0, 2, 2]];
+  var S = { m: 2, n: 2, p: 2, mismatch: false, step: 0, playing: false, speed: 1, layout: 'side', showAll: false, flow: true };
+  var timer = null;
+
+  /* ---------- controls ---------- */
+  var PRESETS = [
+    { id: 'book', label: 'Text example', m: 2, n: 2, p: 2 },
+    { id: 'classic', label: '2&times;3 times 3&times;2', m: 2, n: 3, p: 2 },
+    { id: 'dot', label: 'Row times column', m: 1, n: 3, p: 1 },
+    { id: 'bad', label: 'Sizes disagree', m: 2, n: 3, p: 2, bad: true }
+  ];
+  var presetSeg = KAI.seg({ legend: 'Examples', name: 'pre', value: 'book', options: PRESETS.map(function (q) { return { value: q.id, label: q.label }; }),
+    onChange: function (id) { var q = PRESETS.filter(function (x) { return x.id === id; })[0]; S.m = q.m; S.n = q.n; S.p = q.p; S.mismatch = !!q.bad; syncDims(); rebuild(); } });
+  var mSl = KAI.slider({ label: '<i>m</i>: rows of <span class="v">A</span>', min: 1, max: 4, step: 1, value: 2, digits: 0, onInput: function (v) { S.m = v; presetSeg.set(null); rebuild(); } });
+  var nSl = KAI.slider({ label: '<i>n</i>: columns of <span class="v">A</span>', min: 1, max: 4, step: 1, value: 2, digits: 0, onInput: function (v) { S.n = v; presetSeg.set(null); rebuild(); } });
+  var pSl = KAI.slider({ label: '<i>p</i>: columns of <span class="v">B</span>', min: 1, max: 4, step: 1, value: 2, digits: 0, onInput: function (v) { S.p = v; presetSeg.set(null); rebuild(); } });
+  var layoutSeg = KAI.seg({ legend: 'Layout', name: 'lay', value: 'side', options: [{ value: 'side', label: 'Side by side' }, { value: 'falk', label: 'Falk&rsquo;s scheme' }],
+    onChange: function (v) { S.layout = v; $('#board').className = 'board ' + v; rebuild(); } });
+  var badChk = KAI.check({ label: 'Make the inner sizes disagree', checked: false, onChange: function (v) { S.mismatch = v; presetSeg.set(null); rebuild(); } });
+  var allChk = KAI.check({ label: 'Show all of <span class="v">C</span>', checked: false, onChange: function (v) { S.showAll = v; update(); } });
+  var flowChk = KAI.check({ label: 'Show lines to the entry', checked: true, onChange: function (v) { S.flow = v; drawFlow(); } });
+  var playBtn = KAI.button({ label: '&#9654; Play', kind: 'primary', onClick: function () { if (S.step >= total() - 1) { S.step = 0; } setPlaying(!S.playing); update(); } });
+  var backBtn = KAI.button({ label: '&#9664; Back', onClick: function () { setPlaying(false); S.step = Math.max(0, S.step - 1); update(); } });
+  var stepBtn = KAI.button({ label: 'Step &#9654;', onClick: function () { setPlaying(false); S.step = Math.min(total() - 1, S.step + 1); update(); } });
+  var restartBtn = KAI.button({ label: '&#8634; Restart', onClick: function () { setPlaying(false); S.step = 0; update(); } });
+  var shuffleBtn = KAI.button({ label: 'New numbers', onClick: function () { for (var i = 0; i < 4; i++) for (var j = 0; j < 4; j++) { poolA[i][j] = Math.floor(Math.random() * 9) - 3; poolB[i][j] = Math.floor(Math.random() * 9) - 3; } rebuild(true); } });
+  var scrub = KAI.slider({ label: 'Term', min: 1, max: 4, step: 1, value: 1, digits: 0, format: function (v) { return v + ' / ' + total(); }, onInput: function (v) { setPlaying(false); S.step = v - 1; update(); } });
+  var spd = KAI.slider({ label: 'Speed', min: 0.4, max: 3, step: 0.1, value: 1, digits: 1, unit: '&times;', onInput: function (v) { S.speed = v; } });
+  var c1 = h('div', { class: 'stack' }, presetSeg.el, mSl.el, nSl.el, pSl.el);
+  var c2 = h('div', { class: 'stack' }, layoutSeg.el, badChk.el, allChk.el, flowChk.el);
+  var c3 = h('div', { class: 'stack' }, h('div', { class: 'row' }, backBtn, playBtn, stepBtn), h('div', { class: 'row' }, restartBtn, shuffleBtn), scrub.el, spd.el);
+  $('#ctrl').append(c1, c2, c3);
+
+  function syncDims() { mSl.set(S.m); nSl.set(S.n); pSl.set(S.p); badChk.set(S.mismatch); }
+
+  /* ---------- model ---------- */
+  function rB() { return S.mismatch ? (S.n < 4 ? S.n + 1 : S.n - 1) : S.n; }
+  function bad() { return rB() !== S.n; }
+  function total() { return Math.max(1, S.m * S.p * S.n); }
+  function getA() { return pool(poolA, S.m, S.n); }
+  function getB() { return pool(poolB, rB(), S.p); }
+  function pool(P, r, c) { return P.slice(0, r).map(function (row) { return row.slice(0, c); }); }
+  function derive() {
+    var n = S.n, q = Math.min(S.step, total() - 1), cellIdx = Math.floor(q / n), k = q % n, i = Math.floor(cellIdx / S.p), j = cellIdx % S.p;
+    var A = getA(), B = getB(), sum = 0, t;
+    for (t = 0; t <= k; t++) sum += A[i][t] * B[t][j];
+    return { i: i, j: j, k: k, cellIdx: cellIdx, sum: sum, A: A, B: B };
+  }
+
+  /* ---------- DOM ---------- */
+  var board = $('#board'), cellsA = [], cellsB = [], cellsC = [], flow = null;
+  function matrixBlock(key, rows, cols, title, dimTxt, editable) {
+    var wrap = h('div', { class: 'mwrap ' + key + ' slot' + key });
+    wrap.appendChild(h('div', { class: 'mtitle', html: '<b>' + title + '</b><span class="dim">' + dimTxt + '</span>' }));
+    var grid = h('div', { class: 'mgrid', role: 'group', 'aria-label': 'Matrix ' + title + ', ' + rows + ' by ' + cols });
+    grid.style.setProperty('--cols', cols);
+    var cells = [];
+    for (var i = 0; i < rows; i++) {
+      cells.push([]);
+      for (var j = 0; j < cols; j++) {
+        var el;
+        if (editable) {
+          el = h('input', { type: 'number', class: 'cell', step: 1, min: -99, max: 99, 'aria-label': title + ' row ' + (i + 1) + ', column ' + (j + 1) });
+          el.addEventListener('input', (function (ii, jj, e) { return function () { var v = parseFloat(e.value); if (isFinite(v)) { (key === 'A' ? poolA : poolB)[ii][jj] = v; update(); } }; })(i, j, el));
+        } else el = h('div', { class: 'cell empty', role: 'text' });
+        grid.appendChild(el); cells[i].push(el);
+      }
+    }
+    wrap.appendChild(grid);
+    return { wrap: wrap, cells: cells };
+  }
+  function rebuild(keepStep) {
+    setPlaying(false);
+    if (!keepStep) S.step = 0;
+    S.step = Math.min(S.step, total() - 1);
+    KAI.clear(board);
+    var rb = rB(), A = matrixBlock('A', S.m, S.n, 'A', S.m + '×' + S.n, true), B = matrixBlock('B', rb, S.p, 'B', rb + '×' + S.p, true);
+    cellsA = A.cells; cellsB = B.cells;
+    board.appendChild(A.wrap);
+    board.appendChild(h('div', { class: 'op op1', 'aria-hidden': 'true', text: '·' }));
+    board.appendChild(B.wrap);
+    board.appendChild(h('div', { class: 'op op2', 'aria-hidden': 'true', text: '=' }));
+    if (bad()) {
+      cellsC = [];
+      board.appendChild(h('div', { class: 'slotC undef', html: '<i>AB</i> is not defined<br><span style="font-weight:400">' + S.n + ' columns of <i>A</i> ≠ ' + rb + ' rows of <i>B</i></span>' }));
+    } else {
+      var C = matrixBlock('C', S.m, S.p, 'C', S.m + '×' + S.p, false);
+      cellsC = C.cells; board.appendChild(C.wrap);
+    }
+    flow = s('svg', { class: 'flow', 'aria-hidden': 'true' }); board.appendChild(flow);
+    for (var i = 0; i < S.m; i++) for (var k = 0; k < S.n; k++) cellsA[i][k].value = poolA[i][k];
+    for (var k2 = 0; k2 < rb; k2++) for (var j = 0; j < S.p; j++) cellsB[k2][j].value = poolB[k2][j];
+    scrub.limits(1, total());
+    fit(); update();
+  }
+  function fit() {
+    var W = Math.max(240, board.clientWidth - 24), n = S.n, p = S.p, cols = S.layout === 'side' ? (n + 2 * p) + 5 : (n + p) + 3;
+    board.style.setProperty('--cw', KAI.clamp(Math.floor(W / cols), 30, 54) + 'px');
+  }
+  function setPlaying(b) {
+    S.playing = b; clearTimeout(timer);
+    playBtn.innerHTML = b ? '&#10074;&#10074; Pause' : (S.step >= total() - 1 ? '&#8634; Replay' : '&#9654; Play');
+    if (b) timer = setTimeout(tick, 700 / S.speed);
+  }
+  function tick() {
+    if (!S.playing) return;
+    if (S.step >= total() - 1) { setPlaying(false); update(); return; }
+    S.step++; update();
+    timer = setTimeout(tick, 700 / S.speed);
+  }
+
+  function center(el) {
+    var r = el.getBoundingClientRect(), b = board.getBoundingClientRect();
+    return [r.left - b.left + board.scrollLeft + r.width / 2, r.top - b.top + board.scrollTop + r.height / 2];
+  }
+  function drawFlow() {
+    if (!flow) return;
+    KAI.clear(flow);
+    flow.setAttribute('width', board.scrollWidth); flow.setAttribute('height', board.scrollHeight);
+    if (!S.flow || bad() || !cellsC.length) return;
+    var d = derive(), a = center(cellsA[d.i][d.k]), b = center(cellsB[d.k][d.j]), c = center(cellsC[d.i][d.j]), top, path;
+    if (S.layout === 'falk') {
+      flow.appendChild(s('line', { x1: a[0], y1: a[1], x2: c[0], y2: c[1], stroke: 'var(--blue)', 'stroke-width': 2.4, 'stroke-dasharray': '6 5', 'stroke-linecap': 'round' }));
+      flow.appendChild(s('line', { x1: b[0], y1: b[1], x2: c[0], y2: c[1], stroke: 'var(--verm)', 'stroke-width': 2.4, 'stroke-dasharray': '6 5', 'stroke-linecap': 'round' }));
+    } else {
+      var tops = [cellsA[0][0], cellsB[0][0], cellsC[0][0]].map(function (e) { return center(e)[1]; });
+      top = Math.min.apply(null, tops) - 30;
+      [[a, 'var(--blue)'], [b, 'var(--verm)']].forEach(function (t) {
+        flow.appendChild(s('path', { d: 'M' + t[0][0] + ',' + t[0][1] + ' C' + t[0][0] + ',' + top + ' ' + c[0] + ',' + top + ' ' + c[0] + ',' + c[1], fill: 'none', stroke: t[1], 'stroke-width': 2.2, 'stroke-dasharray': '6 5', 'stroke-linecap': 'round', opacity: 0.85 }));
+      });
+    }
+  }
+
+  function update() {
+    var A = getA(), B = getB(), n = S.n, i, j, k;
+    for (i = 0; i < S.m; i++) for (k = 0; k < n; k++) { cellsA[i][k].className = 'cell'; }
+    for (k = 0; k < B.length; k++) for (j = 0; j < S.p; j++) { cellsB[k][j].className = 'cell'; }
+    var rd = KAI.clear($('#readout'));
+    var lastPlaying = S.playing;
+    if (bad()) {
+      rd.appendChild(h('p', { class: 'bad', html: '<i>AB</i> is not defined: <i>A</i> has ' + n + ' columns but <i>B</i> has ' + rB() + ' rows.' }));
+      rd.appendChild(h('p', { class: 'note', text: 'Each entry of C pairs a row of A with a column of B, term by term. The two lists must have the same length, so the inner sizes must match.' }));
+      scrub.disable(true); stepBtn.disabled = backBtn.disabled = playBtn.disabled = restartBtn.disabled = true;
+      drawFlow(); setPlaying(false); KAI.live('The product is not defined because the inner sizes disagree.');
+      return;
+    }
+    scrub.disable(false); stepBtn.disabled = backBtn.disabled = playBtn.disabled = restartBtn.disabled = false;
+    var d = derive(), C = Mx.mul(A, B);
+    for (k = 0; k < n; k++) cellsA[d.i][k].classList.add('row');
+    cellsA[d.i][d.k].classList.add('act');
+    for (k = 0; k < n; k++) cellsB[k][d.j].classList.add('col');
+    cellsB[d.k][d.j].classList.add('act');
+    for (i = 0; i < S.m; i++) for (j = 0; j < S.p; j++) {
+      var idx = i * S.p + j, el = cellsC[i][j];
+      if (idx < d.cellIdx || S.showAll) { el.textContent = fmt(C[i][j], 3); el.className = 'cell done'; }
+      else if (idx === d.cellIdx) { el.textContent = fmt(d.sum, 3); el.className = 'cell cur'; }
+      else { el.textContent = '·'; el.className = 'cell empty'; }
+    }
+    if (S.showAll) { cellsC[d.i][d.j].className = 'cell cur'; cellsC[d.i][d.j].textContent = fmt(d.sum, 3); }
+    // readout
+    var idx1 = '' + (d.i + 1) + (d.j + 1), terms = [], parts = [];
+    for (k = 0; k < n; k++) {
+      var cls = k < d.k ? 'on' : (k === d.k ? 'cur' : '');
+      terms.push('<span class="t ' + cls + '">(' + fmt(A[d.i][k], 3) + ')(' + fmt(B[k][d.j], 3) + ')</span>');
+      parts.push('a<sub>' + (d.i + 1) + (k + 1) + '</sub>b<sub>' + (k + 1) + (d.j + 1) + '</sub>');
+    }
+    rd.appendChild(h('div', { class: 'eq', html: '<span><i>c</i><sub>' + idx1 + '</sub> = ' + parts.join(' + ') + '</span>' }));
+    rd.appendChild(h('div', { class: 'eq', html: '<span><i>c</i><sub>' + idx1 + '</sub> = ' + terms.join(' + ') + '</span>' }));
+    var done = d.k === n - 1;
+    rd.appendChild(h('p', { html: 'After term ' + (d.k + 1) + ' of ' + n + ': <b>' + fmt(d.sum, 3) + '</b>' + (done ? ' &nbsp;→&nbsp; <i>c</i><sub>' + idx1 + '</sub> = <b>' + fmt(C[d.i][d.j], 3) + '</b>' : '') }));
+    rd.appendChild(h('p', { class: 'note', html: 'Sizes: (' + S.m + '×' + n + ')(' + n + '×' + S.p + ') = (' + S.m + '×' + S.p + '). The inner sizes agree, so <i>AB</i> exists. In all, ' + (S.m * S.p) + ' entries × ' + n + ' products = ' + total() + ' multiplications.' }));
+    scrub.set(S.step + 1);
+    playBtn.innerHTML = S.playing ? '&#10074;&#10074; Pause' : (S.step >= total() - 1 ? '&#8634; Replay' : '&#9654; Play');
+    drawFlow();
+    if (!S.playing) KAI.live('Entry c ' + (d.i + 1) + ' ' + (d.j + 1) + ', after term ' + (d.k + 1) + ' of ' + n + ': running total ' + fmt(d.sum, 3) + (done ? '. Final value ' + fmt(C[d.i][d.j], 3) : '') + '.');
+  }
+
+  if (global_RO()) new ResizeObserver(function () { fit(); drawFlow(); }).observe(board); else window.addEventListener('resize', function () { fit(); drawFlow(); });
+  function global_RO() { return typeof ResizeObserver !== 'undefined'; }
+  rebuild();
+  if (!KAI.reducedMotion) setTimeout(function () { setPlaying(true); }, 600);
+  window.FIG = { S: S, getA: getA, getB: getB, update: update, rebuild: rebuild, derive: derive, setPlaying: setPlaying };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

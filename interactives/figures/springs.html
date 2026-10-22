@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spring-mass chain</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .mats { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .grp { display: grid; gap: 6px; }
+  .grp h2 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  .mat .c.dg { color: var(--blue); font-weight: 650; }
+  .mat .c.of { color: var(--verm); font-weight: 650; }
+  .mat .c.zr { color: var(--muted); opacity: .7; }
+  div.eqs { font: 12.5px var(--mono); display: grid; gap: 2px; }
+  svg text.sm2 { font: 12px var(--font); fill: var(--muted); }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Masses and springs: <span class="v">K x</span> = <span class="v">F</span></h1>
+    <p>Push on the masses with the forces <span class="v">F</span> and watch them settle at the displacements <span class="v">x</span> that make every net force zero. The stiffness matrix <span class="v">K</span> is built from the spring constants.</p>
+  </header>
+
+  <div class="stage"><svg id="sv" role="img" aria-label="Masses joined by springs between two walls"></svg></div>
+  <p class="note" style="margin:6px 2px 8px">Displacements are drawn magnified (1 m is shown as one spacing between masses) and are cut off at 0.32 of the spacing; the numbers are always exact.</p>
+
+  <div class="layout">
+    <div class="stack">
+      <div class="card readout" id="readout"></div>
+    </div>
+    <div class="card stack" id="ctl"></div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Press <em>Text example</em>. Check <span class="v">x</span><sub>1</sub> = 0.1 m and <span class="v">x</span><sub>2</sub> = 0.2 m with the first row of <span class="v">K x</span> = <span class="v">F</span>.</li>
+      <li>Point at the matrix: blue entries lie on the diagonal, vermilion ones are &minus;<span class="v">k</span><sub><i>j</i></sub>. Which entries are zero when you switch to three masses, and why?</li>
+      <li>Make the middle spring very stiff (<span class="v">k</span><sub>2</sub> = 300) and the outer ones soft. Push only mass 1. Does mass 2 follow?</li>
+      <li>Reverse the sign of <span class="v">F</span><sub>2</sub>. What happens to <span class="v">x</span><sub>1</sub> and <span class="v">x</span><sub>2</sub>? Which property of the linear system explains this?</li>
+      <li>The matrix is symmetric. Push mass 1 with 30 N and measure <span class="v">x</span><sub>2</sub>; then push mass 2 with 30 N and measure <span class="v">x</span><sub>1</sub>. Compare.</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, s = KAI.s, fmt = KAI.fmt, $ = KAI.$;
+  var st = { n: 2, k: [100, 100, 100, 100], F: [0, 30, 0] };
+  var svg = $('#sv');
+
+  function Kmat() {
+    var n = st.n, K = [], i, j;
+    for (i = 0; i < n; i++) { K.push([]); for (j = 0; j < n; j++) K[i].push(0); }
+    for (i = 0; i < n; i++) { K[i][i] = st.k[i] + st.k[i + 1]; if (i + 1 < n) { K[i][i + 1] = -st.k[i + 1]; K[i + 1][i] = -st.k[i + 1]; } }
+    return K;
+  }
+  function Fvec() { return st.F.slice(0, st.n); }
+  function det(K) {
+    if (K.length === 2) return K[0][0] * K[1][1] - K[0][1] * K[1][0];
+    return K[0][0] * (K[1][1] * K[2][2] - K[1][2] * K[2][1]) - K[0][1] * (K[1][0] * K[2][2] - K[1][2] * K[2][0]) + K[0][2] * (K[1][0] * K[2][1] - K[1][1] * K[2][0]);
+  }
+  function xvec() { return KAI.solve(Kmat(), Fvec()); }
+
+  /* ---------- controls ---------- */
+  var ctl = $('#ctl'), kS = [], FS = [];
+  var nSeg = KAI.seg({ legend: 'Number of masses', name: 'nm', value: '2', options: [{ value: '2', label: '2 masses' }, { value: '3', label: '3 masses' }], onChange: function (v) { st.n = +v; buildControls(); refresh(); } });
+  function buildControls() {
+    KAI.clear(ctl); kS = []; FS = [];
+    var n = st.n, i;
+    var kg = h('div', { class: 'grp' }, h('h2', { text: 'Spring constants (N/m)' })), fg = h('div', { class: 'grp' }, h('h2', { text: 'Applied forces (N)' }));
+    for (i = 0; i <= n; i++) (function (ii) {
+      var sl = KAI.slider({ label: '<span class="v">k</span><sub>' + (ii + 1) + '</sub>', min: 20, max: 300, step: 10, value: st.k[ii], digits: 0, onInput: function (v) { st.k[ii] = v; refresh('slider'); } });
+      kS.push(sl); kg.appendChild(sl.el);
+    })(i);
+    for (i = 0; i < n; i++) (function (ii) {
+      var sl = KAI.slider({ label: '<span class="v">F</span><sub>' + (ii + 1) + '</sub>', min: -60, max: 60, step: 5, value: st.F[ii], digits: 0, onInput: function (v) { st.F[ii] = v; refresh('slider'); } });
+      FS.push(sl); fg.appendChild(sl.el);
+    })(i);
+    ctl.append(nSeg.el, kg, fg, h('div', { class: 'row' },
+      KAI.button({ label: 'Text example', onClick: function () { st.n = 2; st.k = [100, 100, 100, 100]; st.F = [0, 30, 0]; nSeg.set('2'); buildControls(); refresh(); } }),
+      KAI.button({ label: 'Stiff outer springs', title: 'k₁ = k₃ = 200, k₂ = 100, push mass 1', onClick: function () { st.n = 2; st.k = [200, 100, 200, 100]; st.F = [30, 0, 0]; nSeg.set('2'); buildControls(); refresh(); } }),
+      KAI.button({ label: 'Three masses', onClick: function () { st.n = 3; st.k = [100, 100, 100, 100]; st.F = [0, 0, 30]; nSeg.set('3'); buildControls(); refresh(); } })));
+  }
+
+  /* ---------- drawing ---------- */
+  function zig(x0, x1, y, amp, coils) {
+    var L = x1 - x0, lead = Math.min(14, L * 0.14), pts = [[x0, y], [x0 + lead, y]], a = x0 + lead, b = x1 - lead, i;
+    for (i = 0; i < coils * 2; i++) pts.push([a + (b - a) * (i + 0.5) / (coils * 2), y + (i % 2 ? amp : -amp)]);
+    pts.push([b, y], [x1, y]);
+    return pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+  }
+  function draw() {
+    var n = st.n, W = Math.max(300, Math.floor(svg.parentNode.clientWidth) || 700), H = 260, x = xvec(), F = Fvec(), i;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('width', W); svg.setAttribute('height', H);
+    KAI.clear(svg);
+    var padL = 14, xl = padL, xr = W - padL, d = (xr - xl) / (n + 1), cy = 120, mw = Math.min(64, d * 0.3), mh = Math.min(64, mw + 10);
+    var gy = cy + 62;
+    svg.appendChild(s('rect', { x: xl - 10, y: cy - 62, width: 10, height: 124, fill: 'var(--grid)' }));
+    svg.appendChild(s('line', { x1: xl, y1: cy - 62, x2: xl, y2: cy + 62, stroke: 'var(--ink)', 'stroke-width': 3 }));
+    svg.appendChild(s('rect', { x: xr, y: cy - 62, width: 10, height: 124, fill: 'var(--grid)' }));
+    svg.appendChild(s('line', { x1: xr, y1: cy - 62, x2: xr, y2: cy + 62, stroke: 'var(--ink)', 'stroke-width': 3 }));
+    svg.appendChild(s('line', { x1: xl - 10, y1: gy, x2: xr + 10, y2: gy, stroke: 'var(--ink)', 'stroke-width': 2 }));
+    var sc = 1.0 * d, lim = 0.32 * d, cx = [], rest = [], clipped = false;
+    for (i = 0; i < n; i++) {
+      rest.push(xl + d * (i + 1));
+      var dx = x[i] * sc; if (Math.abs(dx) > lim) { dx = Math.sign(dx) * lim; clipped = true; }
+      cx.push(rest[i] + dx);
+    }
+    // rest guides
+    for (i = 0; i < n; i++) svg.appendChild(s('line', { x1: rest[i], y1: cy - mh / 2 - 6, x2: rest[i], y2: cy + 106, stroke: 'var(--axis)', 'stroke-width': 1.2, 'stroke-dasharray': '4 4' }));
+    // springs
+    var edges = [xl].concat(cx.map(function (c) { return c - mw / 2; })), ends = cx.map(function (c) { return c + mw / 2; }).concat([xr]);
+    for (i = 0; i <= n; i++) {
+      var a = edges[i], b = i === 0 ? edges[1] : ends[i - 1];
+      var x0 = i === 0 ? xl : ends[i - 1], x1 = i === n ? xr : edges[i + 1];
+      svg.appendChild(s('polyline', { points: zig(x0, x1, cy, 11, 7), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 2, 'stroke-linejoin': 'round' }));
+      var lab = s('text', { x: (x0 + x1) / 2, y: cy - 24, class: 'lbl', 'text-anchor': 'middle' }); lab.textContent = 'k' + String.fromCharCode(0x2081 + i) + ' = ' + st.k[i]; svg.appendChild(lab);
+    }
+    // masses, forces, displacements
+    for (i = 0; i < n; i++) {
+      svg.appendChild(s('rect', { x: cx[i] - mw / 2, y: cy - mh / 2, width: mw, height: mh, rx: 4, fill: 'var(--sky-t)', stroke: 'var(--ink)', 'stroke-width': 2 }));
+      var m = s('text', { x: cx[i], y: cy + 5, class: 'lbl', 'text-anchor': 'middle' }); m.textContent = 'm' + String.fromCharCode(0x2081 + i); svg.appendChild(m);
+      // applied force arrow above the mass (length proportional to F)
+      if (Math.abs(F[i]) > 1e-9) {
+        var fl = F[i] / 60 * Math.min(70, d * 0.55), fy = cy - mh / 2 - 30;
+        arrow(cx[i] - fl / 2, fy, cx[i] + fl / 2, fy, 'var(--orange)', 3.2);
+        var ft = s('text', { x: cx[i], y: fy - 8, class: 'lbl', 'text-anchor': 'middle', fill: 'var(--orange)' }); ft.textContent = 'F' + String.fromCharCode(0x2081 + i) + ' = ' + fmt(F[i], 0) + ' N'; svg.appendChild(ft);
+      } else {
+        var ft0 = s('text', { x: cx[i], y: cy - mh / 2 - 38, class: 'lbl sm', 'text-anchor': 'middle', fill: 'var(--muted)' }); ft0.textContent = 'F' + String.fromCharCode(0x2081 + i) + ' = 0'; svg.appendChild(ft0);
+      }
+      // displacement arrow below
+      var ay = cy + 86;
+      if (Math.abs(cx[i] - rest[i]) > 1.5) arrow(rest[i], ay, cx[i], ay, 'var(--green)', 3);
+      svg.appendChild(s('line', { x1: cx[i], y1: cy + mh / 2, x2: cx[i], y2: ay + 5, stroke: 'var(--green)', 'stroke-width': 1, 'stroke-dasharray': '2 3' }));
+      var xt = s('text', { x: (rest[i] + cx[i]) / 2, y: ay + 22, class: 'lbl', 'text-anchor': 'middle', fill: 'var(--green)', 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 5 }); xt.textContent = 'x' + String.fromCharCode(0x2081 + i) + ' = ' + fmt(x[i], 3) + ' m'; svg.appendChild(xt);
+    }
+    if (clipped) { var cl = s('text', { x: xr - 4, y: 16, class: 'sm2', 'text-anchor': 'end' }); cl.textContent = 'display cut off (displacement larger than shown)'; svg.appendChild(cl); }
+  }
+  function arrow(x1, y1, x2, y2, col, w) {
+    var dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len, hh = Math.min(11, len * 0.6), px = -uy, py = ux;
+    svg.appendChild(s('line', { x1: x1, y1: y1, x2: x2 - ux * hh * 0.8, y2: y2 - uy * hh * 0.8, stroke: col, 'stroke-width': w, 'stroke-linecap': 'round' }));
+    svg.appendChild(s('polygon', { points: [x2, y2, x2 - ux * hh + px * hh * .38, y2 - uy * hh + py * hh * .38, x2 - ux * hh - px * hh * .38, y2 - uy * hh - py * hh * .38].map(function (v) { return v.toFixed(1); }).join(' '), fill: col }));
+  }
+  if (window.ResizeObserver) new ResizeObserver(function () { draw(); }).observe(svg.parentNode);
+
+  /* ---------- readout ---------- */
+  function readout() {
+    var n = st.n, K = Kmat(), F = Fvec(), x = xvec(), D = det(K), box = KAI.clear($('#readout')), i, j;
+    var kEl = KAI.matEl(K, { class: 'big', name: 'stiffness matrix K', digits: 0, cls: function (r, c, v) { return r === c ? 'dg' : v === 0 ? 'zr' : 'of'; } });
+    box.appendChild(h('div', { class: 'mats' },
+      h('span', { class: 'eq' }, h('span', { class: 'v', text: 'K' }), ' = ', kEl),
+      h('span', { class: 'eq' }, h('b', { text: 'x' }), ' = ', KAI.matEl(x.map(function (v) { return [v]; }), { class: 'big', name: 'x', digits: 3 })),
+      h('span', { class: 'eq' }, h('b', { text: 'F' }), ' = ', KAI.matEl(F.map(function (v) { return [v]; }), { class: 'big', name: 'F', digits: 0 }))));
+    box.appendChild(h('p', { class: 'note', html: '<span style="color:var(--blue);font-weight:650">blue</span>: <i>k</i><sub>i</sub> + <i>k</i><sub>i+1</sub> (the two springs touching mass <i>i</i>); <span style="color:var(--verm);font-weight:650">vermilion</span>: &minus;<i>k</i> of the spring between two masses; grey: no spring, so 0.' }));
+    var sym = true, tri = true;
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) { if (Math.abs(K[i][j] - K[j][i]) > 1e-9) sym = false; if (Math.abs(i - j) > 1 && Math.abs(K[i][j]) > 1e-9) tri = false; }
+    box.appendChild(h('p', { html: '<span class="ok">K<sup>T</sup> = K ✓ (symmetric)</span> &nbsp; <span class="ok">tridiagonal ✓</span> &nbsp; det <i>K</i> = <b>' + fmt(D, 0) + '</b> &gt; 0, so <i>K</i> is invertible' }));
+    // equilibrium check per mass
+    var rows = [];
+    for (i = 0; i < n; i++) {
+      var left = i === 0 ? 0 : x[i - 1], fl = -st.k[i] * (x[i] - left), fr = st.k[i + 1] * ((i + 1 < n ? x[i + 1] : 0) - x[i]), net = fl + fr + F[i];
+      rows.push('<div><b>m<sub>' + (i + 1) + '</sub></b>: ' + fmt(fl, 1) + ' (left) + ' + fmt(fr, 1) + ' (right) + ' + fmt(F[i], 1) + ' (applied) = <b>' + fmt(Math.abs(net) < 1e-9 ? 0 : net, 1) + '</b></div>');
+    }
+    box.appendChild(h('div', { class: 'note', text: 'Forces on each mass (newtons) at the solution:' }));
+    box.appendChild(h('div', { class: 'eqs', html: rows.join('') }));
+    KAI.live('Displacements ' + x.map(function (v, k) { return 'x' + (k + 1) + ' ' + fmt(v, 3); }).join(', ') + ' metres.');
+  }
+
+  function refresh(src) {
+    if (src !== 'slider') { kS.forEach(function (sl, i) { sl.set(st.k[i]); }); FS.forEach(function (sl, i) { sl.set(st.F[i]); }); }
+    draw(); readout();
+  }
+  buildControls(); refresh();
+  window.FIG = { st: st, Kmat: Kmat, xvec: xvec, refresh: refresh };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

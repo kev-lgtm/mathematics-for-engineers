@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robot arm and rotations</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .mats { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .l1 { color: var(--blue); font-weight: 650; } .l2 { color: var(--verm); font-weight: 650; } .pp { color: var(--purple); font-weight: 650; }
+  .grp { display: grid; gap: 6px; }
+  .sing { color: var(--verm); font-weight: 650; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>A two-link robot arm</h1>
+    <p>Link 1 is turned by <span class="v">&theta;</span><sub>1</sub>, link 2 by a further <span class="v">&theta;</span><sub>2</sub>. The tip is <b>p</b> = <span class="v">R</span>(<span class="v">&theta;</span><sub>1</sub>)([<span class="v">L</span><sub>1</sub>, 0]<sup>T</sup> + <span class="v">R</span>(<span class="v">&theta;</span><sub>2</sub>)[<span class="v">L</span><sub>2</sub>, 0]<sup>T</sup>). Drag the elbow or the tip.</p>
+  </header>
+
+  <div class="layout">
+    <div>
+      <div class="stage"><svg id="pl" role="img" aria-label="Two-link robot arm in the plane"></svg></div>
+    </div>
+    <div class="stack">
+      <div class="card readout" id="readout"></div>
+      <div class="card stack" id="ctl"></div>
+    </div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Press <em>Text example</em> (<span class="v">L</span><sub>1</sub> = <span class="v">L</span><sub>2</sub> = 1, 30&deg;, 60&deg;). Check that the tip is (&radic;3/2, 3/2) &asymp; (0.87, 1.50).</li>
+      <li>Press <em>Exercise</em> and compare the tip with your own calculation (<span class="v">L</span><sub>1</sub> = 2, <span class="v">L</span><sub>2</sub> = 1, 60&deg;, &minus;30&deg;).</li>
+      <li>Turn on <em>Show <b>p</b> = <b>v</b><sub>1</sub> + <b>v</b><sub>2</sub></em>. Change only <span class="v">&theta;</span><sub>2</sub>. Which of the two vectors turns, and which stays fixed?</li>
+      <li>Turn on the reachable region and drag the tip outwards. What happens at the outer edge? Which value of <span class="v">&theta;</span><sub>2</sub> is that?</li>
+      <li>Keep the tip fixed and use the flip button. Two different joint settings give the same tip: why does the matrix formula allow that?</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, $ = KAI.$, Mx = KAI.M, rad = KAI.rad, deg = KAI.deg;
+  var st = { L1: 1, L2: 1, t1: 30, t2: 60, vec: false, reach: false };
+  var L = KAI.plane($('#pl'), { x: [-4.4, 4.4], y: [-4.4, 4.4], step: 1 });
+
+  function fk(t1, t2, L1, L2) {
+    var a = rad(t1), b = rad(t1 + t2);
+    return { e: [L1 * Math.cos(a), L1 * Math.sin(a)], p: [L1 * Math.cos(a) + L2 * Math.cos(b), L1 * Math.sin(a) + L2 * Math.sin(b)] };
+  }
+  function pose() { return fk(st.t1, st.t2, st.L1, st.L2); }
+
+  /* ---------- controls ---------- */
+  var sl = {};
+  sl.L1 = KAI.slider({ label: 'length <span class="v">L</span><sub>1</sub>', min: 0.5, max: 2, step: 0.1, value: st.L1, digits: 1, onInput: function (v) { st.L1 = v; refresh('slider'); } });
+  sl.L2 = KAI.slider({ label: 'length <span class="v">L</span><sub>2</sub>', min: 0.5, max: 2, step: 0.1, value: st.L2, digits: 1, onInput: function (v) { st.L2 = v; refresh('slider'); } });
+  sl.t1 = KAI.slider({ label: 'angle <span class="v">&theta;</span><sub>1</sub>', min: -180, max: 180, step: 1, value: st.t1, unit: '&deg;', digits: 0, onInput: function (v) { st.t1 = v; refresh('slider'); } });
+  sl.t2 = KAI.slider({ label: 'angle <span class="v">&theta;</span><sub>2</sub>', min: -170, max: 170, step: 1, value: st.t2, unit: '&deg;', digits: 0, onInput: function (v) { st.t2 = v; refresh('slider'); } });
+  var cVec = KAI.check({ label: 'Show <b>p</b> = <b>v</b><sub>1</sub> + <b>v</b><sub>2</sub> as a parallelogram', checked: false, onChange: function (v) { st.vec = v; refresh('slider'); } });
+  var cReach = KAI.check({ label: 'Show the reachable region', checked: false, onChange: function (v) { st.reach = v; refresh('slider'); } });
+  function preset(L1, L2, a, b) { return function () { st.L1 = L1; st.L2 = L2; st.t1 = a; st.t2 = b; refresh(); }; }
+  function flip() { // same tip, other elbow
+    var p = pose().p, r = Math.hypot(p[0], p[1]);
+    if (Math.abs(st.t2) < 1e-9 || Math.abs(Math.abs(st.t2) - 180) < 1e-9) return;
+    var t2n = -st.t2, ang = Math.atan2(p[1], p[0]) - Math.atan2(st.L2 * Math.sin(rad(t2n)), st.L1 + st.L2 * Math.cos(rad(t2n)));
+    st.t1 = Math.round(deg(ang) * 100) / 100; st.t2 = t2n;
+    while (st.t1 > 180) st.t1 -= 360; while (st.t1 < -180) st.t1 += 360;
+    refresh();
+  }
+  $('#ctl').append(sl.L1.el, sl.L2.el, sl.t1.el, sl.t2.el, cVec.el, cReach.el,
+    h('div', { class: 'row' }, KAI.button({ label: 'Text example', onClick: preset(1, 1, 30, 60) }), KAI.button({ label: 'Exercise', title: 'L1 = 2, L2 = 1, 60°, −30°', onClick: preset(2, 1, 60, -30) }), KAI.button({ label: 'Flip elbow', title: 'Same tip, other elbow position', onClick: flip })));
+
+  /* ---------- handles ---------- */
+  function norm(a) { while (a > 180) a -= 360; while (a < -180) a += 360; return a; }
+  var hE = KAI.handle(L, { pos: pose().e, color: 'var(--blue)', r: 8,
+    constrain: function (p) { var a = Math.round(deg(Math.atan2(p[1], p[0]))); st.t1 = norm(a); return pose().e; },
+    label: function () { return 'Elbow. Joint angle theta 1 equals ' + st.t1 + ' degrees'; }, step: 0.1,
+    onMove: function () { refresh('handle'); } });
+  var hT = KAI.handle(L, { pos: pose().p, color: 'var(--purple)', r: 9,
+    constrain: function (p) {
+      var L1 = st.L1, L2 = st.L2, rmin = Math.abs(L1 - L2) + 1e-6, rmax = L1 + L2 - 1e-6, r = Math.hypot(p[0], p[1]);
+      if (r < 1e-9) { p = [rmin, 0]; r = rmin; }
+      var rr = KAI.clamp(r, rmin, rmax), q = [p[0] * rr / r, p[1] * rr / r];
+      var c = KAI.clamp((rr * rr - L1 * L1 - L2 * L2) / (2 * L1 * L2), -1, 1), sgn = st.t2 < 0 ? -1 : 1, t2 = sgn * Math.acos(c);
+      var t1 = Math.atan2(q[1], q[0]) - Math.atan2(L2 * Math.sin(t2), L1 + L2 * Math.cos(t2));
+      st.t1 = norm(Math.round(deg(t1))); st.t2 = KAI.clamp(Math.round(deg(t2)), -170, 170);
+      return pose().p;
+    },
+    label: function () { return 'Tip of the arm, joint angles ' + st.t1 + ' and ' + st.t2 + ' degrees'; }, step: 0.1,
+    onMove: function () { refresh('handle'); } });
+
+  /* ---------- drawing ---------- */
+  function draw() {
+    var P = pose(), O = [0, 0], g = L.content, t = L.top, i;
+    KAI.clear(g); KAI.clear(t);
+    if (st.reach) {
+      var rO = st.L1 + st.L2, rI = Math.abs(st.L1 - st.L2), pts = [], n = 90, k;
+      var d = '';
+      function circ(r, rev) { var s = ''; for (k = 0; k <= n; k++) { var a = (rev ? -1 : 1) * 2 * Math.PI * k / n; s += (k ? 'L' : 'M') + L.X(r * Math.cos(a)).toFixed(1) + ',' + L.Y(r * Math.sin(a)).toFixed(1); } return s + 'Z'; }
+      d = circ(rO, false) + (rI > 0.01 ? circ(rI, true) : '');
+      g.appendChild(KAI.s('path', { d: d, fill: 'var(--green-t)', stroke: 'var(--green)', 'stroke-width': 1.4, 'stroke-dasharray': '5 4', 'fill-rule': 'evenodd' }));
+    }
+    var a1 = rad(st.t1), v1 = P.e, v2 = [P.p[0] - P.e[0], P.p[1] - P.e[1]];
+    if (st.vec) {
+      L.poly(g, [O, v1, P.p, v2], { fill: 'var(--purple-t)', stroke: 'none' });
+      L.line(g, O, v2, { stroke: 'var(--verm)', 'stroke-width': 2, 'stroke-dasharray': '6 5', 'stroke-opacity': 0.8 });
+      L.line(g, v2, P.p, { stroke: 'var(--blue)', 'stroke-width': 2, 'stroke-dasharray': '6 5', 'stroke-opacity': 0.8 });
+    }
+    // extension of link 1 and angle arcs
+    var ext = [P.e[0] + 0.75 * Math.cos(a1), P.e[1] + 0.75 * Math.sin(a1)];
+    L.line(g, P.e, ext, { stroke: 'var(--axis)', 'stroke-width': 1.4, 'stroke-dasharray': '3 4' });
+    function arc(c, r, a0, a1_, lab, col) {
+      var q = [], m = 24;
+      for (i = 0; i <= m; i++) { var a = a0 + (a1_ - a0) * i / m; q.push([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]); }
+      L.polyline(t, q, { stroke: col, 'stroke-width': 1.8 });
+      var am = (a0 + a1_) / 2;
+      L.text(t, [c[0] + (r + 0.3) * Math.cos(am), c[1] + (r + 0.3) * Math.sin(am)], lab, { 'text-anchor': 'middle', dy: 4, class: 'lbl', fill: col });
+    }
+    if (Math.abs(st.t1) > 1) arc(O, 0.55, 0, a1, 'θ₁', 'var(--blue)');
+    if (Math.abs(st.t2) > 1) arc(P.e, 0.5, a1, a1 + rad(st.t2), 'θ₂', 'var(--verm)');
+    // links
+    L.line(g, O, P.e, { stroke: 'var(--blue)', 'stroke-width': 11, 'stroke-linecap': 'round' });
+    L.line(g, P.e, P.p, { stroke: 'var(--verm)', 'stroke-width': 9, 'stroke-linecap': 'round' });
+    L.line(g, O, P.e, { stroke: 'var(--bg)', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-opacity': 0.6 });
+    L.line(g, P.e, P.p, { stroke: 'var(--bg)', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-opacity': 0.6 });
+    // labels L1, L2
+    function lab(a, b, str, col, side) {
+      side = side || 1;
+      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+      L.text(t, [mx - side * dy / l * 0.38, my + side * dx / l * 0.38], str, { 'text-anchor': 'middle', dy: 4, class: 'lbl', fill: col, 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 4 });
+    }
+    lab(O, P.e, 'L₁ = ' + fmt(st.L1, 1), 'var(--blue)');
+    lab(P.e, P.p, 'L₂ = ' + fmt(st.L2, 1), 'var(--verm)');
+    if (st.vec) {
+      L.arrow(t, O, P.p, { stroke: 'var(--purple)', width: 3.2 });
+      var pl = Math.hypot(P.p[0], P.p[1]) || 1;
+      L.text(t, [P.p[0] / 2 + P.p[1] / pl * 0.45, P.p[1] / 2 - P.p[0] / pl * 0.45], 'p = (' + fmt(P.p[0], 2) + ', ' + fmt(P.p[1], 2) + ')', { 'text-anchor': 'middle', dy: 4, fill: 'var(--purple)', class: 'lbl', 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 4 });
+      L.text(t, v1, 'v₁', { dx: 0, dy: 20, 'text-anchor': 'middle', fill: 'var(--blue)', class: 'lbl' });
+    } else {
+      L.text(t, P.p, '(' + fmt(P.p[0], 2) + ', ' + fmt(P.p[1], 2) + ')', { dx: 14, dy: -14, 'text-anchor': P.p[0] > 1.5 ? 'end' : 'start', fill: 'var(--purple)', class: 'lbl', 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 4 });
+    }
+    // base
+    L.poly(t, [[-0.35, -0.38], [0.35, -0.38], [0.18, -0.06], [-0.18, -0.06]], { fill: 'var(--ink)', opacity: 0.85 });
+    L.dot(t, O, 7, { fill: 'var(--bg)', stroke: 'var(--ink)', 'stroke-width': 3 });
+    L.dot(t, P.e, 5, { fill: 'var(--bg)', stroke: 'var(--ink)', 'stroke-width': 2.5 });
+  }
+  L.onResize(draw);
+
+  /* ---------- readout ---------- */
+  function Rm(t) { return Mx.rot(t); }
+  function readout() {
+    var P = pose(), box = KAI.clear($('#readout')), R1 = Rm(st.t1), R2 = Rm(st.t2);
+    var w = Mx.apply(R2, [st.L2, 0]), q = [st.L1 + w[0], w[1]], p = Mx.apply(R1, q);
+    function col(v) { return v.map(function (a) { return [a]; }); }
+    box.appendChild(h('div', { class: 'mats' },
+      h('span', { class: 'eq' }, h('span', { class: 'v', html: 'R(&theta;<sub>2</sub>)' }), KAI.matEl(R2, { class: 'big', name: 'R theta 2', digits: 2 }), h('span', { text: '[' + fmt(st.L2, 1) + ', 0]' + 'ᵀ' + ' = ' }), KAI.matEl(col(w), { class: 'big', name: 'second link in link-one frame', digits: 2 }))));
+    box.appendChild(h('div', { class: 'mats', style: { margin: '6px 0' } },
+      h('span', { class: 'eq' }, h('span', { class: 'v', html: 'q' }), ' = [' + fmt(st.L1, 1) + ', 0]ᵀ + ', KAI.matEl(col(w), { class: 'big', name: 'w', digits: 2 }), ' = ', KAI.matEl(col(q), { class: 'big', name: 'q', digits: 2 }))));
+    box.appendChild(h('div', { class: 'mats' },
+      h('span', { class: 'eq' }, h('b', { class: 'pp', text: 'p' }), ' = ', h('span', { class: 'v', html: 'R(&theta;<sub>1</sub>)' }), KAI.matEl(R1, { class: 'big', name: 'R theta 1', digits: 2 }), h('span', { text: ' q = ' }), KAI.matEl(col(p), { class: 'big', name: 'p', digits: 3 }))));
+    var r = Math.hypot(p[0], p[1]), rmax = st.L1 + st.L2, rmin = Math.abs(st.L1 - st.L2), sing = Math.abs(Math.sin(rad(st.t2))) < 0.02;
+    box.appendChild(h('p', { html: '|<b>p</b>| = ' + fmt(r, 3) + '&nbsp; (reachable between ' + fmt(rmin, 1) + ' and ' + fmt(rmax, 1) + ')' }));
+    box.appendChild(h('p', { class: sing ? 'sing' : 'note', text: sing ? 'The arm is fully stretched or folded: this is the edge of the reachable region, where the arm cannot move the tip further in that direction.' : 'Link 2 points at angle θ₁ + θ₂ = ' + fmt(norm(st.t1 + st.t2), 0) + '°, and R(θ₁)R(θ₂) = R(θ₁ + θ₂).' }));
+    KAI.live('Joint angles ' + fmt(st.t1, 0) + ' and ' + fmt(st.t2, 0) + ' degrees. Tip at ' + fmt(p[0], 2) + ', ' + fmt(p[1], 2) + '.');
+  }
+
+  var viewR = 0;
+  function fitView() {
+    var R = Math.max(1.5, Math.ceil((st.L1 + st.L2) * 1.1 * 2) / 2);
+    if (R === viewR) return;
+    viewR = R; L.xr[0] = -R; L.xr[1] = R; L.yr[0] = -R; L.yr[1] = R;
+    L.refresh();
+  }
+  function refresh(src) {
+    fitView();
+    if (src !== 'slider') { sl.L1.set(st.L1); sl.L2.set(st.L2); sl.t1.set(st.t1); sl.t2.set(st.t2); }
+    if (src !== 'handle') { hE.set(pose().e); hT.set(pose().p); }
+    else { hE.set(pose().e); hT.set(pose().p); }
+    draw(); readout();
+  }
+  refresh();
+  window.FIG = { st: st, pose: pose, refresh: refresh };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

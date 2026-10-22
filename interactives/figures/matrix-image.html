@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A picture is a matrix</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+  .blk { display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .blk h2 { margin: 0; font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--ink); font-family: var(--serif); font-weight: 400; }
+  .blk h2 b { font-style: italic; }
+  .pix { display: block; width: 100%; max-width: 210px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 3px; cursor: pointer; background: #000; }
+  .pix rect.p { stroke: rgba(128, 128, 128, .45); stroke-width: .03; }
+  .pix rect.sel { fill: none; stroke: var(--orange); stroke-width: .14; pointer-events: none; }
+  .mg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; max-width: 250px; margin: 0 auto; position: relative; padding: 4px 10px; width: 100%; }
+  .mg::before, .mg::after { content: ""; position: absolute; top: 0; bottom: 0; width: 6px; border: 2px solid var(--ink); }
+  .mg::before { left: 0; border-right: 0; } .mg::after { right: 0; border-left: 0; }
+  .mc { height: 30px; min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); font: 600 13px var(--mono); text-align: center; padding: 0; display: flex; align-items: center; justify-content: center; margin: 0; }
+  input.mc { -moz-appearance: textfield; appearance: textfield; }
+  input.mc::-webkit-outer-spin-button, input.mc::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .mc.sel { outline: 2px solid var(--orange); outline-offset: 0; background: var(--orange-t); }
+  .mc.hi { text-decoration: underline wavy var(--verm); text-underline-offset: 3px; }
+  .mc.lo { text-decoration: underline wavy var(--blue); text-underline-offset: 3px; }
+  .legend { font-size: 12.5px; color: var(--muted); }
+  .eq .big { font-size: 16px; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>A picture is a matrix</h1>
+    <p>Each pixel is one entry (0 = black, 9 = white). Brightening a photo multiplies the matrix by a number; blending two photos adds two matrices. Click a pixel to follow it through the calculation.</p>
+  </header>
+
+  <div class="stack">
+    <div class="trio" id="trio"></div>
+    <div class="card readout" id="readout"></div>
+    <div class="card ctrl stack" id="ctrl"></div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Choose <em>Brighten</em> (<span class="v">k</span> = 2). Which pixels reach white and stop changing? What detail is lost?</li>
+      <li>Choose <em>Blend</em>. Click a pixel and check by hand that <span class="v">r</span><sub><i>ij</i></sub> = &frac12;<span class="v">a</span><sub><i>ij</i></sub> + &frac12;<span class="v">b</span><sub><i>ij</i></sub>.</li>
+      <li>Choose <em>Difference</em> (<span class="v">A</span> &minus; <span class="v">B</span>). Why do many entries become 0?</li>
+      <li>Change a single entry of <span class="v">A</span> in the matrix. How many entries of <span class="v">R</span> change?</li>
+      <li>Set <span class="v">k</span> = 0 and <span class="v">l</span> = 1. What is <span class="v">R</span>? Which matrix does <span class="v">R</span> equal when <span class="v">k</span> = 1 and <span class="v">l</span> = 0?</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, s = KAI.s, fmt = KAI.fmt, $ = KAI.$;
+  var N = 6;
+  var A0 = [[0, 0, 5, 5, 0, 0], [0, 5, 9, 9, 5, 0], [5, 9, 9, 9, 9, 5], [0, 0, 9, 9, 0, 0], [0, 0, 9, 9, 0, 0], [0, 0, 5, 5, 0, 0]];
+  var BIMG = {
+    grad: { label: 'Gradient', f: function (i, j) { return Math.round((i + j) * 9 / 10); } },
+    check: { label: 'Checkerboard', f: function (i, j) { return (i + j) % 2 === 0 ? 9 : 0; } },
+    frame: { label: 'Frame', f: function (i, j) { return (i === 0 || j === 0 || i === N - 1 || j === N - 1) ? 9 : 3; } },
+    stripes: { label: 'Stripes', f: function (i, j) { return j % 2 ? 9 : 2; } }
+  };
+  function make(f) { var M = []; for (var i = 0; i < N; i++) { M.push([]); for (var j = 0; j < N; j++) M[i].push(f(i, j)); } return M; }
+  var st = { A: make(function (i, j) { return A0[i][j]; }), B: make(BIMG.grad.f), k: 1, l: 0, sel: [1, 2] };
+
+  /* ---------- blocks ---------- */
+  var blocks = {};
+  function block(key, title, editable) {
+    var wrap = h('div', { class: 'blk' }), titleEl = h('h2', { html: title });
+    var svg = s('svg', { class: 'pix', viewBox: '0 0 ' + N + ' ' + N, 'aria-hidden': 'true', 'shape-rendering': 'crispEdges' });
+    var rects = [], grid = h('div', { class: 'mg', role: 'group', 'aria-label': 'Matrix ' + (key === 'R' ? 'R' : key) + ', ' + N + ' by ' + N }), cells = [];
+    for (var i = 0; i < N; i++) {
+      rects.push([]); cells.push([]);
+      for (var j = 0; j < N; j++) {
+        var r = s('rect', { class: 'p', x: j, y: i, width: 1, height: 1 });
+        r.addEventListener('click', (function (ii, jj) { return function () { select(ii, jj); }; })(i, j));
+        svg.appendChild(r); rects[i].push(r);
+        var c;
+        if (editable) {
+          c = h('input', { type: 'number', class: 'mc', min: 0, max: 9, step: 1, 'aria-label': key + ' row ' + (i + 1) + ', column ' + (j + 1) });
+          c.addEventListener('input', (function (ii, jj, e) { return function () { var v = parseFloat(e.value); if (isFinite(v)) { st[key][ii][jj] = KAI.clamp(Math.round(v), 0, 9); st.sel = [ii, jj]; update(e); } }; })(i, j, c));
+          c.addEventListener('focus', (function (ii, jj) { return function () { if (st.sel[0] !== ii || st.sel[1] !== jj) { st.sel = [ii, jj]; update(document.activeElement); } }; })(i, j));
+        } else {
+          c = h('button', { type: 'button', class: 'mc', 'aria-label': 'R row ' + (i + 1) + ', column ' + (j + 1) });
+          c.addEventListener('click', (function (ii, jj) { return function () { select(ii, jj); }; })(i, j));
+        }
+        grid.appendChild(c); cells[i].push(c);
+      }
+    }
+    var sel = s('rect', { class: 'sel', width: 1, height: 1 }); svg.appendChild(sel);
+    wrap.append(titleEl, svg, grid);
+    blocks[key] = { wrap: wrap, svg: svg, rects: rects, cells: cells, sel: sel, title: titleEl };
+    return wrap;
+  }
+  var trio = $('#trio');
+  trio.append(block('A', '<b>A</b> &nbsp;(first picture)', true), block('B', '<b>B</b> &nbsp;(second picture)', true), block('R', '<b>R</b> = <i>k</i><b>A</b> + <i>l</i><b>B</b> &nbsp;(result)', false));
+
+  /* ---------- controls ---------- */
+  var OPS = [
+    { id: 'orig', label: 'Original', k: 1, l: 0 }, { id: 'bright', label: 'Brighten', k: 2, l: 0 }, { id: 'dim', label: 'Dim', k: 0.5, l: 0 },
+    { id: 'blend', label: 'Blend', k: 0.5, l: 0.5 }, { id: 'sum', label: 'Sum', k: 1, l: 1 }, { id: 'diff', label: 'Difference', k: 1, l: -1 }
+  ];
+  var opSeg = KAI.seg({ legend: 'Operation', name: 'op', value: 'orig', options: OPS.map(function (o) { return { value: o.id, label: o.label }; }),
+    onChange: function (id) { var o = OPS.filter(function (x) { return x.id === id; })[0]; st.k = o.k; st.l = o.l; kSl.set(o.k); lSl.set(o.l); update(); } });
+  var kSl = KAI.slider({ label: 'multiplier <i>k</i> for <b>A</b>', min: -1, max: 2, step: 0.1, value: 1, digits: 1, onInput: function (v) { st.k = v; syncOp(); update(); } });
+  var lSl = KAI.slider({ label: 'multiplier <i>l</i> for <b>B</b>', min: -1, max: 2, step: 0.1, value: 0, digits: 1, onInput: function (v) { st.l = v; syncOp(); update(); } });
+  var bSeg = KAI.seg({ legend: 'Second picture <b>B</b>', name: 'bimg', value: 'grad', options: Object.keys(BIMG).map(function (k) { return { value: k, label: BIMG[k].label }; }),
+    onChange: function (k) { st.B = make(BIMG[k].f); update(); } });
+  var resetA = KAI.button({ label: 'Restore picture A from the text', onClick: function () { st.A = make(function (i, j) { return A0[i][j]; }); update(); } });
+  function bump(key, d) { var i = st.sel[0], j = st.sel[1]; st[key][i][j] = KAI.clamp(st[key][i][j] + d, 0, 9); update(); }
+  var ctrl = $('#ctrl');
+  ctrl.append(h('div', { class: 'row', style: { 'align-items': 'flex-start', gap: '24px' } }, h('div', { class: 'stack', style: { flex: '1 1 260px' } }, opSeg.el, kSl.el, lSl.el), h('div', { class: 'stack', style: { flex: '1 1 260px' } }, bSeg.el, resetA,
+    h('div', { class: 'row' }, h('span', { class: 'note', text: 'Selected pixel:' }),
+      KAI.button({ label: 'A &minus;1', onClick: function () { bump('A', -1); } }), KAI.button({ label: 'A +1', onClick: function () { bump('A', 1); } }),
+      KAI.button({ label: 'B &minus;1', onClick: function () { bump('B', -1); } }), KAI.button({ label: 'B +1', onClick: function () { bump('B', 1); } })))));
+  function syncOp() {
+    var match = OPS.filter(function (o) { return Math.abs(o.k - st.k) < 1e-9 && Math.abs(o.l - st.l) < 1e-9; })[0];
+    opSeg.set(match ? match.id : null);
+  }
+  function select(i, j) { st.sel = [i, j]; update(); }
+
+  /* ---------- drawing ---------- */
+  function grey(v) { var g = Math.round(255 * KAI.clamp(v, 0, 9) / 9); return 'rgb(' + g + ',' + g + ',' + g + ')'; }
+  function compute() {
+    var R = [], raw = [];
+    for (var i = 0; i < N; i++) { R.push([]); raw.push([]); for (var j = 0; j < N; j++) { var v = st.k * st.A[i][j] + st.l * st.B[i][j]; raw[i].push(v); R[i].push(KAI.clamp(v, 0, 9)); } }
+    return { R: R, raw: raw };
+  }
+  function update(skipEl) {
+    var C = compute(), i, j, hi = 0, lo = 0;
+    ['A', 'B'].forEach(function (key) {
+      for (i = 0; i < N; i++) for (j = 0; j < N; j++) {
+        blocks[key].rects[i][j].setAttribute('fill', grey(st[key][i][j]));
+        var el = blocks[key].cells[i][j];
+        if (el !== skipEl && document.activeElement !== el) el.value = st[key][i][j];
+        el.classList.toggle('sel', i === st.sel[0] && j === st.sel[1]);
+      }
+    });
+    for (i = 0; i < N; i++) for (j = 0; j < N; j++) {
+      var raw = C.raw[i][j], v = C.R[i][j], el2 = blocks.R.cells[i][j];
+      blocks.R.rects[i][j].setAttribute('fill', grey(v));
+      var over = raw > 9 + 1e-9, under = raw < -1e-9;
+      if (over) hi++; if (under) lo++;
+      el2.textContent = fmt(v, 1);
+      el2.classList.toggle('hi', over); el2.classList.toggle('lo', under);
+      el2.classList.toggle('sel', i === st.sel[0] && j === st.sel[1]);
+      el2.setAttribute('aria-label', 'R row ' + (i + 1) + ', column ' + (j + 1) + ': ' + fmt(v, 1) + (over ? ', clipped from ' + fmt(raw, 1) + ' to white' : under ? ', clipped from ' + fmt(raw, 1) + ' to black' : ''));
+    }
+    ['A', 'B', 'R'].forEach(function (key) { var b = blocks[key]; b.sel.setAttribute('x', st.sel[1]); b.sel.setAttribute('y', st.sel[0]); });
+    // readout
+    var si = st.sel[0], sj = st.sel[1], a = st.A[si][sj], b = st.B[si][sj], raw0 = C.raw[si][sj], r0 = C.R[si][sj], idx = (si + 1) + ',' + (sj + 1);
+    var rd = KAI.clear($('#readout'));
+    rd.appendChild(h('div', { class: 'eq', html: '<span><i>r</i><sub>' + idx + '</sub> = <i>k</i>·<i>a</i><sub>' + idx + '</sub> + <i>l</i>·<i>b</i><sub>' + idx + '</sub> = ' + fmt(st.k, 1) + '·' + a + ' + ' + fmt(st.l, 1) + '·' + b + ' = <b>' + fmt(raw0, 2) + '</b>' + (raw0 > 9 + 1e-9 ? ' → clipped to <b>9</b> (white)' : raw0 < -1e-9 ? ' → clipped to <b>0</b> (black)' : '') + '</span>' }));
+    var msg = 'Every entry of R is computed from the entries of A and B in the same position. ';
+    if (Math.abs(st.l) < 1e-9 && Math.abs(st.k - 1) > 1e-9) msg = 'Scalar multiplication: every entry of A is multiplied by ' + fmt(st.k, 1) + '. ';
+    else if (Math.abs(st.k) > 1e-9 && Math.abs(st.l) > 1e-9) msg = 'A linear combination: ' + fmt(st.k, 1) + 'A + ' + fmt(st.l, 1).replace('−', '−') + 'B, computed entry by entry. ';
+    var clip = (hi ? hi + ' entr' + (hi === 1 ? 'y was' : 'ies were') + ' clipped to white (wavy red underline). ' : '') + (lo ? lo + ' entr' + (lo === 1 ? 'y was' : 'ies were') + ' clipped to black (wavy blue underline). ' : '');
+    rd.appendChild(h('p', { class: 'note', text: msg + clip + 'The clipping is only because a picture cannot be brighter than white; it is not part of the matrix algebra.' }));
+    KAI.live('Selected pixel row ' + (si + 1) + ', column ' + (sj + 1) + ': r equals ' + fmt(raw0, 2) + (raw0 > 9 + 1e-9 ? ', clipped to 9' : raw0 < -1e-9 ? ', clipped to 0' : '') + '.');
+  }
+
+  update();
+  window.FIG = { st: st, compute: compute, update: update };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

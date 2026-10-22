@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Symmetric and skew parts</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .board { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-start; justify-content: center; }
+  .unit { display: grid; gap: 6px; justify-items: center; }
+  .unit .cap { font-family: var(--serif); font-size: 15px; }
+  .unit .cap b { font-style: italic; font-weight: 400; }
+  .unit .sub { font-size: 12px; color: var(--muted); max-width: 150px; text-align: center; }
+  .op { align-self: center; font-family: var(--serif); font-size: 22px; color: var(--muted); }
+  .mat input.in { width: 4.2em; font: 13px var(--mono); padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); text-align: right; }
+  .mat input.in.hl, .mat .c.hl { background: var(--orange-t); outline: 1.5px solid var(--orange); }
+  .mat .c { cursor: default; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 760px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+  .sx { color: var(--blue); font-weight: 650; } .kx { color: var(--verm); font-weight: 650; } .ax { color: var(--purple); font-weight: 650; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Every square matrix is symmetric + skew</h1>
+    <p>Edit the entries of <span class="v">A</span>. The matrix <span class="v">S</span> = &frac12;(<span class="v">A</span> + <span class="v">A</span><sup>T</sup>) averages each entry with its mirror image, <span class="v">K</span> = &frac12;(<span class="v">A</span> &minus; <span class="v">A</span><sup>T</sup>) keeps what is left over. Point at an entry to see its mirror partner.</p>
+  </header>
+
+  <div class="stack">
+    <div class="card stack">
+      <div class="row" id="ctl"></div>
+      <div class="board" id="board"></div>
+    </div>
+    <div class="cols">
+      <div class="card readout" id="readout"></div>
+      <div id="planeWrap">
+        <div class="stage"><svg id="pl" role="img" aria-label="Plane with the vector x and its images Sx, Kx and Ax"></svg></div>
+        <p class="note" style="margin:6px 2px 0">Drag the tip of <b>x</b>. Blue + vermilion arrows (head to tail) always end exactly at the purple arrow.</p>
+      </div>
+    </div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Point at the entry <span class="v">a</span><sub>12</sub> of <span class="v">A</span>. Which entries of <span class="v">A</span><sup>T</sup>, <span class="v">S</span> and <span class="v">K</span> light up? How are <span class="v">s</span><sub>12</sub> and <span class="v">s</span><sub>21</sub> related, and <span class="v">k</span><sub>12</sub> and <span class="v">k</span><sub>21</sub>?</li>
+      <li>Press <em>Make <span class="v">A</span> symmetric</em>. What is <span class="v">K</span>? Press <em>Make <span class="v">A</span> skew</em>. What is <span class="v">S</span>?</li>
+      <li>Why is the diagonal of <span class="v">K</span> always zero?</li>
+      <li>Drag <b>x</b>. What angle does <span class="v">Kx</span> make with <b>x</b>, always? (Think of <span class="v">x</span><sup>T</sup><span class="v">Kx</span>.)</li>
+      <li>Switch to 3 &times; 3 and decompose a matrix of your own.</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, Mx = KAI.M, $ = KAI.$;
+  var TEXT2 = [[1, 2], [4, 3]], TEXT3 = [[1, 2, 0], [4, 3, -1], [2, 1, 5]];
+  var st = { n: 2, A: Mx.copy ? Mx.copy(TEXT2) : TEXT2.map(function (r) { return r.slice(); }), sel: [0, 1], x: [1, 0.5], x3: [1, 2, 3] };
+
+  function tr(A) { var n = A.length; return A.map(function (r, i) { return r.map(function (_, j) { return A[j][i]; }); }); }
+  function half(A, B, sgn) { return A.map(function (r, i) { return r.map(function (v, j) { return (v + sgn * B[i][j]) / 2 + 0; }); }); }
+  function mv(A, x) { return A.map(function (r) { return r.reduce(function (s, v, j) { return s + v * x[j]; }, 0) + 0; }); }
+  function parts() { var A = st.A, T = tr(A); return { A: A, T: T, S: half(A, T, 1), K: half(A, T, -1) }; }
+  function near(a, b) { for (var i = 0; i < a.length; i++) for (var j = 0; j < a.length; j++) if (Math.abs(a[i][j] - b[i][j]) > 1e-9) return false; return true; }
+  function zero(A) { return A.every(function (r) { return r.every(function (v) { return Math.abs(v) < 1e-12; }); }); }
+
+  /* ---------- controls ---------- */
+  var sizeSeg = KAI.seg({ legend: 'Size', name: 'size', value: '2', options: [{ value: '2', label: '2 × 2' }, { value: '3', label: '3 × 3' }],
+    onChange: function (v) { st.n = +v; st.A = (st.n === 2 ? TEXT2 : TEXT3).map(function (r) { return r.slice(); }); st.sel = [0, 1]; build(); } });
+  var bText = KAI.button({ label: 'Text example', onClick: function () { st.A = (st.n === 2 ? TEXT2 : TEXT3).map(function (r) { return r.slice(); }); refresh(); } });
+  var bSym = KAI.button({ label: 'Make <span class="v">A</span> symmetric', onClick: function () { st.A = parts().S; refresh(); } });
+  var bSkew = KAI.button({ label: 'Make <span class="v">A</span> skew', onClick: function () { st.A = parts().K; refresh(); } });
+  var bRnd = KAI.button({ label: 'New numbers', onClick: function () { st.A = st.A.map(function (r) { return r.map(function () { return Math.floor(Math.random() * 11) - 5; }); }); refresh(); } });
+  $('#ctl').append(sizeSeg.el, bText, bSym, bSkew, bRnd);
+
+  /* ---------- board ---------- */
+  var cellsOf = {}, inputs = [], board = $('#board');
+  function unit(key, cap, sub, el) { return h('div', { class: 'unit' }, h('div', { class: 'cap', html: cap }), el, h('div', { class: 'sub', html: sub })); }
+  function bind(el, i, j) {
+    el.addEventListener('mouseenter', function () { st.sel = [i, j]; mark(); readout(); });
+    el.addEventListener('focus', function () { st.sel = [i, j]; mark(); readout(); });
+  }
+  function build() {
+    var n = st.n, i, j, P = parts();
+    KAI.clear(board); inputs = []; cellsOf = {};
+    var ain = h('span', { class: 'mat big', role: 'group', 'aria-label': 'Matrix A, ' + n + ' by ' + n + ', editable' });
+    ain.style.setProperty('--n', n);
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) {
+      var inp = h('input', { type: 'number', class: 'in', step: 0.5, min: -9, max: 9, 'aria-label': 'A row ' + (i + 1) + ', column ' + (j + 1) });
+      (function (ii, jj, e) {
+        e.addEventListener('input', function () { var v = parseFloat(e.value); if (isFinite(v)) { st.A[ii][jj] = KAI.clamp(v, -9, 9); st.sel = [ii, jj]; refresh(e); } });
+      })(i, j, inp);
+      bind(inp, i, j); ain.appendChild(inp); inputs.push(inp);
+    }
+    var mk = function (M, name, key) {
+      var el = KAI.matEl(M, { class: 'big', name: name, digits: 1 });
+      cellsOf[key] = Array.prototype.slice.call(el.querySelectorAll('.c'));
+      cellsOf[key].forEach(function (c, k) { bind(c, Math.floor(k / n), k % n); });
+      return el;
+    };
+    var Tel = mk(P.T, 'A transpose', 'T'), Sel = mk(P.S, 'S', 'S'), Kel = mk(P.K, 'K', 'K');
+    board.append(
+      unit('A', '<b>A</b>', 'your matrix', ain),
+      h('div', { class: 'op', text: '→' }),
+      unit('T', '<b>A</b><sup>T</sup>', 'rows and columns swapped', Tel),
+      h('div', { class: 'op', html: '→' }),
+      unit('S', '<b>S</b> = &frac12;(<b>A</b> + <b>A</b><sup>T</sup>)', 'symmetric part', Sel),
+      h('div', { class: 'op', text: '+' }),
+      unit('K', '<b>K</b> = &frac12;(<b>A</b> − <b>A</b><sup>T</sup>)', 'skew part', Kel)
+    );
+    $('#planeWrap').style.display = n === 2 ? '' : 'none';
+    refresh();
+  }
+  function mark() {
+    var n = st.n, a = st.sel[0], b = st.sel[1];
+    function on(i, j) { return (i === a && j === b) || (i === b && j === a); }
+    inputs.forEach(function (e, k) { e.classList.toggle('hl', on(Math.floor(k / n), k % n)); });
+    ['T', 'S', 'K'].forEach(function (key) { cellsOf[key].forEach(function (c, k) { c.classList.toggle('hl', on(Math.floor(k / n), k % n)); }); });
+  }
+  function fill() {
+    var P = parts(), n = st.n;
+    inputs.forEach(function (e, k) { var v = st.A[Math.floor(k / n)][k % n]; if (document.activeElement !== e) e.value = v; });
+    [['T', P.T], ['S', P.S], ['K', P.K]].forEach(function (t) {
+      cellsOf[t[0]].forEach(function (c, k) { c.textContent = fmt(t[1][Math.floor(k / n)][k % n], 1); });
+      var m = c0(t[0]); m.setAttribute('aria-label', t[0] + ', matrix ' + n + ' by ' + n + ', ' + t[1].map(function (r, i) { return 'row ' + (i + 1) + ': ' + r.map(function (v) { return fmt(v, 1); }).join(', '); }).join('; '));
+    });
+  }
+  function c0(key) { return cellsOf[key][0].parentNode; }
+
+  /* ---------- plane (2 x 2) ---------- */
+  var Pl = KAI.plane($('#pl'), { x: [-5, 5], y: [-3, 7] });
+  var hx = KAI.handle(Pl, { pos: st.x, color: 'var(--ink)', r: 8,
+    constrain: function (p, how) { var q = [KAI.clamp(p[0], -3, 3), KAI.clamp(p[1], -3, 3)]; return how === 'pointer' ? [Math.round(q[0] * 4) / 4 + 0, Math.round(q[1] * 4) / 4 + 0] : [Math.round(q[0] * 100) / 100 + 0, Math.round(q[1] * 100) / 100 + 0]; },
+    label: function (p) { return 'Vector x at (' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; }, step: 0.25,
+    onMove: function (p) { st.x = p; drawPlane(); readout(); } });
+  function drawPlane() {
+    if (st.n !== 2) return;
+    var P = parts(), x = st.x, Sx = mv(P.S, x), Kx = mv(P.K, x), Ax = mv(P.A, x), L = Pl;
+    KAI.clear(L.content); KAI.clear(L.top);
+    L.poly(L.content, [[0, 0], Sx, Ax, Kx], { fill: 'var(--purple-t)', stroke: 'none' });
+    L.line(L.content, Sx, Ax, { stroke: 'var(--verm)', 'stroke-width': 1.2, 'stroke-dasharray': '4 4', 'stroke-opacity': 0.7 });
+    L.line(L.content, Kx, Ax, { stroke: 'var(--blue)', 'stroke-width': 1.2, 'stroke-dasharray': '4 4', 'stroke-opacity': 0.7 });
+    var lx = Math.hypot(x[0], x[1]), lk = Math.hypot(Kx[0], Kx[1]);
+    if (lx > 0.05 && lk > 0.05) {
+      var ex = [x[0] / lx, x[1] / lx], ek = [Kx[0] / lk, Kx[1] / lk], s = 0.4;
+      L.polyline(L.top, [[ex[0] * s, ex[1] * s], [(ex[0] + ek[0]) * s, (ex[1] + ek[1]) * s], [ek[0] * s, ek[1] * s]], { stroke: 'var(--verm)', 'stroke-width': 1.5 });
+    }
+    L.arrow(L.top, [0, 0], Kx, { stroke: 'var(--verm)', width: 1.8, dash: '5 4', opacity: 0.75 });
+    L.arrow(L.top, [0, 0], Sx, { stroke: 'var(--blue)', width: 2.6 });
+    L.arrow(L.top, Sx, Ax, { stroke: 'var(--verm)', width: 2.6 });
+    L.arrow(L.top, [0, 0], Ax, { stroke: 'var(--purple)', width: 3.2 });
+    L.arrow(L.top, [0, 0], x, { stroke: 'var(--ink)', width: 2.2 });
+    L.text(L.top, Sx, 'Sx', { dx: -8, dy: 18, fill: 'var(--blue)', 'text-anchor': 'end' });
+    L.text(L.top, Kx, 'Kx', { dx: 8, dy: -8, fill: 'var(--verm)', 'text-anchor': 'start' });
+    L.text(L.top, Ax, 'Ax = Sx + Kx', { dx: 10, dy: -8, fill: 'var(--purple)', 'text-anchor': 'start' });
+    L.text(L.top, x, 'x', { dx: -12, dy: 18, fill: 'var(--ink)', 'text-anchor': 'end' });
+    L.dot(L.top, [0, 0], 3.5, { fill: 'var(--ink)' });
+  }
+  Pl.onResize(drawPlane);
+
+  /* ---------- readout ---------- */
+  function vecEl(v, name) { return KAI.matEl(v.map(function (a) { return [a]; }), { class: '', name: name, digits: 2 }); }
+  function readout() {
+    var P = parts(), n = st.n, i = st.sel[0], j = st.sel[1], box = KAI.clear($('#readout'));
+    var a = P.A[i][j], b = P.A[j][i], I = (i + 1) + (j + 1 === 0 ? '' : ''), idx = (i + 1) + ',' + (j + 1), jdx = (j + 1) + ',' + (i + 1);
+    var sij = (a + b) / 2 + 0, kij = (a - b) / 2 + 0;
+    box.appendChild(h('div', { class: 'note', text: 'Selected pair: positions (' + (i + 1) + ', ' + (j + 1) + ') and (' + (j + 1) + ', ' + (i + 1) + ')' }));
+    if (i === j) {
+      box.appendChild(h('div', { class: 'eq', html: '<span><i>s</i><sub>' + idx + '</sub> = <i>a</i><sub>' + idx + '</sub> = <b>' + fmt(a, 1) + '</b></span>' }));
+      box.appendChild(h('div', { class: 'eq', html: '<span><i>k</i><sub>' + idx + '</sub> = &frac12;(<i>a</i><sub>' + idx + '</sub> &minus; <i>a</i><sub>' + idx + '</sub>) = <b>0</b></span>' }));
+      box.appendChild(h('p', { class: 'note', text: 'A diagonal entry is its own mirror image, so it goes completely to S and K has a zero there.' }));
+    } else {
+      box.appendChild(h('div', { class: 'eq', html: '<span><i>s</i><sub>' + idx + '</sub> = &frac12;(<i>a</i><sub>' + idx + '</sub> + <i>a</i><sub>' + jdx + '</sub>) = &frac12;(' + fmt(a, 1) + ' + ' + fmt(b, 1) + ') = <b>' + fmt(sij, 2) + '</b> = <i>s</i><sub>' + jdx + '</sub></span>' }));
+      box.appendChild(h('div', { class: 'eq', html: '<span><i>k</i><sub>' + idx + '</sub> = &frac12;(<i>a</i><sub>' + idx + '</sub> &minus; <i>a</i><sub>' + jdx + '</sub>) = &frac12;(' + fmt(a, 1) + ' &minus; ' + fmt(b, 1) + ') = <b>' + fmt(kij, 2) + '</b> = &minus;<i>k</i><sub>' + jdx + '</sub></span>' }));
+    }
+    var symOK = near(P.S, tr(P.S)), skewOK = near(tr(P.K), P.K.map(function (r) { return r.map(function (v) { return -v + 0; }); })), sumOK = near(Mx.add(P.S, P.K), P.A);
+    box.appendChild(h('p', { html: '<span class="' + (symOK ? 'ok' : 'bad') + '">S<sup>T</sup> = S ' + (symOK ? '✓' : '✗') + '</span> &nbsp; <span class="' + (skewOK ? 'ok' : 'bad') + '">K<sup>T</sup> = −K ' + (skewOK ? '✓' : '✗') + '</span> &nbsp; <span class="' + (sumOK ? 'ok' : 'bad') + '">S + K = A ' + (sumOK ? '✓' : '✗') + '</span>' }));
+    var msg = zero(P.K) ? 'K = O: A is already symmetric.' : zero(P.S) ? 'S = O: A is already skew-symmetric.' : 'A is neither symmetric nor skew, but it is the sum of one of each.';
+    box.appendChild(h('p', { class: 'note', text: msg }));
+    var x = n === 2 ? st.x : st.x3, Sx = mv(P.S, x), Kx = mv(P.K, x), Ax = mv(P.A, x), xKx = x.reduce(function (s, v, k) { return s + v * Kx[k]; }, 0) + 0;
+    box.appendChild(h('div', { class: 'eq' }, h('b', { text: 'x' }), ' = ', vecEl(x, 'x'), h('span', { text: n === 2 ? '  (drag it)' : '  (fixed)' })));
+    box.appendChild(h('div', { class: 'eq' }, h('span', { class: 'ax', text: 'Ax' }), ' = ', vecEl(Ax, 'A x'), ' = ', h('span', { class: 'sx', text: 'Sx' }), ' + ', h('span', { class: 'kx', text: 'Kx' }), ' = ', vecEl(Sx, 'S x'), ' + ', vecEl(Kx, 'K x')));
+    box.appendChild(h('p', { html: '<i>x</i><sup>T</sup><i>Kx</i> = <b>' + fmt(xKx, 2) + '</b>' + (n === 2 ? ' &nbsp;so <b>Kx</b> is perpendicular to <b>x</b>.' : ' &nbsp;(true for every <i>x</i>, because <i>K</i> is skew)') }));
+    KAI.live('Selected entry pair ' + (i + 1) + ', ' + (j + 1) + '. s equals ' + fmt(sij, 2) + ', k equals ' + fmt(kij, 2) + '. S plus K equals A: ' + (sumOK ? 'yes' : 'no') + '.');
+  }
+
+  function refresh(skip) { fill(); mark(); drawPlane(); readout(); }
+  hx.set(st.x);
+  build();
+  window.FIG = { st: st, parts: parts, refresh: refresh, build: build };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

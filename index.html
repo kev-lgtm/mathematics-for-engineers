@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mathematics for Engineers</title>
+<meta name="description" content="Lecture notes, interactive tools, student projects, open textbooks and a Ukrainian–English dictionary for engineering mathematics.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -3 148 156'%3E%3Cdefs%3E%3ClinearGradient id='g' gradientUnits='userSpaceOnUse' x1='32' y1='0' x2='88' y2='0'%3E%3Cstop offset='0' stop-color='%23333AC8'/%3E%3Cstop offset='.5' stop-color='%237432B6'/%3E%3Cstop offset='1' stop-color='%23F22E84'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%232C3ABF' d='M4 0H30V12H14V138H30V150H4A4 4 0 0 1 0 146V4A4 4 0 0 1 4 0Z'/%3E%3Cpath fill='%23F22E84' d='M116 0H90V12H106V138H90V150H116A4 4 0 0 0 120 146V4A4 4 0 0 0 116 0Z'/%3E%3Cpath fill='none' stroke='url(%23g)' stroke-width='16' stroke-miterlimit='12' d='M40 126V22L60 78L80 22V126'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F5F6FB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1226" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Mathematics for Engineers">
+<meta property="og:description" content="Lecture notes, interactive tools, student projects, open textbooks and a Ukrainian–English dictionary for engineering mathematics.">
+<meta name="twitter:card" content="summary">
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+<style>
+:root{
+  --bg:#F5F6FB; --surface:#FFFFFF; --ink:#14173A; --muted:#5B607F; --line:#D9DCEC;
+  --accent:#3B3FD8; --accent2:#E8457C;
+  --grad:linear-gradient(120deg,var(--accent),var(--accent2));
+  --shadow:0 12px 30px color-mix(in srgb,var(--accent) 12%, transparent);
+  --display:"Big Shoulders Display","Manrope",system-ui,sans-serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1226; --surface:#171B38; --ink:#EEF0FF; --muted:#9AA0C4; --line:#262B52;
+    --accent:#8C93FF; --accent2:#FF7AA8;
+    --shadow:0 12px 30px color-mix(in srgb,var(--accent) 18%, transparent);
+  }
+}
+*{box-sizing:border-box}
+html{
+  scroll-behavior:smooth;
+  scroll-padding-top:72px;
+  overflow-x:hidden; /* prevent horizontal scroll from negative margins / transforms */
+  -webkit-text-size-adjust:100%;
+}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font:400 1rem/1.6 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  min-width:0;
+}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+::selection{background:var(--accent);color:#fff}
+
+/* subtle ambient glow */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    radial-gradient(600px 400px at 8% -8%, color-mix(in srgb,var(--accent) 10%, transparent), transparent 70%),
+    radial-gradient(500px 350px at 100% 8%, color-mix(in srgb,var(--accent2) 8%, transparent), transparent 70%);
+}
+header,main,footer{position:relative;z-index:1}
+
+/* top bar */
+.bar{
+  position:sticky;top:0;z-index:10;
+  backdrop-filter:blur(16px) saturate(1.2);
+  -webkit-backdrop-filter:blur(16px) saturate(1.2);
+  background:color-mix(in srgb,var(--bg) 78%,transparent);
+  border-bottom:1px solid transparent;
+  border-image:linear-gradient(90deg, transparent, color-mix(in srgb,var(--accent) 35%, var(--line)), color-mix(in srgb,var(--accent2) 35%, var(--line)), transparent) 1;
+}
+.bar-in{
+  max-width:1100px;margin:0 auto;
+  padding:14px 24px;
+  display:flex;justify-content:space-between;align-items:center;
+  gap:16px 24px;flex-wrap:wrap;
+  min-width:0;
+}
+
+/* brand + quote lockup */
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:24px;height:24px;flex:none}
+.brand-text{display:flex;flex-direction:column;min-width:0}
+.brand-name{
+  font-family:var(--display);
+  font-size:1.35rem;
+  font-weight:600;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  line-height:1.05;
+}
+.bar nav{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.92rem;font-weight:500;color:var(--muted)}
+.bar nav a{position:relative;display:inline-block}
+.bar nav a::after{content:"";position:absolute;left:0;right:100%;bottom:-4px;height:2px;border-radius:2px;background:var(--grad);transition:right .2s}
+.bar nav a:hover{color:var(--accent)}
+.bar nav a:hover::after{right:0}
+
+/* hero */
+.hero{
+  max-width:1100px;margin:0 auto;
+  padding:72px 24px 56px;
+  display:grid;grid-template-columns:1.1fr .9fr;
+  gap:48px;align-items:center;
+  min-width:0;
+}
+.hero > *{min-width:0}
+.hero h1{
+  font-family:var(--display);
+  font-weight:600;
+  font-size:clamp(2.4rem,5.2vw,4.1rem);
+  line-height:1.04;
+  letter-spacing:.005em;
+  margin:0 0 22px;
+  overflow-wrap:break-word;
+  word-break:normal;
+  hyphens:manual;
+}
+.accent-text{color:var(--accent)}
+@supports (background-clip:text) or (-webkit-background-clip:text){
+  .accent-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+}
+.hero p{max-width:34ch;color:var(--muted);font-size:1.08rem;margin:0 0 28px}
+.who{font-size:.92rem;color:var(--muted)}
+.who b{color:var(--ink);font-weight:600}
+.plot{
+  justify-self:center;width:100%;max-width:420px;min-width:0;
+  position:relative;
+}
+.plot::before{
+  content:"";
+  position:absolute;
+  inset:8% 10%;
+  border-radius:50%;
+  background:radial-gradient(circle, color-mix(in srgb,var(--accent) 18%, transparent) 0%, color-mix(in srgb,var(--accent2) 10%, transparent) 45%, transparent 70%);
+  filter:blur(28px);
+  pointer-events:none;
+  z-index:0;
+  animation:glowPulse 8s ease-in-out infinite alternate;
+}
+.plot svg{width:100%;height:auto;display:block;max-width:100%;aspect-ratio:1/1;position:relative;z-index:1}
+@keyframes glowPulse{
+  from{opacity:.7;transform:scale(.96)}
+  to{opacity:1;transform:scale(1.04)}
+}
+.guide{stroke:var(--line);fill:none;stroke-width:1}
+#curve{fill:none;stroke:url(#grad);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ctrl{
+  display:flex;align-items:center;flex-wrap:wrap;
+  gap:8px 12px;margin-top:12px;
+  font-size:.85rem;color:var(--muted);
+  min-width:0;
+  width:100%;
+}
+.ctrl label{white-space:nowrap;flex:none}
+.ctrl input{
+  flex:1 1 120px;
+  min-width:100px;
+  max-width:100%;
+  accent-color:var(--accent);
+  height:32px;
+  cursor:pointer;
+}
+.eq{font-family:var(--mono);font-size:.85rem;color:var(--ink);white-space:nowrap;flex:none}
+.petal-btns{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-top:4px}
+.petal-btns button{
+  font-family:var(--mono);
+  font-size:.8rem;
+  font-weight:500;
+  min-width:36px;height:32px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+  color:var(--ink);
+  cursor:pointer;
+  transition:background .2s,border-color .2s,color .2s,transform .2s,box-shadow .2s;
+}
+.petal-btns button:hover{
+  border-color:color-mix(in srgb,var(--accent) 50%, var(--line));
+  color:var(--accent);
+}
+.petal-btns button.active{
+  background:var(--grad);
+  border-color:transparent;
+  color:#fff;
+  box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 28%, transparent);
+}
+.petal-btns button.pulse{
+  animation:btnPulse .35s ease;
+}
+@keyframes btnPulse{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.12)}
+  100%{transform:scale(1)}
+}
+/* Hilbert quote between hero and dictionary */
+.quote-sec{
+  max-width:1100px;
+  margin:0 auto;
+  padding:8px 24px 40px;
+}
+.hilbert{
+  margin:0;
+  padding:32px 36px 32px 40px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.hilbert::before{
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:4px;
+  background:var(--grad);
+}
+.hilbert::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(600px 200px at 0% 50%, color-mix(in srgb,var(--accent) 6%, transparent), transparent 70%);
+  pointer-events:none;
+}
+.hilbert p{
+  margin:0 0 14px;
+  font-family:var(--sans);
+  font-style:italic;
+  font-weight:400;
+  font-size:clamp(1.2rem, 2.8vw, 1.55rem);
+  line-height:1.55;
+  color:var(--ink);
+  max-width:52ch;
+  position:relative;
+  z-index:1;
+}
+.hilbert cite{
+  display:block;
+  font-style:normal;
+  font-size:0.98rem;
+  font-weight:500;
+  color:var(--muted);
+  letter-spacing:.01em;
+  position:relative;
+  z-index:1;
+}
+
+
+/* sections */
+.sec{
+  max-width:1100px;margin:0 auto;
+  padding:56px 24px;
+  border-top:1px solid transparent;
+  border-image:linear-gradient(90deg, transparent 5%, color-mix(in srgb,var(--accent) 40%, var(--line)) 30%, color-mix(in srgb,var(--accent2) 40%, var(--line)) 70%, transparent 95%) 1;
+  display:grid;grid-template-columns:1fr 2fr;
+  gap:48px;
+  min-width:0;
+}
+.side{align-self:start;position:sticky;top:90px;min-width:0}
+.side h2{
+  font-family:var(--display);
+  font-weight:600;
+  font-size:2.3rem;
+  letter-spacing:.01em;
+  line-height:1.05;
+  margin:0 0 12px;
+}
+.side h2::after{content:"";display:block;width:34px;height:2px;margin-top:12px;border-radius:2px;background:var(--grad);opacity:.85}
+.side p{margin:0;color:var(--muted);max-width:30ch}
+.list{display:flex;flex-direction:column;min-width:0}
+/* rows: negative margin kept for full-bleed hover, but contained by overflow-x:hidden on html/body */
+.row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  gap:2px 16px;
+  padding:18px 16px;
+  margin:0 -16px;
+  border-bottom:1px solid var(--line);
+  border-radius:12px;
+  transition:background .25s,border-color .25s,transform .25s,box-shadow .25s;
+  min-width:0;
+  position:relative;
+}
+.row::before{
+  content:"";
+  position:absolute;
+  left:0;top:20%;bottom:20%;
+  width:3px;
+  border-radius:0 3px 3px 0;
+  background:var(--grad);
+  opacity:0;
+  transform:scaleY(.4);
+  transition:opacity .25s,transform .25s;
+}
+.row:hover{
+  background:var(--surface);
+  border-bottom-color:transparent;
+  transform:translateX(6px);
+  box-shadow:var(--shadow);
+}
+.row:hover::before{
+  opacity:1;
+  transform:scaleY(1);
+}
+.row .t{font-weight:600;font-size:1.08rem;min-width:0;overflow-wrap:anywhere}
+.row:hover .t{color:var(--accent)}
+.row .d{grid-column:1;color:var(--muted);font-size:1.02rem;line-height:1.55;min-width:0;overflow-wrap:anywhere}
+.row .tag{
+  grid-column:2;grid-row:1 / span 2;align-self:center;
+  font-family:var(--mono);
+  font-size:.7rem;font-weight:500;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);
+  border:1px solid var(--line);
+  padding:6px 10px;border-radius:6px;
+  transition:all .2s;
+  white-space:nowrap;
+  text-align:center;
+  min-height:28px;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+a.row:hover .tag,.row .tag:hover{background:var(--grad);border-color:transparent;color:#fff}
+
+.row.feature{
+  position:relative;
+  background:var(--surface);
+  border:1px solid var(--line);
+  margin-bottom:10px;
+  padding:20px 16px 20px 22px;
+  overflow:hidden;
+}
+.row.feature::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:3px;
+  background:var(--grad);
+  opacity:.9;
+  transform:none;
+  top:0;bottom:0;
+}
+.row.feature:hover::before{opacity:1;transform:none}
+.row.feature .t{font-family:var(--display);font-size:1.55rem;font-weight:600;letter-spacing:.01em;line-height:1.15}
+.acts{grid-column:2;grid-row:1 / span 2;align-self:center;display:flex;gap:8px;flex-wrap:wrap}
+
+footer{
+  max-width:1100px;margin:0 auto;
+  padding:40px 24px 56px;
+  border-top:1px solid transparent;
+  border-image:linear-gradient(90deg, transparent 5%, color-mix(in srgb,var(--accent) 40%, var(--line)) 30%, color-mix(in srgb,var(--accent2) 40%, var(--line)) 70%, transparent 95%) 1;
+  color:var(--muted);font-size:.9rem;
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  min-width:0;
+}
+footer a{color:var(--accent);font-weight:500}
+footer span, footer a{overflow-wrap:anywhere}
+
+/* ========== TABLET (≤820px) ========== */
+@media (max-width:820px){
+  html{scroll-padding-top:88px}
+  .bar-in{padding:12px 20px;gap:12px 18px}
+  .hero{
+    grid-template-columns:minmax(0,1fr);
+    padding:44px 24px 40px;
+    gap:28px;
+  }
+  .hero h1{font-size:clamp(2.6rem,7.5vw,4.6rem)}
+  .hero p,.who{overflow-wrap:anywhere}
+  .plot{width:min(100%,380px);max-width:100%}
+  .sec{
+    grid-template-columns:minmax(0,1fr);
+    gap:22px;
+    padding:40px 24px;
+  }
+  .side{position:static}
+  .bar nav{gap:16px}
+}
+
+/* ========== PHONE (≤600px) ========== */
+@media (max-width:600px){
+  html{scroll-padding-top:0}
+  .bar-in{
+    display:block;
+    padding:10px 16px 8px;
+  }
+  .brand{gap:9px;align-items:center}
+  .mark{width:21px;height:21px}
+  .brand-name{font-size:1.15rem}
+
+
+  /* edge-to-edge horizontal nav scroll */
+  .bar nav{
+    display:flex;flex-wrap:nowrap;
+    gap:18px;
+    margin:10px -16px 0;
+    padding:0 16px 4px;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    white-space:nowrap;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+    font-size:.88rem;
+  }
+  .bar nav::-webkit-scrollbar{display:none}
+  .bar nav a{flex:0 0 auto;padding:4px 0}
+
+  .hero{padding:28px 16px 32px;gap:22px}
+  .hero h1{
+    font-size:clamp(2.35rem,11vw,3.6rem);
+    line-height:1.02;
+    margin-bottom:14px;
+  }
+  .hero p{font-size:1rem;margin-bottom:16px;max-width:none}
+  .who{font-size:.88rem;line-height:1.55}
+
+  .plot{max-width:100%;margin-top:8px}
+  .ctrl{gap:8px 10px;font-size:.8rem;width:100%}
+  .eq{font-size:.78rem}
+  .ctrl input{flex:1 1 90px;min-width:90px;height:32px}
+  .petal-btns button{min-width:40px;height:36px;font-size:.85rem}
+
+  .sec{padding:32px 16px;gap:16px}
+  .quote-sec{padding:4px 16px 28px}
+  .hilbert{padding:22px 20px 22px 24px}
+  .hilbert p{font-size:1.12rem}
+  .row .d{font-size:0.98rem}
+  .row .t{font-size:1.02rem}
+  .side h2{font-size:clamp(1.75rem,7vw,2.2rem)}
+  .side p{max-width:none}
+
+  /* reduce negative margin to stay inside padding */
+  .row{
+    gap:4px 10px;
+    padding:14px 12px;
+    margin:0 -8px;
+  }
+  .row .t{font-size:1.02rem;line-height:1.4}
+  .row .d{font-size:0.98rem;line-height:1.55}
+  .row .tag{padding:5px 8px;font-size:.65rem;min-height:26px}
+  .acts{gap:6px}
+  .row.feature{padding:16px 12px 16px 16px;margin-left:-8px;margin-right:-8px}
+  .row.feature .t{font-size:1.3rem}
+
+  footer{padding:28px 16px 40px;font-size:.85rem}
+}
+
+/* ========== VERY SMALL PHONES (≤380px) ========== */
+@media (max-width:380px){
+  .bar-in{padding-left:12px;padding-right:12px}
+  .bar nav{
+    margin-left:-12px;margin-right:-12px;
+    padding-left:12px;padding-right:12px;
+    gap:14px;
+  }
+  .hero{padding-left:14px;padding-right:14px}
+  .sec{padding-left:14px;padding-right:14px}
+  .row{
+    grid-template-columns:minmax(0,1fr);
+    margin:0 -4px;
+    padding:14px 10px;
+  }
+  .row .acts,
+  .row > .tag{
+    grid-column:1;
+    grid-row:auto;
+    justify-self:start;
+    margin-top:8px;
+  }
+  .row .acts{display:flex}
+  .row.feature{margin-left:-4px;margin-right:-4px}
+  .ctrl{flex-direction:column;align-items:stretch;gap:8px}
+  .ctrl input{width:100%;min-width:0;max-width:100%;height:36px}
+}
+
+
+/* Soft scroll entrance */
+.reveal{
+  opacity:0;
+  transform:translateY(22px);
+  transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1);
+}
+.reveal.is-visible{
+  opacity:1;
+  transform:translateY(0);
+}
+@media (prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important}
+  .plot::before{animation:none}
+}
+
+
+/* additions: unavailable items, skip link */
+.row .acts a.tag{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.row .tag.soon,.row.feature .tag.soon{opacity:.45;cursor:not-allowed;pointer-events:none;border-style:dashed;color:var(--muted)}
+.row[aria-disabled="true"]{cursor:default}
+.license-line{flex-basis:100%;font-size:.82rem}
+.row[aria-disabled="true"]:hover::before{opacity:0}
+.row[aria-disabled="true"]:hover .t{color:inherit}
+
+/* logo (pure SVG + CSS: no image file, no web font) */
+.logo{display:flex;align-items:center;gap:11px;min-width:0;color:var(--ink)}
+.logo:hover{text-decoration:none}
+.logo-mark{height:40px;width:auto;flex:none;display:block}
+.logo-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+.logo-word{height:21px;width:auto;display:block;color:var(--ink)}
+.logo-tag{display:block;width:0;min-width:100%;white-space:nowrap;font:400 7.6px/1 var(--sans);text-transform:uppercase;text-align:justify;text-align-last:justify;letter-spacing:.2em;color:var(--ink)}
+@media (max-width:820px){.logo-mark{height:34px}.logo-word{height:18px}.logo-tag{font-size:6.7px}}
+.logo,.logo *{text-decoration:none!important}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand logo" href="#top" aria-label="Mathematics for Engineers, home">
+      <svg class="logo-mark" viewBox="0 0 120 150" aria-hidden="true" focusable="false">
+<defs><linearGradient id="lgM" gradientUnits="userSpaceOnUse" x1="32" y1="0" x2="88" y2="0"><stop offset="0" stop-color="#333AC8"/><stop offset=".5" stop-color="#7432B6"/><stop offset="1" stop-color="#F22E84"/></linearGradient>
+<clipPath id="lgC"><rect x="20" y="22" width="80" height="106"/></clipPath></defs>
+<path fill="#2C3ABF" d="M4 0H30V12H14V138H30V150H4A4 4 0 0 1 0 146V4A4 4 0 0 1 4 0Z"/>
+<path fill="#F22E84" d="M116 0H90V12H106V138H90V150H116A4 4 0 0 0 120 146V4A4 4 0 0 0 116 0Z"/>
+<g clip-path="url(#lgC)"><path fill="none" stroke="url(#lgM)" stroke-width="16" stroke-miterlimit="12" d="M40 128V10L60 78L80 10V128"/></g>
+</svg>
+      <span class="logo-text"><svg class="logo-word" viewBox="0 0 590 100" aria-hidden="true" focusable="false"><defs><clipPath id="lgW"><rect x="-20" y="0" width="630" height="100"/></clipPath></defs><g clip-path="url(#lgW)" fill="none" stroke="currentColor" stroke-width="16" stroke-miterlimit="10"><path transform="translate(0 0)" d="M8 105 V0 L30 62 L52 0 V105"/><path transform="translate(69 0)" d="M4 105 L25 -3 L46 105 M14 72 H36"/><path transform="translate(128 0)" d="M-2 8 H48 M23 -5 V105"/><path transform="translate(183 0)" d="M8 -5 V105 M38 -5 V105 M8 50 H38"/><path transform="translate(238 0)" d="M8 -5 V105 M8 8 H38 M8 50 H34 M8 92 H38"/><path transform="translate(285 0)" d="M8 105 V0 L30 62 L52 0 V105"/><path transform="translate(354 0)" d="M4 105 L25 -3 L46 105 M14 72 H36"/><path transform="translate(413 0)" d="M-2 8 H48 M23 -5 V105"/><path transform="translate(468 0)" d="M8 -5 V105"/><path transform="translate(493 0)" d="M36 30 V26 Q36 8 22 8 Q8 8 8 26 V74 Q8 92 22 92 Q36 92 36 74 V70"/><path transform="translate(546 0)" d="M36 30 V26 Q36 8 22 8 Q8 8 8 27 Q8 46 22 50 Q36 54 36 73 Q36 92 22 92 Q8 92 8 74 V70"/></g></svg><span class="logo-tag">For Engineers</span></span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#dictionary">Dictionary</a>
+      <a href="#notes">Notes</a>
+      <a href="#projects">Projects</a>
+      <a href="#tools">Tools</a>
+      <a href="#books">Books</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero reveal is-visible">
+    <div>
+      <h1>Mathematics, made to <span class="accent-text">explore.</span></h1>
+      <p>Lecture notes, interactive tools and open textbooks for engineering students.</p>
+      <div class="who"><b>Kaveh Eftekharinasab</b><br>Higher Mathematics Department, National University “Kyiv Aviation Institute”</div>
+    </div>
+    <div class="plot">
+      <svg viewBox="0 0 300 300" role="img" aria-label="Rose curve r = cos(kθ) drawn from the slider value">
+        <defs>
+          <linearGradient id="grad" gradientUnits="userSpaceOnUse" x1="20" y1="20" x2="280" y2="280">
+            <stop offset="0" style="stop-color:var(--accent)"/>
+            <stop offset="1" style="stop-color:var(--accent2)"/>
+          </linearGradient>
+        </defs>
+        <circle class="guide" cx="150" cy="150" r="135"/>
+        <line class="guide" x1="15" y1="150" x2="285" y2="150"/>
+        <line class="guide" x1="150" y1="15" x2="150" y2="285"/>
+        <path id="curve" pathLength="1" d="M285.0 150.0L284.9 151.1L284.6 152.1L284.0 153.2L283.3 154.2L282.3 155.2L281.1 156.2L279.7 157.1L278.1 158.1L276.3 158.9L274.3 159.8L272.1 160.6L269.8 161.3L267.2 162.0L264.4 162.6L261.5 163.2L258.4 163.7L255.1 164.1L251.6 164.5L248.0 164.7L244.3 164.9L240.4 165.0L236.4 165.1L232.2 165.0L227.9 164.9L223.6 164.6L219.1 164.3L214.5 163.9L209.8 163.4L205.1 162.8L200.2 162.1L195.3 161.3L190.4 160.4L185.4 159.4L180.4 158.3L175.3 157.1L170.3 155.9L165.2 154.5L160.1 153.1L155.1 151.6L150.0 150.0L145.0 148.3L140.0 146.6L135.0 144.7L130.1 142.8L125.3 140.9L120.5 138.9L115.8 136.8L111.2 134.6L106.7 132.5L102.3 130.2L98.0 128.0L93.8 125.7L89.7 123.3L85.7 121.0L81.9 118.6L78.2 116.2L74.7 113.8L71.3 111.4L68.0 109.0L64.9 106.7L62.0 104.3L59.3 102.0L56.7 99.7L54.3 97.4L52.1 95.2L50.0 93.0L48.1 90.8L46.5 88.8L45.0 86.8L43.7 84.8L42.5 83.0L41.6 81.2L40.8 79.5L40.3 77.9L39.9 76.4L39.7 75.1L39.7 73.8L39.9 72.6L40.2 71.6L40.8 70.6L41.5 69.9L42.4 69.2L43.4 68.7L44.6 68.3L46.0 68.0L47.6 67.9L49.2 68.0L51.1 68.2L53.0 68.5L55.2 69.0L57.4 69.6L59.8 70.5L62.3 71.4L64.9 72.5L67.6 73.8L70.4 75.2L73.3 76.8L76.3 78.6L79.4 80.5L82.5 82.5L85.7 84.7L89.0 87.0L92.3 89.5L95.7 92.2L99.1 94.9L102.5 97.8L106.0 100.9L109.5 104.0L113.0 107.3L116.4 110.7L119.9 114.2L123.4 117.9L126.9 121.6L130.3 125.4L133.7 129.3L137.1 133.3L140.4 137.4L143.6 141.5L146.9 145.7L150.0 150.0L153.1 154.3L156.1 158.7L159.0 163.1L161.9 167.5L164.6 171.9L167.3 176.3L169.9 180.8L172.4 185.2L174.7 189.6L177.0 194.0L179.2 198.4L181.2 202.8L183.1 207.0L184.9 211.3L186.6 215.4L188.2 219.5L189.7 223.6L191.0 227.5L192.2 231.3L193.3 235.1L194.3 238.7L195.2 242.2L195.9 245.6L196.5 248.8L197.0 251.9L197.4 254.9L197.6 257.7L197.8 260.4L197.8 262.9L197.7 265.2L197.5 267.4L197.3 269.4L196.9 271.2L196.4 272.8L195.8 274.2L195.2 275.5L194.4 276.5L193.6 277.3L192.7 278.0L191.7 278.4L190.7 278.6L189.6 278.6L188.4 278.4L187.2 278.0L185.9 277.4L184.6 276.6L183.3 275.6L181.9 274.4L180.5 272.9L179.1 271.3L177.7 269.4L176.2 267.4L174.8 265.1L173.3 262.7L171.9 260.1L170.5 257.3L169.0 254.3L167.6 251.1L166.3 247.8L164.9 244.3L163.6 240.6L162.4 236.8L161.1 232.8L159.9 228.7L158.8 224.5L157.7 220.1L156.7 215.6L155.8 211.0L154.9 206.3L154.1 201.5L153.3 196.6L152.6 191.6L152.0 186.6L151.5 181.5L151.0 176.3L150.7 171.1L150.4 165.9L150.2 160.6L150.0 155.3L150.0 150.0L150.0 144.7L150.2 139.4L150.4 134.1L150.7 128.9L151.0 123.7L151.5 118.5L152.0 113.4L152.6 108.4L153.3 103.4L154.1 98.5L154.9 93.7L155.8 89.0L156.7 84.4L157.7 79.9L158.8 75.5L159.9 71.3L161.1 67.2L162.4 63.2L163.6 59.4L164.9 55.7L166.3 52.2L167.6 48.9L169.0 45.7L170.5 42.7L171.9 39.9L173.3 37.3L174.8 34.9L176.2 32.6L177.7 30.6L179.1 28.7L180.5 27.1L181.9 25.6L183.3 24.4L184.6 23.4L185.9 22.6L187.2 22.0L188.4 21.6L189.6 21.4L190.7 21.4L191.7 21.6L192.7 22.0L193.6 22.7L194.4 23.5L195.2 24.5L195.8 25.8L196.4 27.2L196.9 28.8L197.3 30.6L197.5 32.6L197.7 34.8L197.8 37.1L197.8 39.6L197.6 42.3L197.4 45.1L197.0 48.1L196.5 51.2L195.9 54.4L195.2 57.8L194.3 61.3L193.3 64.9L192.2 68.7L191.0 72.5L189.7 76.4L188.2 80.5L186.6 84.6L184.9 88.7L183.1 93.0L181.2 97.2L179.2 101.6L177.0 106.0L174.7 110.4L172.4 114.8L169.9 119.2L167.3 123.7L164.6 128.1L161.9 132.5L159.0 136.9L156.1 141.3L153.1 145.7L150.0 150.0L146.9 154.3L143.6 158.5L140.4 162.6L137.1 166.7L133.7 170.7L130.3 174.6L126.9 178.4L123.4 182.1L119.9 185.8L116.4 189.3L113.0 192.7L109.5 196.0L106.0 199.1L102.5 202.2L99.1 205.1L95.7 207.8L92.3 210.5L89.0 213.0L85.7 215.3L82.5 217.5L79.4 219.5L76.3 221.4L73.3 223.2L70.4 224.8L67.6 226.2L64.9 227.5L62.3 228.6L59.8 229.5L57.4 230.4L55.2 231.0L53.0 231.5L51.1 231.8L49.2 232.0L47.6 232.1L46.0 232.0L44.6 231.7L43.4 231.3L42.4 230.8L41.5 230.1L40.8 229.4L40.2 228.4L39.9 227.4L39.7 226.2L39.7 224.9L39.9 223.6L40.3 222.1L40.8 220.5L41.6 218.8L42.5 217.0L43.7 215.2L45.0 213.2L46.5 211.2L48.1 209.2L50.0 207.0L52.1 204.8L54.3 202.6L56.7 200.3L59.3 198.0L62.0 195.7L64.9 193.3L68.0 191.0L71.3 188.6L74.7 186.2L78.2 183.8L81.9 181.4L85.7 179.0L89.7 176.7L93.8 174.3L98.0 172.0L102.3 169.8L106.7 167.5L111.2 165.4L115.8 163.2L120.5 161.1L125.3 159.1L130.1 157.2L135.0 155.3L140.0 153.4L145.0 151.7L150.0 150.0L155.1 148.4L160.1 146.9L165.2 145.5L170.3 144.1L175.3 142.9L180.4 141.7L185.4 140.6L190.4 139.6L195.3 138.7L200.2 137.9L205.1 137.2L209.8 136.6L214.5 136.1L219.1 135.7L223.6 135.4L227.9 135.1L232.2 135.0L236.4 134.9L240.4 135.0L244.3 135.1L248.0 135.3L251.6 135.5L255.1 135.9L258.4 136.3L261.5 136.8L264.4 137.4L267.2 138.0L269.8 138.7L272.1 139.4L274.3 140.2L276.3 141.1L278.1 141.9L279.7 142.9L281.1 143.8L282.3 144.8L283.3 145.8L284.0 146.8L284.6 147.9L284.9 148.9L285.0 150.0"/>
+      </svg>
+      <div class="ctrl">
+        <span class="eq">r = cos(<span id="kv">5</span>θ)</span>
+        <label for="k">Petals</label>
+        <input id="k" type="range" min="1" max="9" step="1" value="5" aria-label="Number of petals">
+        <div class="petal-btns" role="group" aria-label="Choose number of petals">
+          <button type="button" data-k="3">3</button>
+          <button type="button" data-k="4">4</button>
+          <button type="button" data-k="5" class="active">5</button>
+          <button type="button" data-k="6">6</button>
+          <button type="button" data-k="7">7</button>
+          <button type="button" data-k="8">8</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hilbert quote -->
+  <section class="quote-sec reveal" aria-label="Quote">
+    <blockquote class="hilbert">
+      <p>“Mathematics knows no races or geographic boundaries; for mathematics, the cultural world is one country.”</p>
+      <cite>— David Hilbert</cite>
+    </blockquote>
+  </section>
+
+  <!-- ============ DICTIONARY ============ -->
+  <section class="sec reveal" id="dictionary">
+    <div class="side">
+      <h2>Ukrainian–English dictionary</h2>
+      <p>Mathematical terms in both languages.</p>
+    </div>
+    <div class="list">
+      <div class="row">
+        <span class="t">Ukrainian–English math dictionary</span><span class="d">Terms for all the mathematics courses.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LECTURE NOTES ============ -->
+  <section class="sec reveal" id="notes">
+    <div class="side">
+      <h2>Lecture notes</h2>
+      <p>Each topic is available as a PDF and as an interactive web page. The whole book is one PDF.</p>
+    </div>
+    <div class="list">
+      <div class="row feature" aria-disabled="true">
+        <span class="t">Mathematics for Engineers: the full book</span><span class="d">Every topic below in a single PDF.</span><span class="tag soon">Soon</span></div>
+      <div class="row">
+        <span class="t">Linear algebra</span><span class="d">Matrices, determinants and linear systems.</span>
+        <span class="acts"><a class="tag" href="https://drive.google.com/file/d/1IKsAACGOy-7CvB14SkWXREJkoHWXlW8f/view?usp=drive_link" target="_blank" rel="noopener">PDF</a><a class="tag" href="linear-algebra.html">HTML</a><a class="tag" href="interactives/index.html">Interactive</a></span>
+      </div>
+      <div class="row">
+        <span class="t">Analytic geometry</span><span class="d">Lines, planes, conic sections and quadric surfaces.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+      <div class="row">
+        <span class="t">Real analysis</span><span class="d">Limits, continuity, derivatives and integrals.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+      <div class="row">
+        <span class="t">Differential equations</span><span class="d">First-order and linear equations, systems and Laplace transforms.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+      <div class="row">
+        <span class="t">Series</span><span class="d">Numerical, power, Taylor and Fourier series.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+      <div class="row">
+        <span class="t">Probability and statistics</span><span class="d">Random variables, distributions, estimation and hypothesis testing.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+      <div class="row">
+        <span class="t">Complex analysis</span><span class="d">Complex functions, analyticity, contour integrals and residues.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+      <div class="row">
+        <span class="t">Multivariable calculus</span><span class="d">Partial derivatives, multiple integrals and vector calculus.</span>
+        <span class="acts"><span class="tag soon" aria-disabled="true" title="Coming soon">PDF</span><span class="tag soon" aria-disabled="true" title="Coming soon">HTML</span></span>
+      </div>
+      <div class="row" aria-disabled="true">
+        <span class="t">Problem sets and solutions</span><span class="d">Exercises with worked solutions.</span><span class="tag soon">Soon</span></div>
+    </div>
+  </section>
+
+  <!-- ============ STUDENT PROJECTS ============ -->
+  <section class="sec reveal" id="projects">
+    <div class="side">
+      <h2>Student projects</h2>
+      <p>Where the course meets real problems.</p>
+    </div>
+    <div class="list">
+      <a class="row" href="https://kev-lgtm.github.io/aviation-math-showcase/" target="_blank" rel="noopener">
+        <span class="t">Where Math Lands</span><span class="d">Real projects by first-year students, each using an idea from the course: weight and balance, glide slope, runway clearance, bracing and fueling. More are added as students choose topics.</span><span class="tag">Visit</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ MATH TOOLS ============ -->
+  <section class="sec reveal" id="tools">
+    <div class="side">
+      <h2>Math tools</h2>
+      <p>Free software for plotting, computing and checking your work.</p>
+    </div>
+    <div class="list">
+      <a class="row" href="interactives/index.html">
+        <span class="t">Interactive tools for these notes</span><span class="d">Live matrix demos and interactive figures for the Linear Algebra notes. Work offline.</span><span class="tag">Interactive</span>
+      </a>
+      <a class="row" href="https://www.geogebra.org/graphing" target="_blank" rel="noopener">
+        <span class="t">GeoGebra Graphing</span><span class="d">Plot functions, sliders and geometry in the browser.</span><span class="tag">Graphing</span>
+      </a>
+      <a class="row" href="https://www.geogebra.org/cas" target="_blank" rel="noopener">
+        <span class="t">GeoGebra CAS</span><span class="d">Symbolic algebra, derivatives, integrals and equation solving.</span><span class="tag">CAS</span>
+      </a>
+      <a class="row" href="https://www.desmos.com/calculator" target="_blank" rel="noopener">
+        <span class="t">Desmos</span><span class="d">Fast, clean graphing calculator.</span><span class="tag">Graphing</span>
+      </a>
+      <a class="row" href="https://live.sympy.org" target="_blank" rel="noopener">
+        <span class="t">SymPy Live</span><span class="d">Python symbolic mathematics in a shell.</span><span class="tag">CAS</span>
+      </a>
+      <a class="row" href="https://www.wolframalpha.com" target="_blank" rel="noopener">
+        <span class="t">Wolfram Alpha</span><span class="d">Step-by-step answers for quick checks.</span><span class="tag">Computation</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ BOOKS ============ -->
+  <section class="sec reveal" id="books">
+    <div class="side">
+      <h2>Open books and sites</h2>
+      <p>Modern, free and easy to read. Good companions to the lecture notes.</p>
+    </div>
+    <div class="list">
+      <a class="row" href="https://math.libretexts.org" target="_blank" rel="noopener">
+        <span class="t">LibreTexts Mathematics</span><span class="d">A large library of free textbooks, searchable by topic.</span><span class="tag">Library</span>
+      </a>
+      <a class="row" href="https://www.apexcalculus.com" target="_blank" rel="noopener">
+        <span class="t">APEX Calculus</span><span class="d">Clear, modern text with many examples and exercises.</span><span class="tag">Calculus</span>
+      </a>
+      <a class="row" href="https://personal.math.ubc.ca/~CLP/" target="_blank" rel="noopener">
+        <span class="t">CLP Calculus</span><span class="d">Four-part course with multivariable and vector calculus.</span><span class="tag">Calculus</span>
+      </a>
+      <a class="row" href="https://textbooks.math.gatech.edu/ila/" target="_blank" rel="noopener">
+        <span class="t">Interactive Linear Algebra</span><span class="d">Open textbook with interactive demos, written for first-year engineering students.</span><span class="tag">Linear algebra</span>
+      </a>
+      <a class="row" href="https://immersivemath.com/ila/" target="_blank" rel="noopener">
+        <span class="t">Immersive Linear Algebra</span><span class="d">Every concept shown as a live figure.</span><span class="tag">Linear algebra</span>
+      </a>
+      <a class="row" href="https://www.jirka.org/diffyqs/" target="_blank" rel="noopener">
+        <span class="t">Notes on Diffy Qs</span><span class="d">Differential equations for engineers.</span><span class="tag">Differential equations</span>
+      </a>
+      <a class="row" href="https://seeing-theory.brown.edu" target="_blank" rel="noopener">
+        <span class="t">Seeing Theory</span><span class="d">Visual introduction to probability and statistics.</span><span class="tag">Probability</span>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>Kaveh Eftekharinasab, Higher Mathematics Department, Kyiv Aviation Institute</span>
+  <a href="mailto:kaveheft@gmail.com">kaveheft@gmail.com</a>
+  <span class="license-line">© 2026 · Notes, figures and interactive tools are licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a></span>
+</footer>
+
+<script>
+(function () {
+  /* ---- Rose curve ---- */
+  function initRose() {
+    var path = document.getElementById('curve');
+    var slider = document.getElementById('k');
+    var label = document.getElementById('kv');
+    var buttons = document.querySelectorAll('.petal-btns button');
+    if (!path || !slider || !label) return;
+
+    var calm = false;
+    try {
+      calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {}
+
+    function build(k) {
+      var span = (k % 2 === 1) ? Math.PI : 2 * Math.PI;
+      var n = 700, d = '';
+      for (var i = 0; i <= n; i++) {
+        var t = (i / n) * span;
+        var r = Math.cos(k * t);
+        var x = 150 + 135 * r * Math.cos(t);
+        var y = 150 + 135 * r * Math.sin(t);
+        d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+      }
+      return d;
+    }
+
+    function draw(k) {
+      k = Math.max(1, Math.min(9, Math.round(k) || 5));
+      label.textContent = k;
+      slider.value = k;
+      path.setAttribute('d', build(k));
+      for (var i = 0; i < buttons.length; i++) {
+        if (+buttons[i].getAttribute('data-k') === k) {
+          buttons[i].classList.add('active');
+        } else {
+          buttons[i].classList.remove('active');
+        }
+      }
+      path.style.transition = 'none';
+      path.style.strokeDasharray = '1';
+      path.style.strokeDashoffset = calm ? '0' : '1';
+      if (!calm) {
+        try { path.getBoundingClientRect(); } catch (e) {}
+        path.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)';
+        path.style.strokeDashoffset = '0';
+      }
+    }
+
+    slider.addEventListener('input', function () { draw(+slider.value); });
+    slider.addEventListener('change', function () { draw(+slider.value); });
+
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener('click', function () {
+        var k = +this.getAttribute('data-k');
+        draw(k);
+        var btn = this;
+        btn.classList.remove('pulse');
+        void btn.offsetWidth;
+        btn.classList.add('pulse');
+      });
+    }
+
+    draw(+slider.value || 5);
+    setTimeout(function () { draw(+slider.value || 5); }, 80);
+  }
+
+  /* ---- Soft scroll entrance ---- */
+  function initReveal() {
+    var els = document.querySelectorAll('.reveal');
+    if (!els.length) return;
+    if (!('IntersectionObserver' in window)) {
+      for (var i = 0; i < els.length; i++) els[i].classList.add('is-visible');
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    for (var i = 0; i < els.length; i++) io.observe(els[i]);
+  }
+
+  function boot() {
+    initRose();
+    initReveal();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>
