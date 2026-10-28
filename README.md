@@ -8,7 +8,7 @@ Static site. All mathematics is **pre-rendered with KaTeX 0.16.45** at build tim
 4. For the license, open `LICENSE` on GitHub, or use *Add file → Create new file → LICENSE → Choose a license template → Creative Commons Attribution Share Alike 4.0* to replace it with the official full text.
 
 ## Layout
-- `index.html` – home page; `linear-algebra.html` – the lecture notes
+- `index.html` – home page; `linear-algebra.html` – the linear-algebra notes; `analytic-geometry.html` – vectors, lines, planes, conics and quadrics (all figures included; interactive versions later)
 - `interactives/index.html` – **one hub page** with all interactive tools: 9 quick demos (Part 1) and 9 interactive figures (Part 2)
 - `interactives/figures/` – the nine interactive figures as stand-alone pages (`truss.html`, `springs.html`, ...) with `assets/` (shared CSS/JS), a gallery `index.html`, the LaTeX macro `kaifigure.tex` and its own `README.md`
 - `assets/figures/linear-algebra/` – static figures (PNG), named after the figure label (`lines-a.png` = figure "lines", panel a)
