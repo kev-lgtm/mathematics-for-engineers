@@ -137,3 +137,7 @@ svg text { font-family: var(--font); }
 svg text.lbl { font-family: var(--serif); }
 svg text.lbl.up { font-family: var(--font); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* theme-v1 */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }

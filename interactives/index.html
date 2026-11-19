@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Interactive tools — Linear Algebra, Chapter 1 · Mathematics for Engineers</title>
 <meta name="description" content="Interactive tools for the Linear Algebra notes, Chapter 1 (Matrix Algebra): nine quick demos and nine interactive figures. Works offline.">
@@ -31,13 +32,9 @@
   --col-color: #56B4E9;
   --cell-color: #2A9D8F;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0F1226; --surface: #171B38; --ink: #EEF0FF; --muted: #9AA0C4;
-    --line: #262B52; --accent: #8C93FF; --accent2: #FF7AA8; --title: #B8C0FF;
-    --row-color: #E9C46A; --col-color: #7EC8E3; --cell-color: #2A9D8F;
-  }
-}
+:root{color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg: #0F1226;--surface: #171B38;--ink: #EEF0FF;--muted: #9AA0C4;--line: #262B52;--accent: #8C93FF;--accent2: #FF7AA8;--title: #B8C0FF;--row-color: #E9C46A;--col-color: #7EC8E3;--cell-color: #2A9D8F;}}
+:root[data-theme="dark"]{color-scheme:dark;--bg: #0F1226;--surface: #171B38;--ink: #EEF0FF;--muted: #9AA0C4;--line: #262B52;--accent: #8C93FF;--accent2: #FF7AA8;--title: #B8C0FF;--row-color: #E9C46A;--col-color: #7EC8E3;--cell-color: #2A9D8F;}
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 64px; }
 body {
@@ -274,6 +271,16 @@ h2.part .num{color:var(--muted);font-size:.8em}
 footer{text-align:center;padding:28px 20px 40px;font-size:.9rem;color:var(--muted)}
 footer p{margin:.3em 0}
 @media print{.topbar,.jump,.fbox{display:none!important}}
+
+/* theme-v1: Light / Auto / Dark switch */
+.theme-switch{display:none;align-items:center;gap:2px;padding:2px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.theme-ui .theme-switch{display:inline-flex}
+.theme-switch button{all:unset;box-sizing:border-box;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer}
+.theme-switch button:hover{color:var(--ink)}
+.theme-switch button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
+.theme-switch button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.theme-switch svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (forced-colors:active){.theme-switch button[aria-pressed="true"]{outline:2px solid CanvasText}}
 </style>
 </head>
 <body>
@@ -286,6 +293,7 @@ footer p{margin:.3em 0}
       <a href="../linear-algebra.html">Notes</a>
       <a href="#quick">Quick demos</a>
       <a href="#figures">Figures</a>
+          <div class="theme-switch" role="group" aria-label="Colour theme"><button type="button" data-theme-set="light" aria-pressed="false" title="Light theme" aria-label="Light theme"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></button><button type="button" data-theme-set="auto" aria-pressed="false" title="Match my device" aria-label="Match my device setting"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button><button type="button" data-theme-set="dark" aria-pressed="false" title="Dark (navy) theme" aria-label="Dark theme"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button></div>
     </nav>
   </div>
 </header>
@@ -1371,6 +1379,26 @@ document.querySelectorAll('.fprev').forEach(function(b){{
     draw(45);
   })();
 
+})();
+</script>
+<script>/* mfe-theme-ui */
+(function(){
+  var K="mfe-theme",root=document.documentElement,btns=[].slice.call(document.querySelectorAll("[data-theme-set]"));
+  var COL={light:"#F5F6FB",dark:"#0F1226"};
+  function stored(){try{var t=localStorage.getItem(K);return t==="light"||t==="dark"?t:"auto"}catch(e){return root.getAttribute("data-theme")||"auto"}}
+  function show(t){
+    if(t==="auto")root.removeAttribute("data-theme");else root.setAttribute("data-theme",t);
+    btns.forEach(function(b){b.setAttribute("aria-pressed",String(b.getAttribute("data-theme-set")===t))});
+    [].forEach.call(document.querySelectorAll('meta[name="theme-color"]'),function(m){
+      if(!m.hasAttribute("data-orig"))m.setAttribute("data-orig",m.getAttribute("content"));
+      m.setAttribute("content",t==="auto"?m.getAttribute("data-orig"):COL[t]);});
+    [].forEach.call(document.querySelectorAll("iframe"),function(f){try{f.contentWindow.postMessage({kai:"theme",theme:t},"*")}catch(e){}});
+  }
+  function choose(t){try{if(t==="auto")localStorage.removeItem(K);else localStorage.setItem(K,t)}catch(e){}show(t)}
+  btns.forEach(function(b){b.addEventListener("click",function(){choose(b.getAttribute("data-theme-set"))})});
+  window.addEventListener("storage",function(e){if(e.key===K||e.key===null)show(stored())});
+  root.classList.add("theme-ui");
+  show(stored());
 })();
 </script>
 </body>

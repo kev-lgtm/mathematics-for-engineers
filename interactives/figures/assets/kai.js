@@ -11,6 +11,15 @@
   KAI.params = params;
   var theme = params.get('theme');
   if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+  /* mfe-theme: follow the reader's choice made with the switch on the main pages (same key, applied live) */
+  (function () {
+    var root = document.documentElement, K = 'mfe-theme';
+    function apply(t) { if (t === 'light' || t === 'dark') root.setAttribute('data-theme', t); else root.removeAttribute('data-theme'); }
+    if (theme === 'light' || theme === 'dark') return;            // ?theme= in the address wins
+    try { apply(localStorage.getItem(K)); } catch (e) {}
+    window.addEventListener('storage', function (e) { if (e.key === K || e.key === null) { try { apply(localStorage.getItem(K)); } catch (_) {} } });
+    window.addEventListener('message', function (e) { var d = e.data; if (e.source === window.parent && d && d.kai === 'theme') apply(d.theme); });
+  })();
   if (params.get('title') === '0') document.documentElement.classList.add('no-title');
   KAI.reducedMotion = !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
