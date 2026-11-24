@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/kai.css">
 <style>
   .ctrl { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); align-items: start; }
-  .board { position: relative; overflow-x: auto; padding: 16px 10px 14px; display: grid; gap: 22px 26px; justify-content: center; align-items: center; --cw: 46px; }
+  .board { position: relative; overflow-x: auto; padding: 16px 10px 14px; display: grid; gap: 22px var(--gx, 26px); justify-content: center; align-items: center; --cw: 46px; --gx: 26px; }
   .board.side { grid-template-columns: auto auto auto auto auto; grid-template-areas: "A op1 B op2 C"; }
   .board.falk { grid-template-columns: auto auto; grid-template-areas: ". B" "A C"; justify-items: center; }
   .slotA { grid-area: A; } .slotB { grid-area: B; } .slotC { grid-area: C; }
@@ -22,7 +22,7 @@
   .mgrid { display: grid; grid-template-columns: repeat(var(--cols), var(--cw)); gap: 4px; position: relative; padding: 5px 12px; }
   .mgrid::before, .mgrid::after { content: ""; position: absolute; top: 0; bottom: 0; width: 7px; border: 2px solid var(--ink); }
   .mgrid::before { left: 0; border-right: 0; } .mgrid::after { right: 0; border-left: 0; }
-  .cell { width: var(--cw); height: calc(var(--cw) * .8); display: flex; align-items: center; justify-content: center; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); font: 600 calc(var(--cw) * .33) var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); text-align: center; padding: 0; margin: 0; min-width: 0; }
+  .cell { width: var(--cw); height: calc(var(--cw) * .8); display: flex; align-items: center; justify-content: center; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); font: 600 max(12px, calc(var(--cw) * .33)) var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); text-align: center; padding: 0; margin: 0; min-width: 0; }
   input.cell { -moz-appearance: textfield; appearance: textfield; }
   input.cell::-webkit-outer-spin-button, input.cell::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .A .cell.row { background: var(--blue-t); border-color: var(--blue); }
@@ -77,7 +77,8 @@
 
   var poolA = [[1, 2, 1, 0], [3, 4, 2, 1], [0, 1, 2, 3], [2, 1, 0, 1]];
   var poolB = [[5, 6, 1, 2], [7, 8, 0, 1], [2, 1, 3, 0], [1, 0, 2, 2]];
-  var S = { m: 2, n: 2, p: 2, mismatch: false, step: 0, playing: false, speed: 1, layout: 'side', showAll: false, flow: true };
+  var NARROW = (window.innerWidth || 800) < 560;   /* phones: Falk's scheme is much narrower than side by side */
+  var S = { m: 2, n: 2, p: 2, mismatch: false, step: 0, playing: false, speed: 1, layout: NARROW ? 'falk' : 'side', showAll: false, flow: true };
   var timer = null;
 
   /* ---------- controls ---------- */
@@ -92,7 +93,7 @@
   var mSl = KAI.slider({ label: '<i>m</i>: rows of <span class="v">A</span>', min: 1, max: 4, step: 1, value: 2, digits: 0, onInput: function (v) { S.m = v; presetSeg.set(null); rebuild(); } });
   var nSl = KAI.slider({ label: '<i>n</i>: columns of <span class="v">A</span>', min: 1, max: 4, step: 1, value: 2, digits: 0, onInput: function (v) { S.n = v; presetSeg.set(null); rebuild(); } });
   var pSl = KAI.slider({ label: '<i>p</i>: columns of <span class="v">B</span>', min: 1, max: 4, step: 1, value: 2, digits: 0, onInput: function (v) { S.p = v; presetSeg.set(null); rebuild(); } });
-  var layoutSeg = KAI.seg({ legend: 'Layout', name: 'lay', value: 'side', options: [{ value: 'side', label: 'Side by side' }, { value: 'falk', label: 'Falk&rsquo;s scheme' }],
+  var layoutSeg = KAI.seg({ legend: 'Layout', name: 'lay', value: S.layout, options: [{ value: 'side', label: 'Side by side' }, { value: 'falk', label: 'Falk&rsquo;s scheme' }],
     onChange: function (v) { S.layout = v; $('#board').className = 'board ' + v; rebuild(); } });
   var badChk = KAI.check({ label: 'Make the inner sizes disagree', checked: false, onChange: function (v) { S.mismatch = v; presetSeg.set(null); rebuild(); } });
   var allChk = KAI.check({ label: 'Show all of <span class="v">C</span>', checked: false, onChange: function (v) { S.showAll = v; update(); } });
@@ -171,9 +172,14 @@
     scrub.limits(1, total());
     fit(); update();
   }
+  /* Choose the cell width so that the whole scheme fits the board (exact widths: 24 px bracket padding per matrix,
+     4 px between cells, 18 px per operator, 20 px board padding). Falls back to a scroll bar if even the smallest cell does not fit. */
   function fit() {
-    var W = Math.max(240, board.clientWidth - 24), n = S.n, p = S.p, cols = S.layout === 'side' ? (n + 2 * p) + 5 : (n + p) + 3;
-    board.style.setProperty('--cw', KAI.clamp(Math.floor(W / cols), 30, 54) + 'px');
+    var avail = board.clientWidth - 20, narrow = avail < 480, gx = narrow ? 12 : 26, n = S.n, p = S.p, fixed, cols;
+    if (S.layout === 'side') { cols = n + 2 * p; fixed = 4 * gx + 2 * 18 + 3 * 24 + (n - 1 + 2 * (p - 1)) * 4; }
+    else { cols = n + p; fixed = gx + 2 * 24 + (n - 1 + p - 1) * 4; }
+    board.style.setProperty('--gx', gx + 'px');
+    board.style.setProperty('--cw', KAI.clamp(Math.floor((avail - fixed) / cols), 28, 50) + 'px');
   }
   function setPlaying(b) {
     S.playing = b; clearTimeout(timer);
@@ -255,6 +261,7 @@
 
   if (global_RO()) new ResizeObserver(function () { fit(); drawFlow(); }).observe(board); else window.addEventListener('resize', function () { fit(); drawFlow(); });
   function global_RO() { return typeof ResizeObserver !== 'undefined'; }
+  $('#board').className = 'board ' + S.layout;
   rebuild();
   if (!KAI.reducedMotion) setTimeout(function () { setPlaying(true); }, 600);
   window.FIG = { S: S, getA: getA, getB: getB, update: update, rebuild: rebuild, derive: derive, setPlaying: setPlaying };

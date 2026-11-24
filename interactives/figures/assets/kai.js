@@ -311,7 +311,9 @@
     g.appendChild(KAI.s('circle', { class: 'dot', r: r, fill: col, stroke: 'var(--bg)', 'stroke-width': 2 }));
     var H = { el: g };
     function place() {
-      g.setAttribute('transform', 'translate(' + P.X(pos[0]).toFixed(1) + ',' + P.Y(pos[1]).toFixed(1) + ')');
+      /* drawn on the edge of the plane if a typed value or a preset puts it outside, so the handle never disappears */
+      var vx = KAI.clamp(pos[0], P.xr[0], P.xr[1]), vy = KAI.clamp(pos[1], P.yr[0], P.yr[1]);
+      g.setAttribute('transform', 'translate(' + P.X(vx).toFixed(1) + ',' + P.Y(vy).toFixed(1) + ')');
       var lab = typeof o.label === 'function' ? o.label(pos.slice()) : (o.label || 'point');
       g.setAttribute('aria-label', lab + '. Drag, or use the arrow keys to move it.');
     }
@@ -324,10 +326,16 @@
     H.set = function (x, y) { if (Array.isArray(x)) { y = x[1]; x = x[0]; } pos = [x, y]; place(); };
     H.pos = function () { return pos.slice(); };
     H.show = function (b) { g.style.display = b ? '' : 'none'; };
+    /* Touch screens: touch-action does not work on SVG child elements in every browser, so the page scrolled instead of
+       moving the point and the drag was cut off after a few pixels. Cancelling touchstart/touchmove on the handle fixes it
+       (the rest of the page still scrolls normally). */
+    g.style.touchAction = 'none';
+    g.addEventListener('touchstart', function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+    g.addEventListener('touchmove', function (e) { if (dragging && e.cancelable) e.preventDefault(); }, { passive: false });
     g.addEventListener('pointerdown', function (e) { e.preventDefault(); dragging = true; try { g.setPointerCapture(e.pointerId); } catch (x) { } g.focus(); });
     g.addEventListener('pointermove', function (e) { if (dragging) apply(P.fromEvent(e), 'pointer'); });
-    function end() { dragging = false; if (o.onEnd) o.onEnd(pos.slice()); }
-    g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
+    function end() { if (!dragging) return; dragging = false; if (o.onEnd) o.onEnd(pos.slice()); }
+    g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end); g.addEventListener('lostpointercapture', function () { if (dragging) end(); });
     g.addEventListener('keydown', function (e) {
       var dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
       if (!dir) return;

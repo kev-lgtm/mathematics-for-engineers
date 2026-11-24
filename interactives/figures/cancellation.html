@@ -71,7 +71,10 @@
   var s1 = KAI.slider({ label: 'how far <span class="cc">c</span><sub>1</sub> is moved from <span class="bb">b</span><sub>1</sub>', min: -3, max: 3, step: 0.1, value: 1, digits: 1, onInput: function (v) { st.s[0] = v; refresh(); } });
   var s2 = KAI.slider({ label: 'how far <span class="cc">c</span><sub>2</sub> is moved from <span class="bb">b</span><sub>2</sub>', min: -3, max: 3, step: 0.1, value: -1, digits: 1, onInput: function (v) { st.s[1] = v; refresh(); } });
   var snapChk = KAI.check({ label: 'Snap the tips to a half-unit grid', checked: true, onChange: function (v) { st.snap = v; } });
-  ctl.append(modeSeg.el, phiSl.el, s1.el, s2.el, snapChk.el);
+  var resetBtn = KAI.button({ label: '&#8634; Reset', title: 'Back to the starting matrices', onClick: function () {
+    st.mode = 'proj'; st.phi = 0; st.B = [[1, 2], [0.5, 1.5]]; st.s = [1, -1];
+    modeSeg.set('proj'); phiSl.set(0); [phiSl, s1, s2].forEach(function (c) { c.disable(false); }); refresh(); } });
+  ctl.append(modeSeg.el, phiSl.el, s1.el, s2.el, snapChk.el, h('div', { class: 'row' }, resetBtn));
 
   /* ---------- handles ---------- */
   function snap(p, how) { return (how === 'pointer' && st.snap) ? [Math.round(p[0] * 2) / 2 + 0, Math.round(p[1] * 2) / 2 + 0] : [Math.round(p[0] * 100) / 100 + 0, Math.round(p[1] * 100) / 100 + 0]; }

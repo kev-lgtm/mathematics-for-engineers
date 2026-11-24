@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Interactive tools — Linear Algebra, Chapter 1 · Mathematics for Engineers</title>
-<meta name="description" content="Interactive tools for the Linear Algebra notes, Chapter 1 (Matrix Algebra): nine quick demos and nine interactive figures. Works offline.">
+<title>Interactive tools — Linear Algebra, Part 1 · Mathematics for Engineering Students</title>
+<meta name="description" content="Interactive tools for the Linear Algebra notes, Part 1 (Matrix Algebra): nine quick demos and nine interactive figures. Works offline.">
 <link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
 <meta name="author" content="Kaveh Eftekharinasab">
 
@@ -255,6 +255,7 @@ footer {
 .jump a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
 h2.part{font-size:1.75rem;margin-top:2.2em;border-bottom:3px solid var(--accent)}
 h2.part .num{color:var(--muted);font-size:.8em}
+.exp-note{max-width:62ch;margin:0 0 1.1em;padding:10px 14px;border:1px solid var(--line);border-left:4px solid var(--oi-orange);border-radius:10px;background:var(--surface);color:var(--ink);font-size:.95rem}.exp-note b{color:var(--oi-orange)}
 .part-note{color:var(--muted);max-width:62ch;margin:0 0 1em}
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin:1.2em 0 2em}
 .fcard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--oi-green);border-radius:14px;padding:14px 16px 16px;display:grid;gap:8px;align-content:start;min-width:0}
@@ -300,12 +301,13 @@ footer p{margin:.3em 0}
 
 <main class="wrap">
   <h1>Interactive tools</h1>
-  <p class="lead">Live tools for the Linear Algebra notes, Chapter 1 (Matrix Algebra). Nothing to install and no internet needed: edit the numbers, drag the handles, and watch.</p>
+  <p class="lead">Live tools for the Linear Algebra notes, Part 1 (Matrix Algebra). Nothing to install and no internet needed: edit the numbers, drag the handles, and watch.</p>
+  <p class="exp-note" role="note"><b>Experimental.</b> These interactive tools are new and still being developed. Some things may not work perfectly yet, and more tools and features are coming. If something looks wrong, please let the author know.</p>
   <nav class="jump" aria-label="Sections of this page">
     <a href="#quick">Part 1 · Quick demos (9)</a>
     <a href="#figures">Part 2 · Interactive figures (9)</a>
   </nav>
-  <p class="part-note">Chapters 2 (Determinants and Inverses) and 3 (Systems of Linear Equations) will get their own tools later.</p>
+  <p class="part-note">The next parts of the notes (Determinants and Inverses; Systems of Linear Equations) will get their own tools later.</p>
 
   <h2 class="part" id="quick"><span class="num">Part 1</span> Quick demos</h2>
   <p class="part-note">Nine small tools that follow the order of the notes.</p>
@@ -437,7 +439,7 @@ footer p{margin:.3em 0}
         <div id="xform-mat" class="matrix-grid" style="grid-template-columns: repeat(2, auto);"></div>
       </div>
       <div class="svg-wrap" style="max-width:320px;">
-        <svg id="xform-svg" viewBox="-1.2 -1.2 4.4 4.4" aria-label="Unit square transformed by matrix"></svg>
+        <svg id="xform-svg" viewBox="-1.2 -3.2 4.4 4.4" aria-label="Unit square transformed by matrix"></svg>
       </div>
     </div>
     <div class="out" id="xform-out">A maps i → first column, j → second column.</div>
@@ -471,14 +473,14 @@ footer p{margin:.3em 0}
   <h2 id="int7"><span class="num">7</span> Commutativity: AB ≠ BA</h2>
   <section class="interactive">
     <div class="box-label">Interactive · §1.3</div>
-    <p class="hint">Shear <em>S</em> then rotate <em>R</em>, versus rotate then shear. The final shapes differ — so <em>SR ≠ RS</em>.</p>
+    <p class="hint">Two maps: a shear <em>S</em> and a rotation <em>R</em> by 90°. In a product the map written <em>next to the vector</em> acts first, so <em>SR</em> means “rotate first, then shear”. The two final shapes differ, so <em>SR ≠ RS</em>.</p>
     <div class="controls">
-      <button type="button" id="comm-order-sr" class="active">S then R (SR)</button>
-      <button type="button" id="comm-order-rs">R then S (RS)</button>
+      <button type="button" id="comm-order-sr" class="active">SR: rotate, then shear</button>
+      <button type="button" id="comm-order-rs">RS: shear, then rotate</button>
     </div>
     <div class="pair">
       <div class="svg-wrap" style="max-width:280px;">
-        <svg id="comm-svg" viewBox="-1.5 -1.5 5 5" aria-label="Composition of shear and rotation"></svg>
+        <svg id="comm-svg" viewBox="-1.2 -3.2 4.4 4.4" aria-label="Composition of shear and rotation"></svg>
       </div>
       <div>
         <div style="font-size:.85rem; color:var(--muted); margin-bottom:6px;">Result matrix</div>
@@ -608,14 +610,14 @@ footer p{margin:.3em 0}
 </footer>
 <script src="figures/assets/kai-host.js"></script>
 <script>
-document.querySelectorAll('.fprev').forEach(function(b){{
-  b.addEventListener('click',function(){{
+document.querySelectorAll('.fprev').forEach(function(b){
+  b.addEventListener('click',function(){
     var card=b.closest('.fcard'), box=card.querySelector('.fbox');
-    if(box.firstChild){{box.innerHTML='';b.textContent='Preview here';card.classList.remove('open');return;}}
+    if(box.firstChild){box.innerHTML='';b.textContent='Preview here';card.classList.remove('open');return;}
     var f=document.createElement('iframe'); f.src=b.dataset.src; f.title=b.dataset.title; f.loading='lazy'; f.height=480;
     box.appendChild(f); b.textContent='Close preview'; card.classList.add('open');
-  }});
-}});
+  });
+});
 </script>
 
 <script>
@@ -996,25 +998,12 @@ document.querySelectorAll('.fprev').forEach(function(b){{
         document.querySelectorAll("#xform-presets button").forEach(function (b) { b.classList.remove("active"); });
         btn.classList.add("active");
         var p = btn.getAttribute("data-m").split(",").map(Number);
-        // data-m is a,b,c,d in column order? We stored "a,c,b,d" display order in data-m as a,b,c,d meaning [[a,b],[c,d]]
-        // Our internal: first col (a,b), second col (c,d)
-        // Preset strings: "1,0,0,1" means [[1,0],[0,1]] → a=1,c=0,b=0,d=1
+        // data-m lists the entries row by row: [[a, c], [b, d]], so the first column is (a, b)
         a = p[0]; c = p[1]; b = p[2]; d = p[3];
-        // Wait: "2,0,0,1" stretch should be [[2,0],[0,1]] → first col (2,0), second (0,1)
-        // So a=2, b=0, c=0, d=1. That means data-m = a,c,b,d = 2,0,0,1. Good.
-        // "0,-1,1,0" rotate: [[0,-1],[1,0]] → a=0, c=-1, b=1, d=0 → data-m = 0,-1,1,0. Good.
         buildMat();
         draw();
       });
     });
-
-    // Fix preset interpretation: data-m="a,c,b,d" where matrix is [[a,c],[b,d]]
-    // Identity 1,0,0,1 → a=1,c=0,b=0,d=1 ✓
-    // Stretch 2,0,0,1 → [[2,0],[0,1]] ✓
-    // Shear 1,1,0,1 → [[1,1],[0,1]] → a=1,c=1,b=0,d=1 ✓
-    // Rotate 0,-1,1,0 → [[0,-1],[1,0]] ✓
-    // Reflect 1,0,0,-1 → [[1,0],[0,-1]] ✓
-    // Singular 1,2,2,4 → [[1,2],[2,4]] ✓
 
     buildMat();
     draw();
@@ -1160,17 +1149,12 @@ document.querySelectorAll('.fprev').forEach(function(b){{
 
     function update() {
       var M = order === "sr" ? matMul(S, R) : matMul(R, S);
-      // Wait: SR means apply R first then S, which is S*(R*x) = (S R) x
-      // In matrix multiplication notation AB means apply B first.
-      // "S then R" in the UI label meant shear first then rotate = R S
-      // Let me align with labels:
-      // Button "S then R (SR)" — if SR means matrix product S*R, that applies R first.
-      // For teaching, show product matrix clearly.
+      // SR = S*R: first R, then S (the matrix next to the vector acts first)
       draw(M);
       showMat(M);
       out.innerHTML = order === "sr"
-        ? "Product <strong>SR</strong> = S × R. Apply rotation first, then shear."
-        : "Product <strong>RS</strong> = R × S. Apply shear first, then rotation. Different shape!";
+        ? "Product <strong>SR</strong> = S × R: rotate first, then shear."
+        : "Product <strong>RS</strong> = R × S: shear first, then rotate. A different shape, so SR ≠ RS.";
     }
 
     document.getElementById("comm-order-sr").addEventListener("click", function () {

@@ -56,7 +56,7 @@
     identity: { label: 'Identity', params: [], build: function () { return [[1, 0], [0, 1]]; } },
     rotate: { label: 'Rotation', params: [{ k: 'th', label: 'angle &theta;', min: -180, max: 180, step: 5, val: 30, unit: '&deg;', digits: 0 }],
       build: function (p) { return Mx.rot(p.th); } },
-    scale: { label: 'Scaling', params: [{ k: 'sx', label: 'x-factor', min: -3, max: 3, step: 0.1, val: 2 }, { k: 'sy', label: 'y-factor', min: -3, max: 3, step: 0.1, val: 0.5 }],
+    scale: { label: 'Scaling', params: [{ k: 'sx', label: 'x-factor', min: -3, max: 3, step: 0.1, val: 2 }, { k: 'sy', label: 'y-factor', min: -2.5, max: 2.5, step: 0.1, val: 0.5 }],
       build: function (p) { return [[p.sx, 0], [0, p.sy]]; } },
     shear: { label: 'Shear', params: [{ k: 'k', label: 'shear <i>k</i>', min: -3, max: 3, step: 0.1, val: 1 }],
       build: function (p) { return [[1, p.k], [0, 1]]; } },
