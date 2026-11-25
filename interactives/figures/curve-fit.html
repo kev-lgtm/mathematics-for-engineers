@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curve through points: the Vandermonde system</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .exp { display: inline-block; font: 600 11px var(--font); letter-spacing: .04em; text-transform: uppercase; color: var(--orange); border: 1px solid var(--orange); border-radius: 999px; padding: 1px 8px; margin-left: 8px; vertical-align: middle; }
+  .scroll { overflow-x: auto; max-width: 100%; padding: 2px 0; }
+  .ptab { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px 8px; align-items: center; }
+  .ptab .numin { width: 100%; max-width: 6em; }
+  .ptab span.k { font: italic 14px var(--serif); }
+  .poly { font-family: var(--serif); font-size: 15px; overflow-wrap: anywhere; }
+  .warnc { color: var(--orange); font-weight: 650; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Curve through points: the Vandermonde system <span class="exp">experimental</span></h1>
+    <p>Drag the points. The polynomial of degree <i>n</i>&minus;1 through <i>n</i> points is found by solving a square linear system whose matrix is built from the <i>x</i>-values. Its determinant tells you when this works.</p>
+  </header>
+
+  <div class="layout">
+    <div class="stack">
+      <div class="stage"><svg id="plot" role="img" aria-label="Data points and the polynomial through them"></svg></div>
+      <div class="card readout" id="readout"></div>
+    </div>
+    <div class="card stack" id="ctl"></div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Choose <em>Parabola</em> and drag one point. The curve is always a parabola, and the three coefficients change.</li>
+      <li>Choose <em>Six points on a line</em>. The polynomial has degree at most 5, yet it is a straight line. Which coefficients are zero? Move one point off the line.</li>
+      <li>Choose <em>Two x-values close</em>. Watch det <i>V</i>, the size of the coefficients and the wild swing of the curve. Then drag the two points to the same <i>x</i>.</li>
+      <li>With four points, move the first point to the right across the second one. When does det <i>V</i> change sign, and what does that say about the order of the rows?</li>
+      <li>Why does a matrix whose determinant is nearly 0 give huge coefficients? Think of the formula <i>x</i> = <i>A</i><sup>&minus;1</sup><b>y</b> and of the 1/det in <i>A</i><sup>&minus;1</sup>.</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, $ = KAI.$, MINUS = '−', MAXN = 6;
+  var PRE = [
+    ['Line', [[-2, -1], [2, 2]]],
+    ['Parabola', [[-2, 2], [0, -1], [2, 2]]],
+    ['Wave (4 points)', [[-3, -2], [-1, 2], [1, -2], [3, 2]]],
+    ['Six points on a line', [[-4, -1.5], [-2.5, -0.5], [-1, 0.5], [0.5, 1.5], [2, 2.5], [3.5, 3.5]]],
+    ['Two x-values close', [[-3, 0], [-0.25, 1], [0, -1], [3, 0]]]
+  ];
+  var st = { n: 4, pts: [[-3, -2], [-1, 2], [1, -2], [3, 2], [-4, 1], [4, 1]] };
+  var SUB = ['₀', '₁', '₂', '₃', '₄', '₅'], SUP = ['', '', '²', '³', '⁴', '⁵'];
+
+  var P = KAI.plane($('#plot'), { x: [-5, 5], y: [-4, 4], pad: { l: 26 } });
+  var handles = [];
+  function snap(p) { return [Math.round(p[0] * 4) / 4, Math.round(p[1] * 10) / 10]; }
+  for (var i = 0; i < MAXN; i++) (function (i) {
+    handles.push(KAI.handle(P, { pos: st.pts[i], color: 'var(--orange)', r: 7, constrain: snap, step: 0.25,
+      label: function (p) { return 'Point ' + (i + 1) + ' at x = ' + fmt(p[0]) + ', y = ' + fmt(p[1]); },
+      onMove: function (p) { st.pts[i] = p; update('handle'); } }));
+  })(i);
+
+  /* ---------- the maths ---------- */
+  function vander(xs) { return xs.map(function (x) { var r = [], k; for (k = 0; k < xs.length; k++) r.push(Math.pow(x, k)); return r; }); }
+  function detProduct(xs) { var d = 1, i, j; for (i = 0; i < xs.length; i++) for (j = i + 1; j < xs.length; j++) d *= (xs[j] - xs[i]); return d; }
+  function evalPoly(c, x) { var s = 0, k; for (k = c.length - 1; k >= 0; k--) s = s * x + c[k]; return s; }
+  function polyHtml(c) {
+    var s = '', first = true, k;
+    for (k = c.length - 1; k >= 0; k--) {
+      var a = c[k]; if (Math.abs(a) < 5e-4) continue;
+      var mag = fmt(Math.abs(a), 3), term;
+      if (k === 0) term = mag; else term = (Math.abs(Math.abs(a) - 1) < 5e-4 ? '' : mag) + '<i>x</i>' + (k > 1 ? '<sup>' + k + '</sup>' : '');
+      s += first ? (a < 0 ? MINUS : '') + term : ' ' + (a < 0 ? MINUS : '+') + ' ' + term; first = false;
+    }
+    return first ? '0' : s;
+  }
+
+  /* ---------- controls ---------- */
+  var ctl = $('#ctl'), tbl = h('div', { class: 'ptab' }), xin = [], yin = [], rows = [];
+  var nSeg = KAI.seg({ name: 'n', legend: 'Number of points n (the polynomial has degree n − 1)', value: String(st.n),
+    options: [2, 3, 4, 5, 6].map(function (v) { return { value: String(v), label: String(v) }; }), onChange: function (v) { st.n = +v; update(); } });
+  var pre = h('div', { class: 'row' });
+  PRE.forEach(function (q) { pre.appendChild(KAI.button({ label: q[0], onClick: function () { q[1].forEach(function (p, i) { st.pts[i] = p.slice(); }); st.n = q[1].length; nSeg.set(String(st.n)); update(); } })); });
+  tbl.appendChild(h('span')); tbl.appendChild(h('span', { class: 'note', html: '<i>x</i><sub>i</sub>' })); tbl.appendChild(h('span', { class: 'note', html: '<i>y</i><sub>i</sub>' }));
+  for (var r = 0; r < MAXN; r++) (function (r) {
+    var kx = h('span', { class: 'k', html: 'P<sub>' + (r + 1) + '</sub>' });
+    var ix = KAI.numin({ value: 0, step: 0.25, aria: 'x-value of point ' + (r + 1), onInput: function (v) { st.pts[r][0] = KAI.clamp(v, -5, 5); update('edit'); } });
+    var iy = KAI.numin({ value: 0, step: 0.1, aria: 'y-value of point ' + (r + 1), onInput: function (v) { st.pts[r][1] = KAI.clamp(v, -4, 4); update('edit'); } });
+    xin.push(ix); yin.push(iy); rows.push([kx, ix, iy]); tbl.append(kx, ix, iy);
+  })(r);
+  ctl.append(h('h2', { text: 'The points' }), nSeg.el, h('span', { class: 'note', text: 'Drag a point, move it with the arrow keys, or type its coordinates.' }), tbl, pre, KAI.button({ label: 'Reset', onClick: function () { PRE[2][1].forEach(function (p, i) { st.pts[i] = p.slice(); }); st.n = 4; nSeg.set('4'); update(); } }));
+
+  /* ---------- drawing ---------- */
+  var curve = null;
+  function draw(res) {
+    KAI.clear(P.content); KAI.clear(P.top);
+    var n = st.n, i;
+    if (res.c) {
+      var x0 = P.xr[0], x1 = P.xr[1], N = 400, d = '', pen = false, k;
+      for (k = 0; k <= N; k++) {
+        var x = x0 + (x1 - x0) * k / N, y = evalPoly(res.c, x);
+        if (!isFinite(y) || Math.abs(y) > 60) { pen = false; continue; }
+        d += (pen ? 'L' : 'M') + P.X(x).toFixed(1) + ' ' + P.Y(y).toFixed(1); pen = true;
+      }
+      P.content.appendChild(KAI.s('path', { d: d, fill: 'none', stroke: 'var(--blue)', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }));
+    }
+    for (i = 0; i < n; i++) {
+      var p = st.pts[i];
+      P.line(P.content, [p[0], 0], p, { stroke: 'var(--orange)', 'stroke-width': 1, 'stroke-dasharray': '3 4', 'stroke-opacity': 0.8 });
+      P.text(P.top, p, 'P' + (i + 1), { dx: 11, dy: -11, class: 'lbl sm', 'text-anchor': 'start' });
+    }
+    if (!res.c) P.text(P.top, [0, 3.3], res.dup ? 'Two points share an x-value: no polynomial fits.' : 'No polynomial of this degree fits.', { 'text-anchor': 'middle', class: 'lbl sm', fill: 'var(--verm)' });
+  }
+  P.onResize(function () { draw(lastRes); });
+
+  var lastRes = { c: null };
+  function update(how) {
+    var n = st.n, xs = st.pts.slice(0, n).map(function (p) { return p[0]; }), ys = st.pts.slice(0, n).map(function (p) { return p[1]; }), i;
+    for (i = 0; i < MAXN; i++) {
+      handles[i].show(i < n); handles[i].set(st.pts[i]);
+      rows[i].forEach(function (e) { e.style.display = i < n ? '' : 'none'; });
+      if (document.activeElement !== xin[i]) xin[i].value = String(Math.round(st.pts[i][0] * 1000) / 1000);
+      if (document.activeElement !== yin[i]) yin[i].value = String(Math.round(st.pts[i][1] * 1000) / 1000);
+    }
+    var V = vander(xs), dp = detProduct(xs), c = Math.abs(dp) > 1e-9 ? KAI.solve(V, ys) : null;
+    var dup = xs.some(function (x, a) { return xs.some(function (z, b) { return a < b && Math.abs(x - z) < 1e-9; }); });
+    lastRes = { c: c, dup: dup, det: dp };
+    draw(lastRes);
+
+    var box = KAI.clear($('#readout'));
+    box.appendChild(h('p', { html: 'Look for <i>p</i>(<i>x</i>) = <i>c</i>' + SUB[0] + ' + <i>c</i>' + SUB[1] + '<i>x</i>' + (n > 2 ? ' + &hellip; + <i>c</i><sub>' + (n - 1) + '</sub><i>x</i>' + (n > 2 ? '<sup>' + (n - 1) + '</sup>' : '') : '') + ' with <i>p</i>(<i>x</i><sub>i</sub>) = <i>y</i><sub>i</sub> for every point. That is the system <span class="v">V</span><b>c</b> = <b>y</b>:' }));
+    var eq = h('div', { class: 'eq scroll' }, h('span', { class: 'v', text: 'V' }), ' = ',
+      KAI.matEl(V, { digits: 2, text: function (a, b, v) { return fmt(v, 2); } }), h('b', { text: 'y' }), ' = ', KAI.matEl(ys.map(function (y) { return [y]; }), { digits: 2 }));
+    box.appendChild(eq);
+    box.appendChild(h('p', { class: 'note', html: 'Row <i>i</i> of <span class="v">V</span> is (1, <i>x</i><sub>i</sub>, <i>x</i><sub>i</sub><sup>2</sup>, &hellip;): one row per point, one column per power.' }));
+    var gap = 99; xs.forEach(function (a, i) { xs.forEach(function (b2, j) { if (i < j) gap = Math.min(gap, Math.abs(a - b2)); }); }); var small = gap <= 0.5 && gap > 1e-9 && n >= 3;
+    box.appendChild(h('div', { class: 'kv' }, h('span', { html: 'det <span class="v">V</span> = &prod;<sub><i>i</i>&lt;<i>j</i></sub> (<i>x</i><sub>j</sub> &minus; <i>x</i><sub>i</sub>)' }), h('b', { text: Math.abs(dp) < 1e-9 ? '0' : fmt(dp, Math.abs(dp) < 0.01 ? 5 : 3) })));
+    if (!c) {
+      box.appendChild(h('p', { class: 'bad', html: dup ? 'det <span class="v">V</span> = 0 because two points have the same <i>x</i>. The matrix is singular, so there is no unique polynomial (a function cannot give two different heights at one <i>x</i>).' : 'det <span class="v">V</span> = 0: the matrix is singular.' }));
+    } else {
+      box.appendChild(h('p', { class: 'ok', html: 'det <span class="v">V</span> &ne; 0, so <span class="v">V</span> is invertible and there is exactly one polynomial of degree at most ' + (n - 1) + ' through the points.' }));
+      box.appendChild(h('p', { class: 'poly', html: '<i>p</i>(<i>x</i>) = ' + polyHtml(c) }));
+      box.appendChild(h('p', { class: 'note', html: '<b>c</b> = (' + c.map(function (v) { return fmt(v, 3); }).join(', ') + ')' }));
+      var mx = Math.max.apply(null, c.map(Math.abs));
+      if (mx > 40) box.appendChild(h('p', { class: 'warnc', text: 'Large coefficients: det V is small, so V is nearly singular and the curve swings wildly between the points.' }));
+      else if (small) box.appendChild(h('p', { class: 'note', text: 'Two x-values are close (gap ' + fmt(gap, 2) + '): the factor (x_j \u2212 x_i) is small, V is close to singular, and the curve reacts strongly to small moves.' }));
+    }
+    $('#plot').setAttribute('aria-label', c ? 'Polynomial of degree ' + (n - 1) + ' through ' + n + ' points: ' + c.map(function (v) { return fmt(v, 2); }).join(', ') : 'Points with no interpolating polynomial');
+    if (how !== 'handle') KAI.live(c ? 'Unique polynomial found, det V = ' + fmt(dp, 3) : 'No unique polynomial, det V = 0');
+  }
+
+  update();
+  window.FIG = { st: st, update: update, vander: vander, detProduct: detProduct, evalPoly: evalPoly };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 <script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Interactive tools — Linear Algebra, Part 1 · Mathematics for Engineering Students</title>
-<meta name="description" content="Interactive tools for the Linear Algebra notes, Part 1 (Matrix Algebra): nine quick demos and nine interactive figures. Works offline.">
+<meta name="description" content="Interactive tools for the Linear Algebra notes, Part 1 (Matrix Algebra): nine quick demos, nine interactive figures and four new experimental figures for determinants, inverses and systems. Works offline.">
 <link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
 <meta name="author" content="Kaveh Eftekharinasab">
 
@@ -256,6 +256,7 @@ footer {
 h2.part{font-size:1.75rem;margin-top:2.2em;border-bottom:3px solid var(--accent)}
 h2.part .num{color:var(--muted);font-size:.8em}
 .exp-note{max-width:62ch;margin:0 0 1.1em;padding:10px 14px;border:1px solid var(--line);border-left:4px solid var(--oi-orange);border-radius:10px;background:var(--surface);color:var(--ink);font-size:.95rem}.exp-note b{color:var(--oi-orange)}
+.expnew{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--oi-orange);border:1px solid var(--oi-orange);border-radius:999px;padding:0 7px;margin-left:6px;vertical-align:middle}
 .part-note{color:var(--muted);max-width:62ch;margin:0 0 1em}
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin:1.2em 0 2em}
 .fcard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--oi-green);border-radius:14px;padding:14px 16px 16px;display:grid;gap:8px;align-content:start;min-width:0}
@@ -306,8 +307,9 @@ footer p{margin:.3em 0}
   <nav class="jump" aria-label="Sections of this page">
     <a href="#quick">Part 1 · Quick demos (9)</a>
     <a href="#figures">Part 2 · Interactive figures (9)</a>
+    <a href="#figures3">Part 3 · Determinants, inverses, systems (4, new)</a>
   </nav>
-  <p class="part-note">The next parts of the notes (Determinants and Inverses; Systems of Linear Equations) will get their own tools later.</p>
+  <p class="part-note">Part 3 below has the first tools for the next chapters (Determinants and Inverses; Systems of Linear Equations). More will follow.</p>
 
   <h2 class="part" id="quick"><span class="num">Part 1</span> Quick demos</h2>
   <p class="part-note">Nine small tools that follow the order of the notes.</p>
@@ -598,6 +600,43 @@ footer p{margin:.3em 0}
       <p class="try"><b>Try:</b> Compare with the exercise L₁ = 2, L₂ = 1, 60°, −30°.</p>
       <p class="where">Belongs in: § Rotations and Robot Arms</p>
       <div class="facts"><button type="button" class="btn fprev" data-src="figures/robot-arm.html?title=0" data-title="Two-link robot arm">Preview here</button> <a class="btn" href="figures/robot-arm.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+
+  <h2 class="part" id="figures3"><span class="num">Part 3</span> Determinants, inverses and systems</h2>
+  <p class="part-note">Four new figures for the next chapters of the notes. They are experimental: they will be refined, and more are planned. They work like the figures above.</p>
+  <div class="gal">
+    <article class="fcard" id="fig-determinant">
+      <h3><span class="fnum">Figure 10</span>Determinant as area and volume <span class="expnew">experimental</span></h3>
+      <p>Drag the columns of a 2×2 matrix and see the parallelogram; apply row operations and watch det change by the right factor. A 3×3 tab shows the box you can turn.</p>
+      <p class="try"><b>Try:</b> Apply "R2 ← R2 + k·R1". Why does the area not change, and what does a swap do?</p>
+      <p class="where">Belongs in: § Determinants (area, volume, row operations)</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/determinant.html?title=0" data-title="Determinant as area and volume">Preview here</button> <a class="btn" href="figures/determinant.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-gauss-jordan">
+      <h3><span class="fnum">Figure 11</span>Gauss–Jordan, step by step <span class="expnew">experimental</span></h3>
+      <p>Row reduction with exact fractions on 2×2, 3×3 or 4×4 systems, forward and back, to solve Ax = b or to find A⁻¹.</p>
+      <p class="try"><b>Try:</b> Choose "Singular". Where does the elimination stop, and what does it tell you?</p>
+      <p class="where">Belongs in: § Inverses; § Gaussian elimination</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/gauss-jordan.html?title=0" data-title="Gauss–Jordan, step by step">Preview here</button> <a class="btn" href="figures/gauss-jordan.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-linear-systems">
+      <h3><span class="fnum">Figure 12</span>Lines, planes and solutions <span class="expnew">experimental</span></h3>
+      <p>Each equation is a line or plane. Row picture and column picture side by side, with a rank test: one solution, none, or infinitely many.</p>
+      <p class="try"><b>Try:</b> Choose "Triangular prism". Every two planes meet, yet there is no solution. Why?</p>
+      <p class="where">Belongs in: § Systems of Linear Equations</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/linear-systems.html?title=0" data-title="Lines, planes and solutions">Preview here</button> <a class="btn" href="figures/linear-systems.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-curve-fit">
+      <h3><span class="fnum">Figure 13</span>Curve through points (Vandermonde) <span class="expnew">experimental</span></h3>
+      <p>Drag up to six points. The interpolating polynomial comes from a square system whose determinant is a product of differences.</p>
+      <p class="try"><b>Try:</b> Drag two points to the same x. What happens to det V and to the curve on the way?</p>
+      <p class="where">Belongs in: § Determinants (Vandermonde matrix)</p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="figures/curve-fit.html?title=0" data-title="Curve through points (Vandermonde)">Preview here</button> <a class="btn" href="figures/curve-fit.html">Open full page</a></div>
       <div class="fbox"></div>
     </article>
   </div>

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The determinant as area and volume</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .tabs { margin-bottom: 10px; }
+  .hidden { display: none !important; }
+  .mgrid3 { justify-content: start; display: grid; grid-template-columns: repeat(3, auto); gap: 6px 8px; }
+  .mgrid2 { justify-content: start; display: grid; grid-template-columns: repeat(2, auto); gap: 6px 8px; }
+  .pos { color: var(--blue); font-weight: 650; } .neg { color: var(--purple); font-weight: 650; }
+  .exp { display: inline-block; font: 600 11px var(--font); letter-spacing: .04em; text-transform: uppercase; color: var(--orange); border: 1px solid var(--orange); border-radius: 999px; padding: 1px 8px; margin-left: 8px; vertical-align: middle; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>The determinant as area and volume <span class="exp">experimental</span></h1>
+    <p>The columns of <span class="v">A</span> span a parallelogram (2&times;2) or a box (3&times;3). Its size is |det <span class="v">A</span>| and its orientation is the sign. Change the matrix and watch both.</p>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <!-- ===== 2 x 2 ===== -->
+  <section id="tab2">
+    <div class="layout">
+      <div class="stack">
+        <div class="stage"><svg id="plot2" role="img" aria-label="Parallelogram spanned by the two columns of A"></svg></div>
+        <div class="card readout" id="readout2"></div>
+      </div>
+      <div class="side">
+        <div class="card stack">
+          <h2>The matrix <span class="v">A</span></h2>
+          <div id="ed2"></div>
+          <label class="chk" id="snapwrap"></label>
+          <p class="note" style="margin:0">Drag the blue and vermilion tips. <span class="pos">Blue</span> parallelogram: positive determinant. <span class="neg">Purple</span>: negative. Grey: zero.</p>
+        </div>
+        <div class="card stack" id="ops2">
+          <h2>Row operations on <span class="v">A</span></h2>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 3 x 3 ===== -->
+  <section id="tab3" class="hidden">
+    <div class="layout">
+      <div class="stack">
+        <div class="stage"><svg id="plot3" aria-label="Box spanned by the three columns of A. Drag to turn it."></svg></div>
+        <p class="note" style="margin:6px 2px 0">Drag the picture to turn it (or click it and use the arrow keys).</p>
+        <div class="card readout" id="readout3"></div>
+      </div>
+      <div class="side">
+        <div class="card stack">
+          <h2>The matrix <span class="v">A</span></h2>
+          <div id="ed3"></div>
+          <div class="row" id="pre3"></div>
+        </div>
+        <div class="card stack" id="ops3">
+          <h2>Column operations</h2>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>2&times;2: drag the blue tip to (2, 0) and the vermilion tip to (0, 2). By what factor did the area grow, and what is det <span class="v">A</span>?</li>
+      <li>Swap the two columns (blue to the vermilion position and back). What happens to the colour and to the sign?</li>
+      <li>Press <em>R2 &larr; R2 + k&middot;R1</em> with k = 2. The picture is sheared. What happens to the area and to det? Why is the determinant unchanged by this operation?</li>
+      <li>Press <em>R1 &larr; k&middot;R1</em> with k = 3. By what factor does det change?</li>
+      <li>Make the two columns point along the same line. What is the area? Can you undo it with a row operation?</li>
+      <li>3&times;3: choose <em>Flat (det 0)</em>. Why does the box collapse? Which relation do the three columns satisfy?</li>
+      <li>Press <em>Swap columns 1 and 2</em> and watch the sign. Is the volume the same?</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, fmt = KAI.fmt, Mx = KAI.M, $ = KAI.$;
+  var MINUS = '−';
+  function det3(A) { return A[0][0] * (A[1][1] * A[2][2] - A[1][2] * A[2][1]) - A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0]) + A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]); }
+  function sgnClass(d) { return Math.abs(d) < 1e-9 ? '' : d > 0 ? 'pos' : 'neg'; }
+  function sgnCol(d, kind) { return Math.abs(d) < 1e-9 ? 'var(--axis)' : d > 0 ? (kind === 't' ? 'var(--sky-t)' : 'var(--blue)') : (kind === 't' ? 'var(--purple-t)' : 'var(--purple)'); }
+  function num(v) { return fmt(v, 2); }
+  function plain(v) { return fmt(v, 2).replace(MINUS, '-'); }
+
+  /* ---------- tabs ---------- */
+  var tab = '2';
+  var tabSeg = KAI.seg({ name: 'tab', value: '2', options: [{ value: '2', label: '2 &times; 2: area' }, { value: '3', label: '3 &times; 3: volume' }],
+    onChange: function (v) { tab = v; $('#tab2').classList.toggle('hidden', v !== '2'); $('#tab3').classList.toggle('hidden', v !== '3'); if (v === '3') V.redraw(); else { P.refresh(); } } });
+  $('#tabs').appendChild(tabSeg.el);
+
+  /* =====================================================  2 x 2  ===================================================== */
+  var A0 = [[2, 1], [0, 1.5]];
+  var st2 = { A: Mx.copy(A0), prev: null, op: null, snap: true, k: 2 };
+  var P = KAI.plane($('#plot2'), { x: [-3.5, 3.5], y: [-2.6, 2.6] });
+
+  var inputs2 = [[null, null], [null, null]], grid2 = h('div', { class: 'mgrid2' });
+  [0, 1].forEach(function (i) { [0, 1].forEach(function (j) {
+    inputs2[i][j] = KAI.numin({ value: st2.A[i][j], step: 0.5, aria: 'entry in row ' + (i + 1) + ', column ' + (j + 1),
+      onInput: function (v) { st2.A[i][j] = v; st2.prev = null; st2.op = null; sync2('input'); } });
+    inputs2[i][j].style.color = j === 0 ? 'var(--blue)' : 'var(--verm)';
+    grid2.appendChild(inputs2[i][j]);
+  }); });
+  $('#ed2').appendChild(grid2);
+  var snapChk = KAI.check({ label: 'Snap the tips to a half-unit grid', checked: true, onChange: function (v) { st2.snap = v; } });
+  $('#snapwrap').replaceWith(snapChk.el);
+
+  function snapper(p, how) { return (how === 'pointer' && st2.snap) ? [Math.round(p[0] * 2) / 2 + 0, Math.round(p[1] * 2) / 2 + 0] : [Math.round(p[0] * 100) / 100 + 0, Math.round(p[1] * 100) / 100 + 0]; }
+  var hI = KAI.handle(P, { pos: [st2.A[0][0], st2.A[1][0]], color: 'var(--blue)', r: 8, constrain: snapper,
+    label: function (p) { return 'First column of A at (' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; },
+    onMove: function (p) { st2.A[0][0] = p[0]; st2.A[1][0] = p[1]; st2.prev = null; st2.op = null; sync2('handle'); } });
+  var hJ = KAI.handle(P, { pos: [st2.A[0][1], st2.A[1][1]], color: 'var(--verm)', r: 8, constrain: snapper,
+    label: function (p) { return 'Second column of A at (' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; },
+    onMove: function (p) { st2.A[0][1] = p[0]; st2.A[1][1] = p[1]; st2.prev = null; st2.op = null; sync2('handle'); } });
+
+  /* row operations */
+  var kSl = KAI.slider({ label: 'the number <i>k</i>', min: -3, max: 3, step: 0.5, value: 2, digits: 1, onInput: function (v) { st2.k = v; } });
+  function applyOp(name, E) {
+    st2.prev = Mx.copy(st2.A); st2.A = Mx.mul(E, st2.A); st2.op = { name: name, E: E, dA: Mx.det2(st2.prev) };
+    sync2();
+  }
+  var opsBox = $('#ops2');
+  opsBox.appendChild(h('p', { class: 'note', style: { margin: 0 }, html: 'A row operation multiplies <span class="v">A</span> from the left by a matrix <span class="v">E</span>, so it moves <b>both</b> columns. The dashed outline is the picture before the step.' }));
+  opsBox.appendChild(kSl.el);
+  opsBox.appendChild(h('div', { class: 'row' },
+    KAI.button({ label: 'Swap R1, R2', onClick: function () { applyOp('swap R1 and R2', [[0, 1], [1, 0]]); } }),
+    KAI.button({ label: 'R1 &larr; k&middot;R1', onClick: function () { applyOp('R1 ← ' + plain(st2.k) + '·R1', [[st2.k, 0], [0, 1]]); } }),
+    KAI.button({ label: 'R2 &larr; R2 + k&middot;R1', onClick: function () { applyOp('R2 ← R2 + ' + plain(st2.k) + '·R1', [[1, 0], [st2.k, 1]]); } }),
+    KAI.button({ label: 'R1 &larr; R1 + k&middot;R2', onClick: function () { applyOp('R1 ← R1 + ' + plain(st2.k) + '·R2', [[1, st2.k], [0, 1]]); } })));
+  var undoBtn = KAI.button({ label: '&#8630; Undo', onClick: function () { if (st2.prev) { st2.A = st2.prev; st2.prev = null; st2.op = null; sync2(); } } });
+  opsBox.appendChild(h('div', { class: 'row' }, undoBtn, KAI.button({ label: 'Reset', onClick: function () { st2.A = Mx.copy(A0); st2.prev = null; st2.op = null; sync2(); } })));
+
+  function draw2() {
+    var A = st2.A, c1 = [A[0][0], A[1][0]], c2 = [A[0][1], A[1][1]], d = Mx.det2(A), mid = [(c1[0] + c2[0]) / 2, (c1[1] + c2[1]) / 2];
+    KAI.clear(P.content); KAI.clear(P.top);
+    P.poly(P.content, KAI.UNIT, { fill: 'none', stroke: 'var(--axis)', 'stroke-dasharray': '4 4', 'stroke-width': 1.3 });
+    if (st2.prev) P.poly(P.content, KAI.imgPts(st2.prev, KAI.UNIT), { fill: 'none', stroke: 'var(--muted)', 'stroke-dasharray': '7 5', 'stroke-width': 1.8, 'stroke-linejoin': 'round' });
+    P.poly(P.content, KAI.imgPts(A, KAI.UNIT), { fill: sgnCol(d, 't'), stroke: sgnCol(d), 'stroke-width': 2, 'stroke-linejoin': 'round' });
+    /* orientation arc: from the first column to the second, the short way round */
+    if (Math.abs(d) > 1e-9) {
+      var a1 = Math.atan2(c1[1], c1[0]), a2 = Math.atan2(c2[1], c2[0]), da = a2 - a1;
+      while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+      var pts = [], n = 18, r = 0.5;
+      for (var k = 0; k <= n; k++) { var a = a1 + da * k / n; pts.push([r * Math.cos(a), r * Math.sin(a)]); }
+      P.polyline(P.top, pts, { stroke: sgnCol(d), 'stroke-width': 2.2, 'stroke-linecap': 'round' });
+      P.arrow(P.top, pts[n - 2], pts[n], { stroke: sgnCol(d), width: 2.2, head: 9 });
+    }
+    P.arrow(P.top, [0, 0], c1, { stroke: 'var(--blue)', width: 3 });
+    P.arrow(P.top, [0, 0], c2, { stroke: 'var(--verm)', width: 3, dash: '7 5' });
+    P.text(P.top, mid, 'area ' + num(Math.abs(d)) + (Math.abs(d) < 1e-9 ? '' : d > 0 ? ' (+)' : ' (' + MINUS + ')'), { 'text-anchor': 'middle', dy: 5, class: 'lbl sm', fill: 'var(--ink)' });
+    P.dot(P.top, [0, 0], 3.5, { fill: 'var(--ink)' });
+  }
+  function readout2() {
+    var A = st2.A, d = Mx.det2(A), box = KAI.clear($('#readout2')), a = A[0][0], b = A[0][1], c = A[1][0], dd = A[1][1];
+    box.appendChild(h('div', { class: 'eq' }, h('span', { class: 'v', text: 'A' }), ' = ', KAI.matEl(A, { class: 'big', cls: function (i, j) { return j ? 'c2' : 'c1'; }, name: 'A' })));
+    box.appendChild(h('p', null, 'det ', h('span', { class: 'v', text: 'A' }), ' = (' + num(a) + ')(' + num(dd) + ') ' + MINUS + ' (' + num(b) + ')(' + num(c) + ') = ', h('b', { class: sgnClass(d), text: num(d) })));
+    var msg;
+    if (Math.abs(d) < 1e-9) msg = 'The two columns lie on one line, so the parallelogram is flat: area 0 and det = 0. The map cannot be undone.';
+    else if (d > 0) msg = 'Area ' + num(Math.abs(d)) + '. Going from the first column to the second turns counter-clockwise: positive orientation.';
+    else msg = 'Area ' + num(Math.abs(d)) + '. Going from the first column to the second turns clockwise: negative orientation (the picture is mirrored).';
+    box.appendChild(h('p', { class: Math.abs(d) < 1e-9 ? 'bad' : '', text: msg }));
+    if (st2.op) {
+      var E = st2.op.E, dE = Mx.det2(E);
+      box.appendChild(h('div', { class: 'eq', style: { marginTop: '6px' } }, h('span', { text: 'Step: ' + st2.op.name + ',   ' }), h('span', { class: 'v', text: 'E' }), ' = ', KAI.matEl(E, { name: 'E' }), h('span', { html: ',   det <i>E</i> = ' + num(dE) })));
+      box.appendChild(h('p', { html: 'det(<i>EA</i>) = det <i>E</i> &middot; det <i>A</i> = (' + num(dE) + ')(' + num(st2.op.dA) + ') = <b>' + num(dE * st2.op.dA) + '</b>. ' +
+        (Math.abs(Math.abs(dE) - 1) < 1e-9 ? (dE > 0 ? 'A shear keeps the area: the determinant does not change.' : 'A swap keeps the area but flips the orientation: the sign changes.') : 'The area is multiplied by |det <i>E</i>| = ' + num(Math.abs(dE)) + '.') }));
+    } else box.appendChild(h('p', { class: 'note', text: 'Try a row operation on the right and compare the dashed outline (before) with the filled one (after).' }));
+    $('#plot2').setAttribute('aria-label', 'Parallelogram spanned by the columns of A. Determinant ' + num(d) + ', area ' + num(Math.abs(d)) + '.');
+    KAI.live('Determinant ' + num(d) + ', area ' + num(Math.abs(d)) + '.');
+    undoBtn.disabled = !st2.prev;
+  }
+  function sync2(src) {
+    var A = st2.A;
+    if (src !== 'handle') { hI.set(A[0][0], A[1][0]); hJ.set(A[0][1], A[1][1]); }
+    if (src !== 'input') [0, 1].forEach(function (i) { [0, 1].forEach(function (j) { if (document.activeElement !== inputs2[i][j]) inputs2[i][j].value = plain(A[i][j]); }); });
+    draw2(); readout2();
+  }
+  P.onResize(draw2);
+
+  /* =====================================================  3 x 3  ===================================================== */
+  var M0 = [[1, 0.5, 0], [0, 1, 0.5], [0.5, 0, 1]];
+  var st3 = { A: Mx.copy(M0), note: '' };
+  var V = KAI.view3($('#plot3'), { range: 2 });
+  var inputs3 = [[], [], []], grid3 = h('div', { class: 'mgrid3' }), cols = ['var(--blue)', 'var(--verm)', 'var(--green)'];
+  [0, 1, 2].forEach(function (i) { [0, 1, 2].forEach(function (j) {
+    inputs3[i][j] = KAI.numin({ value: st3.A[i][j], step: 0.5, min: -3, max: 3, aria: 'entry in row ' + (i + 1) + ', column ' + (j + 1),
+      onInput: function (v) { st3.A[i][j] = KAI.clamp(v, -3, 3); st3.note = ''; sync3('input'); } });
+    inputs3[i][j].style.color = cols[j];
+    grid3.appendChild(inputs3[i][j]);
+  }); });
+  $('#ed3').appendChild(grid3);
+  var PRE3 = [['Slanted box', M0], ['Unit cube', [[1, 0, 0], [0, 1, 0], [0, 0, 1]]], ['Stretch', [[2, 0, 0], [0, 1, 0], [0, 0, 1.5]]], ['Flat (det 0)', [[1, 0, 1], [0, 1, 1], [0.5, 0.5, 1]]], ['Left-handed', [[0, 1, 0], [1, 0, 0], [0, 0, 1]]]];
+  PRE3.forEach(function (q) { $('#pre3').appendChild(KAI.button({ label: q[0], onClick: function () { st3.A = Mx.copy(q[1]); st3.note = ''; sync3(); } })); });
+  var ops3 = $('#ops3');
+  function colop(name, f) { return KAI.button({ label: name, onClick: function () { var before = det3(st3.A); f(st3.A); st3.note = name; st3.before = before; sync3(); } }); }
+  ops3.appendChild(h('div', { class: 'row' },
+    colop('Swap columns 1 and 2', function (A) { for (var i = 0; i < 3; i++) { var t = A[i][0]; A[i][0] = A[i][1]; A[i][1] = t; } }),
+    colop('Column 3 += column 1', function (A) { for (var i = 0; i < 3; i++) A[i][2] = KAI.clamp(A[i][2] + A[i][0], -3, 3); }),
+    colop('Column 1 &times; 2', function (A) { for (var i = 0; i < 3; i++) A[i][0] = KAI.clamp(A[i][0] * 2, -3, 3); })));
+  ops3.appendChild(KAI.button({ label: 'Reset the view', onClick: function () { V.setView(-38, 22); } }));
+  ops3.appendChild(h('p', { class: 'note', style: { margin: 0 }, text: 'The same three rules hold as for rows: a swap flips the sign, adding a multiple of one column to another changes nothing, scaling a column scales the determinant.' }));
+
+  function drawBox(V) {
+    var A = st3.A, v = [0, 1, 2].map(function (j) { return [A[0][j], A[1][j], A[2][j]]; }), d = det3(A), i, k;
+    var mx = 2; v.forEach(function (q) { mx = Math.max(mx, Math.abs(q[0]), Math.abs(q[1]), Math.abs(q[2])); });
+    var sum = [v[0][0] + v[1][0] + v[2][0], v[0][1] + v[1][1] + v[2][1], v[0][2] + v[1][2] + v[2][2]];
+    mx = Math.max(mx, Math.abs(sum[0]), Math.abs(sum[1]), Math.abs(sum[2]));
+    V.setRange(Math.max(2, Math.ceil(mx + 0.3)));
+    V.axes();
+    function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+    var o = [0, 0, 0], v12 = add(v[0], v[1]), v13 = add(v[0], v[2]), v23 = add(v[1], v[2]), v123 = add(v12, v[2]);
+    /* unit cube, dashed, for comparison */
+    var U = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], u12 = [1, 1, 0], u13 = [1, 0, 1], u23 = [0, 1, 1], u123 = [1, 1, 1];
+    [[o, U[0]], [o, U[1]], [o, U[2]], [U[0], u12], [U[0], u13], [U[1], u12], [U[1], u23], [U[2], u13], [U[2], u23], [u12, u123], [u13, u123], [u23, u123]].forEach(function (e) {
+      V.line(e[0], e[1], { stroke: 'var(--axis)', 'stroke-width': 1, 'stroke-dasharray': '3 4', opacity: 0.8 });
+    });
+    var faces = [[o, v[0], v12, v[1]], [v[2], v13, v123, v23], [o, v[1], v23, v[2]], [v[0], v12, v123, v13], [o, v[0], v13, v[2]], [v[1], v12, v123, v23]];
+    faces.sort(function (a, b) { return V.depth(b) - V.depth(a); });
+    faces.forEach(function (f) { V.poly(f, { fill: sgnCol(d, 't'), stroke: sgnCol(d), 'stroke-width': 1.5, 'stroke-linejoin': 'round' }); });
+    var names = ['a₁', 'a₂', 'a₃'];
+    for (i = 0; i < 3; i++) { V.arrow(o, v[i], { stroke: cols[i], width: 3 }); V.text(v[i].map(function (x) { return x * 1.08; }), names[i], { class: 'lbl', 'text-anchor': 'middle', dy: -4, fill: cols[i] }); }
+    V.dot(o, 3.5, { fill: 'var(--ink)' });
+  }
+  V.onDraw(drawBox);
+
+  function readout3() {
+    var A = st3.A, d = det3(A), box = KAI.clear($('#readout3'));
+    box.appendChild(h('div', { class: 'eq' }, h('span', { class: 'v', text: 'A' }), ' = ', KAI.matEl(A, { class: 'big', cls: function (i, j) { return 'col' + j; }, name: 'A' })));
+    box.appendChild(h('p', { html: 'det <i>A</i> = <b class="' + sgnClass(d) + '">' + num(d) + '</b> &nbsp;= &nbsp;<i>a</i>₁ &middot; (<i>a</i>₂ &times; <i>a</i>₃)' }));
+    var msg, cls = '';
+    if (Math.abs(d) < 1e-9) { msg = 'The three columns lie in one plane (or a line), so the box is flat: volume 0 and det = 0. The map cannot be undone.'; cls = 'bad'; }
+    else if (d > 0) msg = 'Volume ' + num(Math.abs(d)) + ' (the unit cube has volume 1). The columns form a right-handed system: positive determinant.';
+    else msg = 'Volume ' + num(Math.abs(d)) + '. The columns form a left-handed system (the picture is mirrored): negative determinant.';
+    box.appendChild(h('p', { class: cls, text: msg }));
+    if (st3.note) box.appendChild(h('p', { class: 'note', html: 'Last step: ' + st3.note + '. det went from ' + num(st3.before) + ' to ' + num(d) + '.' }));
+    $('#plot3').setAttribute('aria-label', 'Box spanned by the columns of A. Determinant ' + num(d) + ', volume ' + num(Math.abs(d)) + '. Drag to turn it.');
+    if (tab === '3') KAI.live('Determinant ' + num(d) + ', volume ' + num(Math.abs(d)) + '.');
+  }
+  function sync3(src) {
+    var A = st3.A;
+    if (src !== 'input') [0, 1, 2].forEach(function (i) { [0, 1, 2].forEach(function (j) { if (document.activeElement !== inputs3[i][j]) inputs3[i][j].value = plain(A[i][j]); }); });
+    V.redraw(); readout3();
+  }
+
+  /* colour the 3x3 matrix columns in the readout */
+  var sty = document.createElement('style');
+  sty.textContent = '.mat .c.col0 { color: var(--blue); font-weight: 650; } .mat .c.col1 { color: var(--verm); font-weight: 650; } .mat .c.col2 { color: var(--green); font-weight: 650; }';
+  document.head.appendChild(sty);
+
+  sync2(); sync3();
+  window.FIG = { st2: st2, st3: st3, sync2: sync2, sync3: sync3, det3: det3, applyOp: applyOp };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gauss-Jordan elimination, step by step</title>
+<link rel="stylesheet" href="assets/kai.css">
+<style>
+  .exp { display: inline-block; font: 600 11px var(--font); letter-spacing: .04em; text-transform: uppercase; color: var(--orange); border: 1px solid var(--orange); border-radius: 999px; padding: 1px 8px; margin-left: 8px; vertical-align: middle; }
+  .board { padding: 14px 10px; overflow-x: auto; display: grid; justify-items: center; }
+  table.aug { border-collapse: separate; border-spacing: 0; font-family: var(--serif); font-size: var(--fs, 17px); position: relative; margin: 0 14px; }
+  table.aug::before, table.aug::after { content: ""; position: absolute; top: 0; bottom: 0; width: 8px; border: 2px solid var(--ink); }
+  table.aug::before { left: -10px; border-right: 0; } table.aug::after { right: -10px; border-left: 0; }
+  table.aug td { text-align: center; padding: 5px 9px; min-width: 2.7em; border-radius: 6px; font-variant-numeric: tabular-nums; }
+  table.aug td.sep { border-left: 2px solid var(--axis); border-radius: 0 6px 6px 0; }
+  table.aug td.rowa { background: var(--blue-t); }
+  table.aug td.piv { background: var(--orange-t); outline: 2px solid var(--orange); outline-offset: -2px; font-weight: 700; }
+  table.aug td.res { background: var(--green-t); font-weight: 650; }
+  table.aug td.zero { color: var(--muted); }
+  .fr { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.15; font-size: .82em; }
+  .fr > span:first-child { border-bottom: 1.4px solid currentColor; padding: 0 2px 1px; }
+  .fr > span:last-child { padding: 1px 2px 0; }
+  .sym { font: 600 15px var(--serif); color: var(--ink); }
+  .hdrs { display: flex; gap: 14px; justify-content: center; color: var(--muted); font: 12px var(--font); margin-bottom: 6px; }
+  .edit table { border-collapse: separate; border-spacing: 4px; }
+  .edit .numin { width: 4em; }
+  .edit .bcol { border-left: 2px solid var(--axis); padding-left: 6px; }
+  .big-msg { font-size: 14px; }
+</style>
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Gauss&ndash;Jordan elimination, step by step <span class="exp">experimental</span></h1>
+    <p>Row operations turn <span class="v">A</span> into the identity. Done to <span class="v">[ A | b ]</span> they solve <span class="v">A x = b</span>; done to <span class="v">[ A | I ]</span> they produce <span class="v">A</span><sup>&minus;1</sup>. All numbers are exact fractions.</p>
+  </header>
+
+  <div class="layout">
+    <div class="stack">
+      <div class="stage"><div class="board" id="board" role="group" aria-label="The augmented matrix"></div></div>
+      <div class="card readout" id="readout"></div>
+    </div>
+    <div class="side">
+      <div class="card stack" id="setup"></div>
+      <div class="card stack" id="player"></div>
+    </div>
+  </div>
+
+  <details class="try">
+    <summary>Try this</summary>
+    <ol>
+      <li>Choose <em>Find the inverse</em> and press Next until the end. Check the result by multiplying: the figure does it for you.</li>
+      <li>Choose the preset <em>Needs a row swap</em>. Why can the first step not be a division?</li>
+      <li>Choose <em>Singular</em>. Where does the elimination get stuck, and what does that say about det <span class="v">A</span>?</li>
+      <li>Switch to <em>Solve Ax = b</em> and choose <em>Singular</em> with the two different right-hand sides. One has no solution and one has infinitely many. How do you read that from the last rows?</li>
+      <li>Type your own matrix. Before pressing Next, predict which pivot comes first and which multiples will be subtracted.</li>
+    </ol>
+  </details>
+</main>
+
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  'use strict';
+  var h = KAI.h, $ = KAI.$, MINUS = '−';
+
+  /* ---------- exact fractions ---------- */
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a; }
+  function F(n, d) { if (d === undefined) d = 1; if (d < 0) { n = -n; d = -d; } var g = gcd(n, d) || 1; return { n: n / g, d: d / g }; }
+  function add(a, b) { return F(a.n * b.d + b.n * a.d, a.d * b.d); }
+  function sub(a, b) { return F(a.n * b.d - b.n * a.d, a.d * b.d); }
+  function mul(a, b) { return F(a.n * b.n, a.d * b.d); }
+  function div(a, b) { return F(a.n * b.d, a.d * b.n); }
+  function isZero(a) { return a.n === 0; }
+  function isOne(a) { return a.n === 1 && a.d === 1; }
+  function neg(a) { return F(-a.n, a.d); }
+  function fromNum(v) { v = Math.round(v * 100) / 100; return F(Math.round(v * 100), 100); }
+  function toNum(a) { return a.n / a.d; }
+  function fstr(a) { var s = a.d === 1 ? String(Math.abs(a.n)) : Math.abs(a.n) + '/' + a.d; return (a.n < 0 ? MINUS : '') + s; }
+  function fhtml(a) {
+    var sign = a.n < 0 ? MINUS : '';
+    if (a.d === 1) return sign + Math.abs(a.n);
+    return sign + '<span class="fr"><span>' + Math.abs(a.n) + '</span><span>' + a.d + '</span></span>';
+  }
+  function copy(M) { return M.map(function (r) { return r.slice(); }); }
+  function matMul(A, B) { return A.map(function (row, i) { return B[0].map(function (_, j) { var s = F(0); row.forEach(function (v, k) { s = add(s, mul(v, B[k][j])); }); return s; }); }); }
+
+  /* ---------- the elimination, recorded step by step ---------- */
+  function opText(r, f, p) { return 'R' + (r + 1) + ' ← R' + (r + 1) + (f.n < 0 ? ' + ' + fstr(neg(f)) : ' − ' + fstr(f)) + '·R' + (p + 1); }
+  function build(A, b, mode) {
+    var n = A.length, M = A.map(function (row, i) { return row.concat(mode === 'inv' ? A.map(function (_, j) { return F(i === j ? 1 : 0); }) : [b[i]]); });
+    var steps = [{ M: copy(M), sym: 'Start', text: mode === 'inv' ? 'Write <i>A</i> and the identity side by side: [ <i>A</i> | <i>I</i> ]. We will turn the left half into <i>I</i>; the right half then becomes <i>A</i><sup>−1</sup>.' : 'Write the system as the augmented matrix [ <i>A</i> | <b>b</b> ]. We will turn the left half into <i>I</i>; the right column then shows the solution.', hl: null }];
+    var row = 0, pivcols = [], swaps = 0, scale = F(1), c, r, j;
+    for (c = 0; c < n && row < n; c++) {
+      var pr = -1;
+      for (r = row; r < n; r++) if (!isZero(M[r][c])) { pr = r; break; }
+      if (pr < 0) { steps.push({ M: copy(M), sym: 'no pivot in column ' + (c + 1), text: 'Column ' + (c + 1) + ' has only zeros at and below row ' + (row + 1) + ', so there is <b>no pivot</b> here. We move on to the next column.', hl: { col: c, rowsFrom: row }, stuck: true }); continue; }
+      if (pr !== row) {
+        var t = M[row]; M[row] = M[pr]; M[pr] = t; swaps++;
+        steps.push({ M: copy(M), sym: 'R' + (row + 1) + ' ↔ R' + (pr + 1), text: 'The pivot position (row ' + (row + 1) + ', column ' + (c + 1) + ') holds 0, so it cannot be used. Swap row ' + (row + 1) + ' with row ' + (pr + 1) + ', which has a nonzero entry in this column.', hl: { rows: [row, pr], pivot: [row, c] } });
+      }
+      var p = M[row][c];
+      if (!isOne(p)) {
+        M[row] = M[row].map(function (x) { return div(x, p); }); scale = mul(scale, p);
+        steps.push({ M: copy(M), sym: 'R' + (row + 1) + ' ← (1/' + fstr(p) + ')·R' + (row + 1), text: 'Divide row ' + (row + 1) + ' by the pivot ' + fstr(p) + ' so that the pivot becomes 1.', hl: { rows: [row], pivot: [row, c] } });
+      }
+      for (r = 0; r < n; r++) {
+        if (r === row || isZero(M[r][c])) continue;
+        var f = M[r][c];
+        for (j = 0; j < M[r].length; j++) M[r][j] = sub(M[r][j], mul(f, M[row][j]));
+        steps.push({ M: copy(M), sym: opText(r, f, row), text: 'Make the entry in row ' + (r + 1) + ', column ' + (c + 1) + ' equal to 0: ' + (f.n < 0 ? 'add ' + fstr(neg(f)) : 'subtract ' + fstr(f)) + ' times row ' + (row + 1) + ' ' + (f.n < 0 ? 'to' : 'from') + ' row ' + (r + 1) + '.', hl: { rows: [r, row], pivot: [row, c] } });
+      }
+      pivcols.push(c); row++;
+    }
+    var rank = pivcols.length, det = rank === n ? mul(F(swaps % 2 ? -1 : 1), scale) : F(0);
+    var res = { mode: mode, n: n, rank: rank, pivcols: pivcols, det: det, M: copy(M) }, text, kind;
+    if (mode === 'inv') {
+      if (rank === n) { res.inv = M.map(function (rw) { return rw.slice(n); }); res.check = matMul(A, res.inv); kind = 'ok'; text = 'The left half is the identity, so the right half is <i>A</i><sup>−1</sup>. Check: <i>A</i> times it gives <i>I</i>. Also det <i>A</i> = ' + fhtml(det) + ' ≠ 0.'; }
+      else { kind = 'bad'; text = 'The elimination got stuck: there are only ' + rank + ' pivots for ' + n + ' rows, so the left half cannot become <i>I</i>. <b><i>A</i> is not invertible</b> (and det <i>A</i> = 0).'; }
+    } else {
+      var incons = false, i;
+      for (i = rank; i < n; i++) if (!isZero(M[i][n])) incons = true;
+      if (incons) { kind = 'bad'; res.type = 'none'; text = 'A row reads 0 = nonzero: the equations contradict each other. <b>No solution.</b> (rank <i>A</i> = ' + rank + ' < rank [ <i>A</i> | <b>b</b> ].)'; }
+      else if (rank === n) { kind = 'ok'; res.type = 'unique'; res.x = M.map(function (rw) { return rw[n]; }); text = '<b>Exactly one solution</b>: ' + res.x.map(function (v, k) { return '<i>x</i><sub>' + (k + 1) + '</sub> = ' + fhtml(v); }).join(', &nbsp;') + '. Also det <i>A</i> = ' + fhtml(det) + ' ≠ 0.'; }
+      else {
+        kind = 'warn'; res.type = 'many';
+        var free = []; for (i = 0; i < n; i++) if (pivcols.indexOf(i) < 0) free.push(i);
+        text = '<b>Infinitely many solutions.</b> Rank ' + rank + ' < ' + n + ' unknowns, so ' + free.map(function (k) { return '<i>x</i><sub>' + (k + 1) + '</sub>'; }).join(', ') + ' can be chosen freely, and the other unknowns follow from them. det <i>A</i> = 0.';
+      }
+    }
+    steps.push({ M: copy(M), sym: 'Result', text: text, hl: { result: true, kind: kind }, final: true });
+    return { steps: steps, res: res };
+  }
+
+  /* ---------- presets ---------- */
+  function Q(rows) { return rows.map(function (r) { return r.map(function (v) { return F(v); }); }); }
+  var PRES = {
+    2: [{ label: 'Example', A: [[2, 1], [5, 3]], b: [1, 2] }, { label: 'Needs a row swap', A: [[0, 1], [2, 3]], b: [4, 5] }, { label: 'Singular', A: [[1, 2], [2, 4]], b: [3, 6] }, { label: 'Singular, no solution', A: [[1, 2], [2, 4]], b: [3, 7] }],
+    3: [{ label: 'Example', A: [[1, 2, 3], [0, 1, 4], [5, 6, 0]], b: [1, 2, 3] }, { label: 'Needs a row swap', A: [[0, 2, 1], [1, 1, 1], [2, 1, 3]], b: [3, 4, 7] }, { label: 'Singular', A: [[1, 2, 3], [4, 5, 6], [7, 8, 9]], b: [6, 15, 24] }, { label: 'Singular, no solution', A: [[1, 2, 3], [4, 5, 6], [7, 8, 9]], b: [1, 2, 4] }],
+    4: [{ label: 'Example', A: [[1, 1, 1, 1], [1, 2, 3, 4], [1, 3, 6, 10], [1, 4, 10, 20]], b: [1, 2, 3, 4] }, { label: 'Needs a row swap', A: [[0, 1, 0, 2], [1, 0, 1, 1], [2, 1, 0, 0], [0, 0, 1, 3]], b: [1, 2, 3, 4] }, { label: 'Singular', A: [[1, 2, 3, 4], [2, 4, 6, 8], [1, 0, 1, 0], [0, 1, 0, 1]], b: [1, 2, 3, 4] }]
+  };
+
+  /* ---------- state ---------- */
+  var S = { mode: 'solve', n: 3, A: [], b: [], step: 0, playing: false, built: null };
+  var timer = null;
+  function loadPreset(i) { var q = PRES[S.n][i]; S.A = q.A.map(function (r) { return r.map(function (v) { return F(v); }); }); S.b = q.b.map(function (v) { return F(v); }); }
+  loadPreset(0);
+
+  /* ---------- setup controls ---------- */
+  var setup = $('#setup'), edit = h('div', { class: 'edit' }), presetBox = h('div', { class: 'row' });
+  var modeSeg = KAI.seg({ legend: 'What to compute', name: 'mode', value: S.mode, options: [{ value: 'solve', label: 'Solve <i>A x</i> = <b>b</b>' }, { value: 'inv', label: 'Find <i>A</i><sup>−1</sup>' }], onChange: function (v) { S.mode = v; rebuild(); } });
+  var sizeSeg = KAI.seg({ legend: 'Size', name: 'size', value: '3', options: [{ value: '2', label: '2 × 2' }, { value: '3', label: '3 × 3' }, { value: '4', label: '4 × 4' }], onChange: function (v) { S.n = +v; loadPreset(0); buildEditor(); rebuild(); } });
+  setup.append(modeSeg.el, sizeSeg.el, h('div', { class: 'stack', style: { gap: '4px' } }, h('span', { class: 'note', text: 'Examples' }), presetBox), h('div', { class: 'stack', style: { gap: '4px' } }, h('span', { class: 'note', text: 'Type your own numbers' }), edit));
+
+  function buildPresets() {
+    KAI.clear(presetBox);
+    PRES[S.n].forEach(function (q, i) { presetBox.appendChild(KAI.button({ label: q.label, onClick: function () { loadPreset(i); fillEditor(); rebuild(); } })); });
+  }
+  var inA = [], inB = [];
+  function buildEditor() {
+    KAI.clear(edit); inA = []; inB = [];
+    var tb = h('table'); edit.appendChild(tb);
+    for (var i = 0; i < S.n; i++) {
+      var tr = h('tr'); inA.push([]);
+      for (var j = 0; j < S.n; j++) {
+        (function (i, j) {
+          var inp = KAI.numin({ value: 0, step: 1, aria: 'A, row ' + (i + 1) + ', column ' + (j + 1), onInput: function (v) { S.A[i][j] = fromNum(v); rebuild(); } });
+          inA[i][j] = inp; tr.appendChild(h('td', null, inp));
+        })(i, j);
+      }
+      var ib = KAI.numin({ value: 0, step: 1, aria: 'b, row ' + (i + 1), onInput: function (v) { S.b[i] = fromNum(v); rebuild(); } });
+      inB.push(ib); var tdb = h('td', { class: 'bcol' }, ib); tdb.dataset.b = '1'; tr.appendChild(tdb);
+      tb.appendChild(tr);
+    }
+    buildPresets(); fillEditor();
+  }
+  function fillEditor() {
+    for (var i = 0; i < S.n; i++) {
+      for (var j = 0; j < S.n; j++) if (document.activeElement !== inA[i][j]) inA[i][j].value = toNum(S.A[i][j]);
+      if (document.activeElement !== inB[i]) inB[i].value = toNum(S.b[i]);
+    }
+  }
+  function showB() { edit.querySelectorAll('td[data-b]').forEach(function (td) { td.style.display = S.mode === 'solve' ? '' : 'none'; }); }
+
+  /* ---------- player ---------- */
+  var player = $('#player');
+  var backBtn = KAI.button({ label: '&#9664; Back', onClick: function () { stop(); go(S.step - 1); } });
+  var nextBtn = KAI.button({ label: 'Next &#9654;', kind: 'primary', onClick: function () { stop(); go(S.step + 1); } });
+  var playBtn = KAI.button({ label: '&#9654; Play', onClick: function () { if (S.playing) stop(); else { if (S.step >= total() - 1) S.step = 0; play(); } } });
+  var restartBtn = KAI.button({ label: '&#8634; Restart', onClick: function () { stop(); go(0); } });
+  var endBtn = KAI.button({ label: 'Jump to the end', onClick: function () { stop(); go(total() - 1); } });
+  var scrub = KAI.slider({ label: 'Step', min: 0, max: 1, step: 1, value: 0, digits: 0, format: function (v) { return v + ' / ' + (total() - 1); }, onInput: function (v) { stop(); go(v); } });
+  player.append(h('div', { class: 'row' }, backBtn, nextBtn, playBtn), h('div', { class: 'row' }, restartBtn, endBtn), scrub.el);
+  function total() { return S.built ? S.built.steps.length : 1; }
+  function stop() { S.playing = false; clearTimeout(timer); playBtn.innerHTML = '&#9654; Play'; }
+  function play() { S.playing = true; playBtn.innerHTML = '&#10074;&#10074; Pause'; timer = setTimeout(tick, 1100); }
+  function tick() { if (!S.playing) return; if (S.step >= total() - 1) { stop(); return; } go(S.step + 1); if (S.step >= total() - 1) stop(); else timer = setTimeout(tick, 1100); }
+  function go(k) { S.step = KAI.clamp(k, 0, total() - 1); render(); }
+
+  /* ---------- drawing ---------- */
+  function render() {
+    var st = S.built.steps[S.step], M = st.M, n = S.n, w = M[0].length, hl = st.hl || {};
+    var board = KAI.clear($('#board'));
+    board.style.setProperty('--fs', w >= 8 ? '14px' : w >= 6 ? '16px' : '18px');
+    var tb = h('table', { class: 'aug', role: 'table', 'aria-label': 'Augmented matrix after step ' + S.step });
+    var rowsHl = hl.rows || [];
+    M.forEach(function (row, i) {
+      var tr = h('tr');
+      row.forEach(function (v, j) {
+        var cls = [];
+        if (j === n) cls.push('sep');
+        if (hl.result && j >= n && ((S.mode === 'inv' && S.built.res.rank === n) || (S.mode === 'solve' && S.built.res.type === 'unique'))) cls.push('res');
+        else if (rowsHl.indexOf(i) >= 0) cls.push('rowa');
+        if (hl.pivot && hl.pivot[0] === i && hl.pivot[1] === j) cls.push('piv');
+        if (hl.col !== undefined && hl.col === j && i >= (hl.rowsFrom || 0) && j < n) cls.push('piv');
+        if (isZero(v)) cls.push('zero');
+        tr.appendChild(h('td', { class: cls.join(' '), html: fhtml(v) }));
+      });
+      tb.appendChild(tr);
+    });
+    var hd = h('div', { class: 'hdrs' }, h('span', { html: '<i>A</i> is being turned into <i>I</i>' }), h('span', { text: '|' }), h('span', { html: S.mode === 'inv' ? '<i>I</i> becomes <i>A</i><sup>−1</sup>' : '<b>b</b> becomes the solution' }));
+    board.append(hd, tb);
+
+    var rd = KAI.clear($('#readout'));
+    rd.appendChild(h('div', { class: 'row' }, h('span', { class: 'sym', text: S.step === 0 ? 'Step 0' : st.final ? 'Done' : 'Step ' + S.step }), h('span', { class: 'sym', style: { color: 'var(--orange)' }, text: st.final ? '' : (S.step === 0 ? '' : st.sym) })));
+    rd.appendChild(h('p', { class: 'big-msg ' + (st.final ? (hl.kind === 'ok' ? 'ok' : hl.kind === 'bad' ? 'bad' : '') : ''), html: st.text }));
+    if (st.final) {
+      var res = S.built.res;
+      if (S.mode === 'inv' && res.inv) {
+        rd.appendChild(h('div', { class: 'eq' }, h('span', { html: '<i>A</i><sup>−1</sup> = ' }), KAI.matEl(res.inv.map(function (r) { return r.map(toNum); }), { class: 'big', text: function (i, j) { return fstr(res.inv[i][j]); }, name: 'A inverse' })));
+        rd.appendChild(h('p', { class: 'note', text: 'Check: A times A⁻¹ = I is ' + (res.check.every(function (r, i) { return r.every(function (v, j) { return v.n === (i === j ? 1 : 0) && v.d === 1; }); }) ? 'true' : 'false') + ' (computed with exact fractions).' }));
+      }
+      if (S.mode === 'solve' && res.type === 'many') {
+        var free = [], i, j, eqs = [];
+        for (i = 0; i < res.n; i++) if (res.pivcols.indexOf(i) < 0) free.push(i);
+        res.pivcols.forEach(function (pc, r) {
+          var s = '<i>x</i><sub>' + (pc + 1) + '</sub> = ' + fhtml(res.M[r][res.n]);
+          free.forEach(function (fc) { var c = res.M[r][fc]; if (!isZero(c)) s += (c.n > 0 ? ' − ' : ' + ') + (Math.abs(c.n) === 1 && c.d === 1 ? '' : fhtml(F(Math.abs(c.n), c.d))) + '<i>x</i><sub>' + (fc + 1) + '</sub>'; });
+          eqs.push(s);
+        });
+        rd.appendChild(h('p', { class: 'num', html: eqs.join('<br>') + '<br>' + free.map(function (k) { return '<i>x</i><sub>' + (k + 1) + '</sub> free'; }).join(', ') }));
+      }
+      if (S.mode === 'inv' && !res.inv) rd.appendChild(h('p', { class: 'note', text: 'Compare with Chapter 2: a matrix is invertible exactly when its determinant is not 0.' }));
+    }
+    backBtn.disabled = S.step === 0; nextBtn.disabled = S.step >= total() - 1;
+    scrub.limits(0, total() - 1); scrub.set(S.step);
+    KAI.live(st.text.replace(/<[^>]+>/g, ''));
+  }
+
+  function rebuild() {
+    stop();
+    S.built = build(S.A, S.b, S.mode);
+    S.step = 0; showB(); render();
+  }
+
+  buildEditor(); rebuild();
+  window.FIG = { S: S, build: build, F: F, toNum: toNum, go: go, rebuild: rebuild, total: total, loadPreset: loadPreset, fillEditor: fillEditor };
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

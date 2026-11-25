@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Interactive figures: Matrix Algebra</title>
+<title>Interactive figures: Linear Algebra</title>
 <link rel="stylesheet" href="assets/kai.css">
 <style>
   .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; margin-top: 14px; }
@@ -25,8 +25,8 @@
 <body>
 <main class="fig" style="max-width:1100px">
   <header class="fig-head">
-    <h1 style="font-size:22px">Interactive figures: Chapter 1, Matrix Algebra</h1>
-    <p class="top">Nine small pages, each one idea. Every figure is a single HTML file that works offline, on a phone, and in light or dark mode. Drag the round handles, use the sliders, or press the arrow keys when a handle is focused.</p>
+    <h1 style="font-size:22px">Interactive figures: Matrix Algebra, determinants and systems</h1>
+    <p class="top">Thirteen small pages, each one idea (the last four, on determinants, inverses and systems, are experimental). Every figure is a single HTML file that works offline, on a phone, and in light or dark mode. Drag the round handles, use the sliders, or press the arrow keys when a handle is focused.</p>
   </header>
   <div class="gal" id="gal"></div>
 </main>
@@ -43,7 +43,11 @@
     ['symmetric-skew', 'Symmetric + skew split', 'Edit A and see S and K appear, with mirror entries highlighted; for 2×2 also x, Sx, Kx and Ax.', 'Why is Kx always perpendicular to x?', '§ Special Types of Square Matrices, after the theorem box', 820],
     ['truss', 'Forces in a truss', 'Drag the top joint; compression and tension update from E f = p. Watch det E fall for flat trusses.', 'Make the truss flat. What happens to the forces?', '§ Statics: Forces in a Truss', 760],
     ['springs', 'Masses and springs', 'K x = F made visible: forces push the masses, springs hold them, the stiffness matrix is built live.', 'Check x = (0.1, 0.2) m in the text example.', '§ Mechanics: Coupled Springs', 900],
-    ['robot-arm', 'Two-link robot arm', 'Joint angles in, tip position out through rotation matrices. Drag the elbow or the tip.', 'Compare with the exercise L₁ = 2, L₂ = 1, 60°, −30°.', '§ Rotations and Robot Arms', 760]
+    ['robot-arm', 'Two-link robot arm', 'Joint angles in, tip position out through rotation matrices. Drag the elbow or the tip.', 'Compare with the exercise L₁ = 2, L₂ = 1, 60°, −30°.', '§ Rotations and Robot Arms', 760],
+    ['determinant', 'Determinant as area and volume', 'Drag the columns of a 2×2 matrix and see the parallelogram; apply row operations and watch det change by the right factor. A 3×3 tab shows the box you can turn.', 'Apply "R2 ← R2 + k·R1". Why does the area not change, and what does a swap do?', '§ Determinants (area, volume, row operations)'],
+    ['gauss-jordan', 'Gauss\u2013Jordan, step by step', 'Row reduction with exact fractions on 2×2, 3×3 or 4×4 systems, forward and back, to solve Ax = b or to find A⁻¹.', 'Choose "Singular". Where does the elimination stop, and what does it tell you?', '§ Inverses; § Gaussian elimination'],
+    ['linear-systems', 'Lines, planes and solutions', 'Each equation is a line or plane. Row picture and column picture side by side, with a rank test: one solution, none, or infinitely many.', 'Choose "Triangular prism". Every two planes meet, yet there is no solution. Why?', '§ Systems of Linear Equations'],
+    ['curve-fit', 'Curve through points (Vandermonde)', 'Drag up to six points. The interpolating polynomial comes from a square system whose determinant is a product of differences.', 'Drag two points to the same x. What happens to det V and to the curve on the way?', '§ Determinants (Vandermonde matrix)']
   ];
   var g = document.getElementById('gal');
   F.forEach(function (f, i) {

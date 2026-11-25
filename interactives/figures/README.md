@@ -1,6 +1,6 @@
-# Interactive figures for Chapter 1 (Matrix Algebra)
+# Interactive figures: Matrix Algebra, determinants and systems
 
-Nine self-contained HTML figures plus a gallery page. No build step, no dependencies, no internet needed.
+Thirteen self-contained HTML figures (the last four are experimental) plus a gallery page. No build step, no dependencies, no internet needed.
 Everything works from `file://`, from GitHub Pages, and inside an `<iframe>`.
 
 ```
@@ -9,6 +9,9 @@ figures/
   transformations.html  composition.html   cancellation.html
   matrix-product.html   matrix-image.html  symmetric-skew.html
   truss.html            springs.html       robot-arm.html
+  determinant.html      gauss-jordan.html  (new, experimental)
+  linear-systems.html   curve-fit.html     (new, experimental)
+  assets/kai3d.js       small rotatable 3D view (used by determinant and linear-systems)
   assets/kai.css        shared theme (colours, controls, light and dark)
   assets/kai.js         shared helpers (SVG plane, draggable handles, sliders, matrices)
   assets/kai-host.js    include on the page that embeds figures; sizes the iframes
@@ -72,6 +75,10 @@ paste the iframe snippet from section 2 into the generated page by hand.
 | 7 | `truss` | "Statics: Forces in a Truss", after the example box | 760 |
 | 8 | `springs` | "Mechanics: Coupled Springs", after the three-equal-springs example | 900 |
 | 9 | `robot-arm` | "Rotations and Robot Arms", after the worked tip position | 760 |
+| 10 | `determinant` (experimental) | the determinant section, after the area/volume discussion and the row-operation rules | 800 |
+| 11 | `gauss-jordan` (experimental) | the inverse section, after the worked Gauss-Jordan example | 920 |
+| 12 | `linear-systems` (experimental) | "Systems of Linear Equations", after the solution-types discussion (rank test) | 900 |
+| 13 | `curve-fit` (experimental) | the Vandermonde determinant example | 800 |
 
 ## 4. What each figure checks against the book
 
