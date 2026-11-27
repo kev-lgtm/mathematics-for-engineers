@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One family of curves: eccentricity and the focus–directrix property</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>One family of curves: eccentricity and the focus–directrix property</h1><p>Every conic is the set of points whose distance to a focus is <span class="v">e</span> times the distance to a line (the directrix). Change <span class="v">e</span> to move between circle, ellipse, parabola and hyperbola; move <span class="v">P</span> along the curve.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-10,10],y:[-8,8]});
+var se=KAI.slider({label:'eccentricity <i>e</i>',min:0,max:2.5,step:0.05,value:0.5,digits:2,onInput:function(){draw();}}),sp=KAI.slider({label:'parameter <i>p</i>',min:0.5,max:3,step:0.5,value:1.5,digits:1,onInput:function(){draw();}}),st=KAI.slider({label:'position of <i>P</i> (angle θ)',min:-180,max:180,step:1,value:60,digits:0,unit:'°',onInput:function(){draw();}});
+KAI.$('#ctl').append(se.el,sp.el,st.el);P.onResize(draw);
+function run(e,p,sgn){var runs=[],cur=[];for(var k=-3140;k<=3140;k+=5){var th=k/1000,den=1+e*Math.cos(th);if(sgn*den>0.04){var r=p/den;if(Math.abs(r)<30){cur.push([r*Math.cos(th),r*Math.sin(th)]);continue;}}if(cur.length>1)runs.push(cur);cur=[];}if(cur.length>1)runs.push(cur);return runs;}
+function draw(){var e=se.get(),p=sp.get(),c=KAI.clear(P.content),th=KAI.rad(st.get()),type=e<1e-9?'circle':e<0.999999?'ellipse':e<1.000001?'parabola':'hyperbola';
+if(e>1.000001){var lim=Math.acos(-1/e)*0.97;th=KAI.clamp(th,-lim,lim);}
+run(e,p,1).forEach(function(r){P.polyline(c,r,{stroke:'var(--blue)','stroke-width':2.8});});
+if(e>1.000001)run(e,p,-1).forEach(function(r){P.polyline(c,r,{stroke:'var(--blue)','stroke-width':2.2,'stroke-dasharray':'6 4'});});
+if(e>1e-9)P.line(c,[p/e,-30],[p/e,30],{stroke:'var(--verm)','stroke-dasharray':'6 4','stroke-width':1.6});
+P.dot(c,[0,0],6,{fill:'var(--ink)'});P.text(c,[0.2,0.35],'F');
+var rows=[['type','<b>'+type+'</b>'],['e',fmt(e,2)]];
+if(e>1e-9&&Math.abs(e-1)>1e-6){var a=p/Math.abs(1-e*e),cc=e*a,F2=e<1?[-2*cc,0]:[2*cc,0];P.dot(c,F2,5,{fill:'var(--ink)'});P.text(c,[F2[0]+0.2,0.35],"F′");rows.push(['semi-axis a',fmt(a,2)],['c = e·a',fmt(cc,2)]);}
+var r=p/(1+e*Math.cos(th)),Pt=[r*Math.cos(th),r*Math.sin(th)];P.dot(c,Pt,6,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.text(c,[Pt[0]+0.2,Pt[1]+0.4],'P',{fill:'var(--orange)'});
+P.line(c,[0,0],Pt,{stroke:'var(--blue)','stroke-width':2});
+if(e>1e-9){var D=[p/e,Pt[1]];P.line(c,Pt,D,{stroke:'var(--verm)','stroke-width':2});var pf=Math.hypot(Pt[0],Pt[1]),pd=Math.abs(p/e-Pt[0]);rows.push(['<span class="blue">|PF|</span>',fmt(pf,3)],['<span class="verm">|PD| to directrix</span>',fmt(pd,3)],['|PF| / |PD|',fmt(pf/pd,3)]);}
+else rows.push(['|PF|',fmt(r,3)]);
+out(rows,e<1e-9?'e = 0: a circle of radius p; the directrix has moved infinitely far away.':'|PF| / |PD| = e for every point of the curve. With e = 1 the far end of the ellipse has run off to infinity: a parabola.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

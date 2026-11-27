@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slicing a cube or a tetrahedron with a plane</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Slicing a cube or a tetrahedron with a plane</h1><p>Choose a solid and set the plane <span class="v">ax + by + cz = k</span>; rotate by dragging. The orange cross-section is a polygon with 3 to 6 sides, depending on how the plane cuts the edges.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A solid cut by a plane with the polygonal cross-section'});
+var cv=[];for(var i=0;i<8;i++)cv.push([i&1?2:-2,i&2?2:-2,i&4?2:-2]);
+var SOL={cube:{V:cv,F:[[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]]},tet:{V:[[2,2,2],[2,-2,-2],[-2,2,-2],[-2,-2,2]],F:[[0,1,2],[0,1,3],[0,2,3],[1,2,3]]}},cur='cube';
+var sg=KAI.seg({legend:'Solid',value:'cube',options:[{value:'cube',label:'Cube'},{value:'tet',label:'Tetrahedron'}],onChange:function(k){cur=k;S.refresh();}});
+var sl=['a','b','c'].map(function(n){return KAI.slider({label:n,min:-3,max:3,step:1,value:1,digits:0,onInput:function(){S.refresh();}});}),sk=KAI.slider({label:'k',min:-6,max:6,step:0.25,value:0,digits:2,onInput:function(){S.refresh();}});
+function pre(a,b,c,k){return function(){sl[0].set(a);sl[1].set(b);sl[2].set(c);sk.set(k);S.refresh();};}
+KAI.$('#ctl').append(sg.el,sl[0].el,sl[1].el,sl[2].el,sk.el,KAI.button({label:'Triangle',onClick:pre(1,1,1,5)}),KAI.button({label:'Square',onClick:pre(0,0,1,0.5)}),KAI.button({label:'Pentagon',onClick:pre(1,2,3,1)}),KAI.button({label:'Hexagon',onClick:pre(1,1,1,0)}));
+S.onDraw(function(S){var V=SOL[cur].V,F=SOL[cur].F,n=sl.map(function(x){return x.get();}),k=sk.get(),N=nm(n);S.grid(4);S.axes(4.3);
+F.forEach(function(f){S.poly(f.map(function(i){return V[i];}),{fill:'var(--sky-t)',stroke:'var(--blue)','stroke-width':1.3});});
+if(N<1e-9){out([],'Set at least one of a, b, c to a nonzero value.');return;}
+var seen={},E=[];F.forEach(function(f){for(var i=0;i<f.length;i++){var a=f[i],b=f[(i+1)%f.length],key=Math.min(a,b)+'-'+Math.max(a,b);if(!seen[key]){seen[key]=1;E.push([a,b]);}}});
+var fv=V.map(function(v){return dt(n,v)-k;}),pts=[];function add(p){if(!pts.some(function(q){return nm([q[0]-p[0],q[1]-p[1],q[2]-p[2]])<1e-6;}))pts.push(p);}
+E.forEach(function(e){var f1=fv[e[0]],f2=fv[e[1]];if(f1*f2<-1e-12){var t=f1/(f1-f2);add(ad(V[e[0]],sc(t,[V[e[1]][0]-V[e[0]][0],V[e[1]][1]-V[e[0]][1],V[e[1]][2]-V[e[0]][2]])));}});
+V.forEach(function(v,i){if(Math.abs(fv[i])<1e-9)add(v);});
+if(pts.length<3){out([['cross-section','none']],pts.length?'The plane only touches the solid at a vertex or along an edge.':'The plane misses the solid.');return;}
+var cen=sc(1/pts.length,pts.reduce(ad)),nh=sc(1/N,n),t0=Math.abs(nh[0])<0.9?[1,0,0]:[0,1,0],e1=sc(1/nm(cr(nh,t0)),cr(nh,t0)),e2=cr(nh,e1);
+pts.sort(function(p,q){var a=[p[0]-cen[0],p[1]-cen[1],p[2]-cen[2]],b=[q[0]-cen[0],q[1]-cen[1],q[2]-cen[2]];return Math.atan2(dt(a,e2),dt(a,e1))-Math.atan2(dt(b,e2),dt(b,e1));});
+S.poly(pts,{fill:'var(--orange-t)',stroke:'var(--verm)','stroke-width':3.2});pts.forEach(function(p){S.dot(p,4,{fill:'var(--verm)'});});
+var s=[0,0,0];for(var i=0;i<pts.length;i++){var A=pts[i],B=pts[(i+1)%pts.length];s=ad(s,cr([A[0]-cen[0],A[1]-cen[1],A[2]-cen[2]],[B[0]-cen[0],B[1]-cen[1],B[2]-cen[2]]));}
+var nmz={3:'triangle',4:'quadrilateral',5:'pentagon',6:'hexagon'};
+out([['cross-section','<b>'+(nmz[pts.length]||pts.length+'-gon')+'</b> ('+pts.length+' vertices)'],['area',fmt(nm(s)/2,3)],['edges cut',String(pts.length)+' (one vertex per cut edge)']],'The section has one vertex wherever the plane crosses an edge, so a tetrahedron (6 edges) gives at most 4 sides and a cube (12 edges, 6 faces) at most 6.');});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

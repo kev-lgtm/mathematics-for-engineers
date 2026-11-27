@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Triangulation: two noisy bearings in space</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Triangulation: two noisy bearings in space</h1><p>Two observers look at a target and measure its direction. With perfect measurements the two rays meet at the target. A small angular error makes them <i>skew</i>; the midpoint of their common perpendicular is the best estimate.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'Two observers, two slightly skew sight lines, and the midpoint estimate of the target'});
+function S_(l,mn,mx,v,st,u){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:1,unit:u,onInput:function(){S.refresh();}});}
+var tx=S_('target x',-2,2,0.5,0.5),ty=S_('target y',-1,3,1,0.5),tz=S_('target z',0.5,3,2,0.5),e1=S_('error of observer 1',-10,10,4,0.5,'°'),e2=S_('error of observer 2',-10,10,-4,0.5,'°');
+KAI.$('#ctl').append(tx.el,ty.el,tz.el,e1.el,e2.el);
+var C1=[-3,-2,0],C2=[3,-2,0];
+function bearing(C,T,e){var d=sc(1/nm([T[0]-C[0],T[1]-C[1],T[2]-C[2]]),[T[0]-C[0],T[1]-C[1],T[2]-C[2]]),k=[0,0,1],v=ad(k,sc(-dt(k,d),d));v=sc(1/nm(v),v);var q=ad(d,sc(Math.tan(KAI.rad(e)),v));return sc(1/nm(q),q);}
+S.onDraw(function(S){var T=[tx.get(),ty.get(),tz.get()],d1=bearing(C1,T,e1.get()),d2=bearing(C2,T,e2.get());S.grid(4);S.axes(4.3);
+[[C1,d1,'var(--blue)','O₁'],[C2,d2,'var(--verm)','O₂']].forEach(function(o){var L=1.5*nm([T[0]-o[0][0],T[1]-o[0][1],T[2]-o[0][2]]);S.line(o[0],ad(o[0],sc(L,o[1])),{stroke:o[2],'stroke-width':2.6});S.dot(o[0],6,{fill:o[2]});S.text(o[0],o[3],{fill:o[2]});});
+S.dot(T,7,{fill:'var(--ink)',stroke:'var(--bg)','stroke-width':2});S.text(T,'target');
+var n=cr(d1,d2),nn=nm(n),w=[C2[0]-C1[0],C2[1]-C1[1],C2[2]-C1[2]];
+if(nn<1e-6){out([],'The two sight lines are parallel: they never meet, so there is no estimate.');return;}
+var m=nn*nn,t=dt(cr(w,d2),n)/m,s=dt(cr(w,d1),n)/m,A=ad(C1,sc(t,d1)),Bp=ad(C2,sc(s,d2)),M=sc(0.5,ad(A,Bp)),gap=nm([A[0]-Bp[0],A[1]-Bp[1],A[2]-Bp[2]]),err=nm([M[0]-T[0],M[1]-T[1],M[2]-T[2]]);
+S.line(A,Bp,{stroke:'var(--verm)','stroke-width':3.4,'stroke-dasharray':'4 3'});S.dot(M,6,{fill:'var(--green)',stroke:'var(--bg)','stroke-width':2});S.text(M,'estimate',{fill:'var(--green)'});
+out([['gap between the rays |AB|',fmt(gap,3)],['<span class="green">estimate M</span>',tri(M)],['true target',tri(T)],['<b>position error |MT|</b>',fmt(err,3)]],gap<1e-6?'The rays meet in a single point: the estimate is the target.':'The rays are skew; A and B are their closest points, and the midpoint M of the common perpendicular AB is the estimate. A longer baseline between the observers makes the error smaller.');});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

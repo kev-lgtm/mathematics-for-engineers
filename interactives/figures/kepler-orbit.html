@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A planet on an ellipse: Kepler's laws</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A planet on an ellipse: Kepler's laws</h1><p>The Sun sits at a focus. Move time with the slider (or press Play). In equal times the planet sweeps equal areas, so it moves fastest at the closest point. Change <span class="v">e</span> to flatten the orbit.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-11,7],y:[-6,6]}),a=5,timer=null;
+var se=KAI.slider({label:'eccentricity <i>e</i>',min:0,max:0.9,step:0.05,value:0.6,digits:2,onInput:function(){draw();}}),sm=KAI.slider({label:'time (fraction of the period)',min:0,max:1,step:0.005,value:0.1,digits:3,onInput:function(){draw();}}),sd=KAI.slider({label:'time interval Δt',min:0.02,max:0.2,step:0.01,value:0.08,digits:2,onInput:function(){draw();}});
+var pl=KAI.button({label:'Play',onClick:function(){if(timer){clearInterval(timer);timer=null;pl.textContent='Play';}else{timer=setInterval(function(){sm.set((sm.get()+0.004)%1);draw();},40);pl.textContent='Pause';}}});
+KAI.$('#ctl').append(sm.el,sd.el,se.el,pl);P.onResize(draw);
+function pos(f,e){var M=2*Math.PI*f,E=M,b=a*Math.sqrt(1-e*e);for(var i=0;i<8;i++)E-=(E-e*Math.sin(E)-M)/(1-e*Math.cos(E));return [a*(Math.cos(E)-e),b*Math.sin(E)];}
+function sector(f1,f2,e){var pts=[[0,0]],n=24;for(var i=0;i<=n;i++)pts.push(pos(f1+(f2-f1)*i/n,e));var A=0;for(var i=0;i<pts.length;i++){var u=pts[i],v=pts[(i+1)%pts.length];A+=u[0]*v[1]-v[0]*u[1];}return {pts:pts,area:Math.abs(A)/2};}
+function draw(){var e=se.get(),f=sm.get(),d=sd.get(),c=KAI.clear(P.content),orb=[];for(var i=0;i<=200;i++)orb.push(pos(i/200,e));P.polyline(c,orb,{stroke:'var(--blue)','stroke-width':2.4});
+var s1=sector(f-d,f,e),s2=sector(0.5-d/2,0.5+d/2,e);P.poly(c,s2.pts,{fill:'var(--sky-t)',stroke:'var(--blue)','stroke-width':1.2});P.poly(c,s1.pts,{fill:'var(--orange-t)',stroke:'var(--orange)','stroke-width':1.4});
+var Pt=pos(f,e),r=Math.hypot(Pt[0],Pt[1]),v=Math.sqrt(Math.max(0,2/r-1/a)),vp=Math.sqrt((1+e)/(a*(1-e))),va=Math.sqrt((1-e)/(a*(1+e)));
+P.dot(c,[0,0],9,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.text(c,[0.3,0.5],'Sun');P.dot(c,Pt,7,{fill:'var(--ink)',stroke:'var(--bg)','stroke-width':2});
+out([['distance to Sun',fmt(r,2)+'  (min '+fmt(a*(1-e),2)+', max '+fmt(a*(1+e),2)+')'],['speed (relative)',fmt(v,3)],['<span class="verm">area swept just now</span>',fmt(s1.area,3)],['<span class="blue">area swept at the far end</span>',fmt(s2.area,3)],['speed ratio fastest : slowest',fmt(vp/va,2)]],'Equal intervals Δt give equal areas (orange = blue), wherever the planet is. The shaded wedges are long and thin at the far end and short and fat near the Sun. Speed uses units with GM = 1.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

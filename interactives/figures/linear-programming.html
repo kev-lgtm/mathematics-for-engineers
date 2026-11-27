@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear programming: feasible region and the optimal vertex</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Linear programming: feasible region and the optimal vertex</h1><p>Maximise <span class="v">z = c₁x + c₂y</span> subject to <span class="v">x + y ≤ b₁</span>, <span class="v">x + 3y ≤ b₂</span>, <span class="v">x ≤ b₃</span> and <span class="v">x, y ≥ 0</span>. Slide the orange level line outwards: the last point it touches is the optimum, always a vertex.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-1,9],y:[-1,7]});
+function S_(l,mn,mx,v,st){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:2,onInput:function(){draw();}});}
+var s1=S_('b₁ (x + y ≤ b₁)',1,8,4,0.5),s2=S_('b₂ (x + 3y ≤ b₂)',1,12,6,0.5),s3=S_('b₃ (x ≤ b₃)',0.5,6,3.5,0.5),c1=S_('c₁',0,5,3,0.5),c2=S_('c₂',0,5,2,0.5),sk=S_('objective level z = k',0,30,6,0.25);
+var snap=KAI.button({label:'Slide the level line to the optimum',onClick:function(){var q=solve();if(q&&q.z!==null){sk.set(q.z);draw();}}});
+KAI.$('#ctl').append(sk.el,c1.el,c2.el,s1.el,s2.el,s3.el,snap);P.onResize(draw);
+function clip(poly,a,b,d){var res=[];for(var i=0;i<poly.length;i++){var p=poly[i],q=poly[(i+1)%poly.length],fp=a*p[0]+b*p[1]-d,fq=a*q[0]+b*q[1]-d;if(fp<=1e-9)res.push(p);if((fp<-1e-9&&fq>1e-9)||(fp>1e-9&&fq<-1e-9)){var t=fp/(fp-fq);res.push([p[0]+t*(q[0]-p[0]),p[1]+t*(q[1]-p[1])]);}}return res;}
+function solve(){var poly=[[0,0],[30,0],[30,30],[0,30]];[[1,1,s1.get()],[1,3,s2.get()],[1,0,s3.get()]].forEach(function(k){poly=clip(poly,k[0],k[1],k[2]);});
+var C1=c1.get(),C2=c2.get(),best=null,bv=null;poly.forEach(function(v){var z=C1*v[0]+C2*v[1];if(best===null||z>best+1e-9){best=z;bv=v;}});return {poly:poly,z:best,v:bv,C1:C1,C2:C2};}
+function lineAt(c,a,b,d,at){if(Math.abs(b)>1e-9)P.line(c,[-2,(d+2*a)/b],[12,(d-12*a)/b],at);else P.line(c,[d/a,-2],[d/a,9],at);}
+function draw(){var q=solve(),c=KAI.clear(P.content);
+if(q.poly.length<3){out([],'The constraints leave no feasible region.');return;}
+P.poly(c,q.poly,{fill:'var(--sky-t)',stroke:'none'});
+lineAt(c,1,1,s1.get(),{stroke:'var(--blue)','stroke-width':2});lineAt(c,1,3,s2.get(),{stroke:'var(--verm)','stroke-width':2});lineAt(c,1,0,s3.get(),{stroke:'var(--green)','stroke-width':2});
+var k=sk.get(),touch=false;if(q.C1||q.C2){var zs=q.poly.map(function(v){return q.C1*v[0]+q.C2*v[1];});touch=k>=Math.min.apply(null,zs)-1e-9&&k<=Math.max.apply(null,zs)+1e-9;lineAt(c,q.C1,q.C2,k,{stroke:'var(--orange)','stroke-width':3,'stroke-dasharray':touch?null:'6 4'});}
+q.poly.forEach(function(v){P.dot(c,v,4,{fill:'var(--ink)'});});P.dot(c,q.v,8,{fill:'var(--green)',stroke:'var(--bg)','stroke-width':2});P.text(c,[q.v[0]+0.2,q.v[1]+0.45],'optimum',{fill:'var(--green)'});
+out([['<span class="blue">x + y ≤ b₁</span>, <span class="verm">x + 3y ≤ b₂</span>, <span class="green">x ≤ b₃</span>',''],['vertices of the region',String(q.poly.length)],['<b>optimum z*</b>',fmt(q.z,3)],['at the vertex','('+fmt(q.v[0],2)+', '+fmt(q.v[1],2)+')'],['level line z = '+fmt(k,2),touch?'meets the region':'misses the region']],q.C1||q.C2?'A linear objective is largest at a vertex of the feasible polygon (or along an edge if the level lines are parallel to it). Moving the level line away from the origin raises z until it only just touches the region.':'With c₁ = c₂ = 0 every feasible point is optimal.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

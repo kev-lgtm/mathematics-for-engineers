@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mirror image and the law of reflection</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Mirror image and the law of reflection</h1><p>Drag the mirror points and <span class="v">A</span>, <span class="v">B</span>. Reflect <span class="v">B</span> to <span class="v">B′</span>; the straight segment <span class="v">AB′</span> meets the mirror at the bounce point <span class="v">R</span>, where the two angles with the mirror are equal.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img','aria-label':'Plane with a mirror line, points A and B, the image of B and the bounce point R'});KAI.nodeStage=KAI.$('#stage').appendChild(svg);
+function snap(k){return function(p){return [Math.round(p[0]*k)/k,Math.round(p[1]*k)/k];};}
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+function hd(P,pos,col,name,draw,k){k=k||2;return KAI.handle(P,{pos:pos,color:col,constrain:snap(k),step:1/k,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+function lab(P,c,p,t,col){P.text(c,[p[0]+0.15,p[1]+0.2],t,{fill:col||'var(--ink)'});}
+function reset(fn){return KAI.button({label:'Reset',onClick:fn});}
+var P=KAI.plane(svg,{x:[-3,9],y:[-3,8]});
+var hs=[hd(P,[1,1],'var(--blue)','mirror point 1',draw),hd(P,[4,4],'var(--blue)','mirror point 2',draw),hd(P,[1,4],'var(--ink)','A',draw),hd(P,[2,5],'var(--verm)','B',draw)];
+KAI.$('#ctl').append(reset(function(){[[1,1],[4,4],[1,4],[2,5]].forEach(function(q,i){hs[i].set(q[0],q[1]);});draw();}));P.onResize(draw);
+function draw(){var p=hs.map(function(x){return x.pos();}),m=p[0],a=p[2],b=p[3],c=KAI.clear(P.content),dx=p[1][0]-m[0],dy=p[1][1]-m[1],l=Math.hypot(dx,dy);
+if(l<1e-9){out([],'The mirror points coincide: move one.');return;}
+var u=[dx/l,dy/l],n=[u[1],-u[0]];function de(q){return n[0]*(q[0]-m[0])+n[1]*(q[1]-m[1]);}
+P.line(c,[m[0]-40*u[0],m[1]-40*u[1]],[m[0]+40*u[0],m[1]+40*u[1]],{stroke:'var(--blue)','stroke-width':3});
+var B2=[b[0]-2*de(b)*n[0],b[1]-2*de(b)*n[1]];P.line(c,b,B2,{stroke:'var(--axis)','stroke-dasharray':'3 4'});P.dot(c,B2,6,{fill:'var(--purple)'});lab(P,c,B2,"B′",'var(--purple)');
+P.dot(c,a,6,{fill:'var(--ink)'});lab(P,c,a,'A');P.dot(c,b,6,{fill:'var(--verm)'});lab(P,c,b,'B','var(--verm)');
+var dA=de(a),dB=de(b);
+if(dA*dB<0){out([['|AB| straight line',fmt(Math.hypot(a[0]-b[0],a[1]-b[1]),2)]],'A and B are on opposite sides of the mirror: a light ray would simply cross it. Put them on the same side.');P.line(c,a,b,{stroke:'var(--orange)','stroke-width':2});return;}
+var t=dA/(dA+dB),R=[a[0]+t*(B2[0]-a[0]),a[1]+t*(B2[1]-a[1])];
+P.line(c,a,B2,{stroke:'var(--purple)','stroke-dasharray':'5 4'});P.polyline(c,[a,R,b],{stroke:'var(--orange)','stroke-width':3});P.dot(c,R,6,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});lab(P,c,R,'R','var(--orange)');
+function ang(q){var v=[q[0]-R[0],q[1]-R[1]],vl=Math.hypot(v[0],v[1]);return vl<1e-9?0:KAI.deg(Math.acos(Math.min(1,Math.abs(v[0]*u[0]+v[1]*u[1])/vl)));}
+out([['bounce point R','('+fmt(R[0],2)+', '+fmt(R[1],2)+')'],['image B′','('+fmt(B2[0],2)+', '+fmt(B2[1],2)+')'],['|AR| + |RB|',fmt(Math.hypot(a[0]-R[0],a[1]-R[1])+Math.hypot(b[0]-R[0],b[1]-R[1]),3)],['|AB′|',fmt(Math.hypot(a[0]-B2[0],a[1]-B2[1]),3)],['angle at R (A side, B side)',fmt(ang(a),1)+'°, '+fmt(ang(b),1)+'°']],'The two path lengths agree, and this is the shortest path from A via the mirror to B.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A ray meets a sphere: the discriminant decides</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A ray meets a sphere: the discriminant decides</h1><p>Edit the ray's origin and direction and the sphere's radius; rotate by dragging. Putting the ray <span class="v">o + t·d</span> into the sphere equation gives a quadratic in <span class="v">t</span>; its discriminant tells hit, graze or miss.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A ray and a sphere with their intersection points'});
+var G={o:[-4,1,0],d:[1,0,0]},cur='o',sl=[],DEF=JSON.stringify(G);
+var sg=KAI.seg({legend:'Edit',value:'o',options:[{value:'o',label:'Ray origin'},{value:'d',label:'Ray direction'}],onChange:function(k){cur=k;sync();}});
+['x','y','z'].forEach(function(n,i){sl.push(KAI.slider({label:'component '+n,min:-4,max:4,step:0.5,value:0,digits:1,onInput:function(v){G[cur][i]=v;S.refresh();}}));});
+var sr=KAI.slider({label:'sphere radius r (centre at the origin)',min:0.5,max:3,step:0.5,value:2,digits:1,onInput:function(){S.refresh();}});
+KAI.$('#ctl').append(sg.el);sl.forEach(function(x){KAI.$('#ctl').appendChild(x.el);});KAI.$('#ctl').append(sr.el,KAI.button({label:'Reset',onClick:function(){G=JSON.parse(DEF);sync();S.reset();}}));
+function sync(){sl.forEach(function(x,i){x.set(G[cur][i]);});S.refresh();}
+function ring(r,e1,e2,at){var pr=null;for(var i=0;i<=48;i++){var t=i*Math.PI/24,q=ad(sc(r*Math.cos(t),e1),sc(r*Math.sin(t),e2));if(pr)S.line(pr,q,at);pr=q;}}
+S.onDraw(function(S){var o=G.o,d=G.d,r=sr.get(),Nd=nm(d);S.grid(4);S.axes(4.3);
+[[[1,0,0],[0,1,0]],[[1,0,0],[0,0,1]],[[0,1,0],[0,0,1]]].forEach(function(e){ring(r,e[0],e[1],{stroke:'var(--blue)','stroke-width':1.3,'stroke-opacity':0.8});});
+if(Nd<1e-9){out([],'The direction must not be the zero vector.');return;}
+var a=dt(d,d),b=2*dt(d,o),c=dt(o,o)-r*r,disc=b*b-4*a*c,u=sc(1/Nd,d);
+S.line(ad(o,sc(-3,u)),ad(o,sc(8,u)),{stroke:'var(--verm)','stroke-width':1.4,'stroke-opacity':0.5,'stroke-dasharray':'4 4'});S.line(o,ad(o,sc(8,u)),{stroke:'var(--verm)','stroke-width':3});S.dot(o,6,{fill:'var(--verm)'});S.text(o,'o',{fill:'var(--verm)'});S.arrow(o,ad(o,sc(1.6,u)),{stroke:'var(--verm)',width:4});
+var rows=[['a = d·d, b = 2 d·o, c = o·o − r²',fmt(a,2)+', '+fmt(b,2)+', '+fmt(c,2)],['discriminant b² − 4ac',fmt(disc,3)]],note;
+if(disc<-1e-9){rows.unshift(['result','<b>miss</b>']);note='b² − 4ac &lt; 0: the quadratic has no real root, so the line never meets the sphere.';}
+else{var q=Math.sqrt(Math.max(0,disc)),t1=(-b-q)/(2*a),t2=(-b+q)/(2*a),P1=ad(o,sc(t1,d)),P2=ad(o,sc(t2,d)),front=t1>=0?t1:(t2>=0?t2:null);
+S.line(P1,P2,{stroke:'var(--orange)','stroke-width':4});[[P1,t1],[P2,t2]].forEach(function(z,i){if(i===1&&q<1e-9)return;S.dot(z[0],6,{fill:z[1]>=0?'var(--orange)':'var(--axis)',stroke:'var(--bg)','stroke-width':2});});
+rows.unshift(['result','<b>'+(q<1e-9?'graze (tangent)':'two intersection points')+'</b>']);rows.push(['t₁, t₂',fmt(t1,3)+', '+fmt(t2,3)],['point at t₁',tri(P1)],['<b>first hit in front</b>',front===null?'none (both behind the origin)':'t = '+fmt(front,3)]);
+note=q<1e-9?'b² − 4ac = 0: one double root, the line touches the sphere.':'b² − 4ac > 0: two roots. A ray only counts roots with t ≥ 0; grey points are behind the origin of the ray. This test is the heart of a ray tracer.';}
+out(rows,note);});
+sync();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

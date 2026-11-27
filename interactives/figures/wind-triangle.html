@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The wind triangle: heading, wind and ground track</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>The wind triangle: heading, wind and ground track</h1><p>A plane flies with airspeed <span class="v">v<sub>a</sub></span> on a heading; the wind adds its own vector. The ground velocity is the vector sum: <span class="v">v<sub>g</sub> = v<sub>a</sub> + v<sub>w</sub></span>. Angles are compass bearings (0° = north, clockwise).</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-4,9],y:[-4,8]});
+function S_(l,mn,mx,v,st,u){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:0,unit:u,onInput:function(){draw();}});}
+var sa=S_('airspeed',100,300,200,10,' kt'),sh=S_('heading',0,355,60,5,'°'),sw=S_('wind speed',0,100,50,5,' kt'),sd=S_('wind blowing from',0,355,300,5,'°');
+KAI.$('#ctl').append(sa.el,sh.el,sw.el,sd.el);P.onResize(draw);
+function bear(x,y){return ((KAI.deg(Math.atan2(x,y))%360)+360)%360;}
+function draw(){var k=1/50,va=sa.get(),h_=KAI.rad(sh.get()),ws=sw.get(),wd=KAI.rad(sd.get()),c=KAI.clear(P.content);
+var A=[va*k*Math.sin(h_),va*k*Math.cos(h_)],W=[-ws*k*Math.sin(wd),-ws*k*Math.cos(wd)],G=[A[0]+W[0],A[1]+W[1]];
+P.arrow(c,[0,-3.2],[0,-2.2],{stroke:'var(--axis)',width:3});P.text(c,[0.2,-2.5],'N',{});
+P.arrow(c,[0,0],A,{stroke:'var(--blue)',width:3.4});P.arrow(c,A,G,{stroke:'var(--verm)',width:3.4});P.arrow(c,[0,0],G,{stroke:'var(--green)',width:4});P.dot(c,[0,0],5,{fill:'var(--ink)'});
+P.text(c,[A[0]/2+0.2,A[1]/2+0.3],'v_a',{fill:'var(--blue)'});P.text(c,[A[0]+W[0]/2+0.2,A[1]+W[1]/2+0.3],'v_w',{fill:'var(--verm)'});P.text(c,[G[0]/2+0.2,G[1]/2-0.5],'v_g',{fill:'var(--green)'});
+var gs=Math.hypot(G[0],G[1])/k,tr=bear(G[0],G[1]),dr=((tr-sh.get()+540)%360)-180;
+out([['<span class="blue">heading</span>',fmt(sh.get(),0)+'° at '+fmt(va,0)+' kt'],['<span class="verm">wind</span>','from '+fmt(sd.get(),0)+'° at '+fmt(ws,0)+' kt'],['<span class="green"><b>ground speed</b></span>',fmt(gs,1)+' kt'],['<span class="green"><b>track over the ground</b></span>',gs>1e-9?fmt(tr,1)+'°':'—'],['drift angle (track − heading)',fmt(dr,1)+'°']],'The wind arrow starts at the tip of the airspeed arrow. A tailwind raises the ground speed, a headwind lowers it, and a crosswind turns the track away from the heading (drift). To fly a given track, the pilot points the nose into the wind by the drift angle.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

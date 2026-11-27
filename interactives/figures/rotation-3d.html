@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A rotation in space: axis, angle and matrix</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A rotation in space: axis, angle and matrix</h1><p>Set the rotation axis and the angle; rotate the view by dragging. The faint cube is the start, the orange cube is the result, and the coloured arrows are the images of <span class="v">e₁, e₂, e₃</span> (the columns of the matrix).</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A cube rotated about an axis through the origin'});
+var ux=KAI.slider({label:'axis x',min:-2,max:2,step:1,value:0,digits:0,onInput:function(){S.refresh();}}),uy=KAI.slider({label:'axis y',min:-2,max:2,step:1,value:0,digits:0,onInput:function(){S.refresh();}}),uz=KAI.slider({label:'axis z',min:-2,max:2,step:1,value:1,digits:0,onInput:function(){S.refresh();}}),an=KAI.slider({label:'angle',min:0,max:360,step:5,value:45,digits:0,unit:'°',onInput:function(){S.refresh();}});
+function pre(x,y,z,a){return function(){ux.set(x);uy.set(y);uz.set(z);an.set(a);S.refresh();};}
+KAI.$('#ctl').append(ux.el,uy.el,uz.el,an.el,KAI.button({label:'45° about the z-axis',onClick:pre(0,0,1,45)}),KAI.button({label:'120° about (1, 1, 1): e₁→e₂→e₃',onClick:pre(1,1,1,120)}),KAI.button({label:'180° about (1, 1, 0)',onClick:pre(1,1,0,180)}));
+var cv=[];for(var i=0;i<8;i++)cv.push([i&1?1:-1,i&2?1:-1,i&4?1:-1]);var FC=[[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]];
+S.onDraw(function(S){var u=[ux.get(),uy.get(),uz.get()],N=nm(u),t=KAI.rad(an.get());S.grid(4);S.axes(4.3);
+if(N<1e-9){out([],'The axis must not be the zero vector.');return;}u=sc(1/N,u);var c=Math.cos(t),s=Math.sin(t),k=1-c;
+var R=[[c+k*u[0]*u[0],k*u[0]*u[1]-s*u[2],k*u[0]*u[2]+s*u[1]],[k*u[0]*u[1]+s*u[2],c+k*u[1]*u[1],k*u[1]*u[2]-s*u[0]],[k*u[0]*u[2]-s*u[1],k*u[1]*u[2]+s*u[0],c+k*u[2]*u[2]]],ap=function(v){return [dt(R[0],v),dt(R[1],v),dt(R[2],v)];};
+FC.forEach(function(f){S.poly(f.map(function(i){return ap(cv[i]);}),{fill:'var(--orange-t)',stroke:'var(--orange)','stroke-width':1.4});});
+FC.forEach(function(f){for(var i=0;i<4;i++)S.line(cv[f[i]],cv[f[(i+1)%4]],{stroke:'var(--axis)','stroke-width':1,'stroke-opacity':0.7});});
+S.line(sc(-3.6,u),sc(3.6,u),{stroke:'var(--purple)','stroke-width':3.4});S.text(sc(3.6,u),'axis',{fill:'var(--purple)'});
+[[1,0,0,'var(--blue)','e₁′'],[0,1,0,'var(--green)','e₂′'],[0,0,1,'var(--verm)','e₃′']].forEach(function(e){var w=ap([e[0]*2.2,e[1]*2.2,e[2]*2.2]);S.arrow([0,0,0],w,{stroke:e[3],width:3.2});S.text(w,e[4],{fill:e[3]});});
+var det=dt(R[0],cr(R[1],R[2])),tr=R[0][0]+R[1][1]+R[2][2],rows=R.map(function(r,i){return ['row '+(i+1),fmt(r[0],3)+'  '+fmt(r[1],3)+'  '+fmt(r[2],3)];});
+rows.push(['det R',fmt(det,3)],['trace → angle',fmt(KAI.deg(Math.acos(KAI.clamp((tr-1)/2,-1,1))),1)+'°']);
+out(rows,'Rodrigues’ formula: R = cos θ·I + sin θ·[u]× + (1 − cos θ)·uuᵀ with u the unit axis. R is orthogonal with det R = 1, and the trace is 1 + 2 cos θ. Points on the axis do not move.');});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,8 @@
-/*! kai3d.js - a small rotatable 3D view for the interactive figures (needs kai.js). No dependencies.
-   Orthographic projection, z up. Drag the picture (or use the arrow keys when it has focus) to turn it.
-   Usage:  var V = KAI.view3(svgElement, { range: 3 });   V.onDraw(function () { ...draw with V.line, V.poly, ... });  V.redraw(); */
+/*! kai3d.js - rotatable 3D pictures in plain SVG for the interactive figures. Needs kai.js first. No dependencies.
+   Two interfaces live in this file:
+   KAI.view3(svg, {range, zoom})  - immediate drawing (V.line, V.poly, V.onDraw, V.redraw); used by the Linear Algebra figures.
+   KAI.scene3(svg, {range})       - depth-sorted scene (S.line, S.poly, S.arrow, S.grid, S.axes, S.onDraw, S.refresh); used by the Analytic Geometry figures.
+   Drag to rotate, or use the arrow keys when the picture has focus (Home resets scene3). */
 (function (global) {
   'use strict';
   var KAI = global.KAI;
@@ -94,5 +96,84 @@
     if (global.ResizeObserver) new ResizeObserver(function () { var w = Math.floor(svg.parentNode.clientWidth); if (w && Math.abs(w - W) > 1) { size(); V.redraw(); } }).observe(svg.parentNode);
     else global.addEventListener('resize', function () { size(); V.redraw(); });
     return V;
+  };
+})(window);
+
+/*! kai3d.js - 3D scenes in plain SVG for the kai figures. Load AFTER kai.js, only on pages that need it.
+   Drag to rotate (or use the arrow keys, Home resets). World axes: x, y, z with z pointing up (right-handed). */
+(function (g) {
+  'use strict';
+  var KAI = g.KAI;
+  KAI.scene3 = function (svg, o) {
+    o = o || {};
+    var R = o.range || 5, az0 = o.az === undefined ? 110 : o.az, el0 = o.el === undefined ? 22 : o.el;
+    var az = az0, el = el0, W = 600, H = 480, items = [], draw = null, drag = null, S = { svg: svg }, grp = KAI.s('g');
+    svg.appendChild(grp);
+    svg.setAttribute('tabindex', '0'); svg.style.touchAction = 'none'; svg.style.cursor = 'grab'; svg.style.userSelect = 'none'; svg.style.webkitUserSelect = 'none';
+    function layout() {
+      W = Math.max(260, Math.floor(svg.parentNode.clientWidth) || 600); H = Math.round(W * (o.aspect || 0.82));
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('width', W); svg.setAttribute('height', H);
+    }
+    /* world point -> [screen x, screen y, depth]; larger depth = farther from the viewer */
+    S.p = function (q) {
+      var A = KAI.rad(az), E = KAI.rad(el), k = Math.min(W, H) / (2.3 * R);
+      var a = q[0] * Math.cos(A) + q[1] * Math.sin(A), d = -q[0] * Math.sin(A) + q[1] * Math.cos(A);
+      return [W / 2 + a * k, H / 2 - (q[2] * Math.cos(E) + d * Math.sin(E)) * k, d * Math.cos(E) - q[2] * Math.sin(E)];
+    };
+    function add(d, make) { items.push({ d: d, make: make }); }
+    function mid(ps) { var s = 0; ps.forEach(function (q) { s += q[2]; }); return s / ps.length; }
+    S.line = function (a, b, at, bias) {
+      var pa = S.p(a), pb = S.p(b);
+      add((pa[2] + pb[2]) / 2 + (bias || 0), function () { return KAI.s('line', Object.assign({ x1: pa[0], y1: pa[1], x2: pb[0], y2: pb[1], 'stroke-linecap': 'round' }, at)); });
+    };
+    S.poly = function (list, at, bias) {
+      var ps = list.map(S.p);
+      add(mid(ps) + (bias || 0), function () { return KAI.s('polygon', Object.assign({ points: ps.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '), 'stroke-linejoin': 'round' }, at)); });
+    };
+    S.dot = function (q, r, at) { var p = S.p(q); add(p[2], function () { return KAI.s('circle', Object.assign({ cx: p[0], cy: p[1], r: r }, at)); }); };
+    S.text = function (q, str, at) { var p = S.p(q); add(-1e6, function () { return KAI.s('text', Object.assign({ x: p[0] + 6, y: p[1] - 6, class: 'lbl', text: str }, at)); }); };
+    S.arrow = function (a, b, at) {
+      at = at || {};
+      var pa = S.p(a), pb = S.p(b), col = at.stroke || 'var(--ink)', w = at.width || 2.6, dx = pb[0] - pa[0], dy = pb[1] - pa[1], len = Math.hypot(dx, dy);
+      add((pa[2] + pb[2]) / 2, function () {
+        var e = KAI.s('g');
+        if (len < 2) { e.appendChild(KAI.s('circle', { cx: pb[0], cy: pb[1], r: w, fill: col })); return e; }
+        var ux = dx / len, uy = dy / len, hh = Math.min(11, len * 0.7), px = -uy, py = ux;
+        e.appendChild(KAI.s('line', { x1: pa[0], y1: pa[1], x2: pb[0] - ux * hh * 0.8, y2: pb[1] - uy * hh * 0.8, stroke: col, 'stroke-width': w, 'stroke-dasharray': at.dash || null, 'stroke-linecap': 'round' }));
+        e.appendChild(KAI.s('polygon', { points: [pb[0], pb[1], pb[0] - ux * hh + px * hh * 0.38, pb[1] - uy * hh + py * hh * 0.38, pb[0] - ux * hh - px * hh * 0.38, pb[1] - uy * hh - py * hh * 0.38].map(function (v) { return v.toFixed(1); }).join(' '), fill: col }));
+        return e;
+      });
+    };
+    S.axes = function (L, names) {
+      names = names || ['x', 'y', 'z'];
+      [[1, 0, 0], [0, 1, 0], [0, 0, 1]].forEach(function (e, i) {
+        var t = [e[0] * L, e[1] * L, e[2] * L];
+        S.line([0, 0, 0], t, { stroke: 'var(--axis)', 'stroke-width': 1.5 }, 1e5);
+        S.text([t[0] * 1.05, t[1] * 1.05, t[2] * 1.05], names[i], { class: 'lbl sm' });
+      });
+    };
+    S.grid = function (n) { for (var i = -n; i <= n; i++) { S.line([i, -n, 0], [i, n, 0], { stroke: 'var(--grid)' }, 1e6); S.line([-n, i, 0], [n, i, 0], { stroke: 'var(--grid)' }, 1e6); } };
+    S.refresh = function () {
+      layout(); KAI.clear(grp); items = []; if (draw) draw(S);
+      items.sort(function (a, b) { return b.d - a.d; });
+      items.forEach(function (it) { grp.appendChild(it.make()); });
+      svg.setAttribute('aria-label', (o.label || '3D scene') + '. Drag or use the arrow keys to rotate; Home resets the view.');
+    };
+    S.onDraw = function (fn) { draw = fn; S.refresh(); };
+    S.reset = function () { az = az0; el = el0; S.refresh(); };
+    svg.addEventListener('pointerdown', function (e) { e.preventDefault(); drag = { x: e.clientX, y: e.clientY, az: az, el: el }; try { svg.setPointerCapture(e.pointerId); } catch (x) { } svg.focus(); svg.style.cursor = 'grabbing'; });
+    svg.addEventListener('pointermove', function (e) { if (!drag) return; az = drag.az - (e.clientX - drag.x) * 0.5; el = KAI.clamp(drag.el + (e.clientY - drag.y) * 0.4, -85, 85); S.refresh(); });
+    function end() { drag = null; svg.style.cursor = 'grab'; }
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end); svg.addEventListener('lostpointercapture', end);
+    /* touch screens: stop the page from scrolling while the picture is being turned */
+    svg.addEventListener('touchstart', function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+    svg.addEventListener('touchmove', function (e) { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });
+    svg.addEventListener('keydown', function (e) {
+      var k = { ArrowLeft: [5, 0], ArrowRight: [-5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5] }[e.key];
+      if (e.key === 'Home') { e.preventDefault(); S.reset(); return; }
+      if (!k) return; e.preventDefault(); az += k[0]; el = KAI.clamp(el + k[1], -85, 85); S.refresh();
+    });
+    if (g.ResizeObserver) new ResizeObserver(function () { var w = Math.floor(svg.parentNode.clientWidth); if (w && Math.abs(w - W) > 1) S.refresh(); }).observe(svg.parentNode);
+    return S;
   };
 })(window);

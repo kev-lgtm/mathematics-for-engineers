@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A line meets a plane: intersection point, angle and shadow</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A line meets a plane: intersection point, angle and shadow</h1><p>Edit the plane, the line's point or its direction with the sliders; rotate by dragging. The dashed shadow is the orthogonal projection of the line onto the plane; the angle between a line and a plane is the angle between the line and its shadow.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A line and a plane in space, with the shadow of the line on the plane'});
+var G={pl:[1,1,1,-3],pt:[-1,0,0],dr:[1,1,2]},cur='pl',sl=[],DEF=JSON.stringify(G);
+var sg=KAI.seg({legend:'Edit',value:'pl',options:[{value:'pl',label:'Plane'},{value:'pt',label:'Line: point'},{value:'dr',label:'Line: direction'}],onChange:function(k){cur=k;sync();}});
+['component 1 (a, x₀ or d₁)','component 2 (b, y₀ or d₂)','component 3 (c, z₀ or d₃)','d (plane only)'].forEach(function(l,i){sl.push(KAI.slider({label:l,min:i<3?-3:-6,max:i<3?3:6,step:i<3?0.5:1,value:0,digits:1,onInput:function(v){G[cur][i]=v;S.refresh();}}));});
+KAI.$('#ctl').append(sg.el);sl.forEach(function(x){KAI.$('#ctl').appendChild(x.el);});KAI.$('#ctl').appendChild(KAI.button({label:'Reset',onClick:function(){G=JSON.parse(DEF);sync();S.reset();}}));
+function sync(){sl.forEach(function(x,i){if(i<3||cur==='pl')x.set(G[cur][i]);});sl[3].el.style.display=cur==='pl'?'':'none';S.refresh();}
+function patch(q){var n=q.slice(0,3),N=nm(n),nh=sc(1/N,n),F=sc(-q[3]/(N*N),n),t=Math.abs(nh[0])<0.9?[1,0,0]:[0,1,0],e1=sc(1/nm(cr(nh,t)),cr(nh,t)),e2=cr(nh,e1),H=3;S.poly([ad(F,ad(sc(H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(-H,e2))),ad(F,ad(sc(H,e1),sc(-H,e2)))],{fill:'var(--sky-t)',stroke:'var(--blue)','stroke-width':1.4});}
+S.onDraw(function(S){var pl=G.pl,n=pl.slice(0,3),N=nm(n),p0=G.pt,d=G.dr,Dn=nm(d);S.grid(4);S.axes(4.3);
+if(N<1e-9||Dn<1e-9){out([],'The plane needs a nonzero normal (a, b, c) and the line a nonzero direction.');return;}
+patch(pl);var u=sc(1/Dn,d),pr=function(q){return ad(q,sc(-(dt(n,q)+pl[3])/(N*N),n));},nd=dt(n,d),sp=dt(n,p0)+pl[3];
+S.line(pr(ad(p0,sc(-4,u))),pr(ad(p0,sc(4,u))),{stroke:'var(--ink)','stroke-dasharray':'5 4','stroke-width':2.4});S.line(p0,pr(p0),{stroke:'var(--axis)','stroke-dasharray':'3 4'});
+S.line(ad(p0,sc(-4,u)),ad(p0,sc(4,u)),{stroke:'var(--verm)','stroke-width':3.6});S.arrow(p0,ad(p0,sc(1.3,u)),{stroke:'var(--verm)',width:4});S.dot(p0,5,{fill:'var(--verm)'});
+var phi=KAI.deg(Math.asin(KAI.clamp(Math.abs(nd)/(N*Dn),0,1))),rows=[['distance of P₀ from plane',fmt(Math.abs(sp)/N,3)],['angle line–plane',fmt(phi,1)+'°']],rel,note;
+if(Math.abs(nd)>1e-9){var t=-sp/nd,X=ad(p0,sc(t,d));S.dot(X,7,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});S.text(X,'X',{fill:'var(--orange)'});rel='meets the plane in one point';rows.unshift(['intersection X',tri(X)],['parameter t',fmt(t,3)]);note='n·d ≠ 0, so t = −(n·P₀ + d)/(n·d) gives exactly one point. sin φ = |n·d| / (|n||d|).';}
+else if(Math.abs(sp)<1e-9){rel='lies in the plane';note='n·d = 0 and P₀ is on the plane: every point of the line is in the plane (angle 0°).';}
+else{rel='is parallel to the plane';note='n·d = 0 but P₀ is off the plane: the line never meets it; the distance from the line to the plane is the distance of P₀.';}
+rows.unshift(['the line','<b>'+rel+'</b>']);out(rows,note);});
+sync();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

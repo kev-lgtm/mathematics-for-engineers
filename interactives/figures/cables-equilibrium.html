@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two cables hold a sign: tensions and force triangle</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Two cables hold a sign: tensions and force triangle</h1><p>Change the cable angles and the weight. The three forces at the knot always close into a triangle: <span class="v">T₁ + T₂ + W = 0</span>.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img','aria-label':'A knot held by two cables at adjustable angles with the three forces and the closed force triangle'});KAI.nodeStage=KAI.$('#stage').appendChild(svg);
+function snap(k){return function(p){return [Math.round(p[0]*k)/k,Math.round(p[1]*k)/k];};}
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+function hd(P,pos,col,name,draw,k){k=k||2;return KAI.handle(P,{pos:pos,color:col,constrain:snap(k),step:1/k,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+function lab(P,c,p,t,col){P.text(c,[p[0]+0.15,p[1]+0.2],t,{fill:col||'var(--ink)'});}
+function reset(fn){return KAI.button({label:'Reset',onClick:fn});}
+var P=KAI.plane(svg,{x:[-7,8],y:[-5,6]});
+var s1=KAI.slider({label:'Left cable angle θ₁',min:15,max:75,step:1,value:30,digits:0,unit:'°',onInput:function(){draw();}}),s2=KAI.slider({label:'Right cable angle θ₂',min:15,max:75,step:1,value:60,digits:0,unit:'°',onInput:function(){draw();}}),sw=KAI.slider({label:'Weight W',min:10,max:200,step:5,value:100,digits:0,unit:' N',onInput:function(){draw();}});
+KAI.$('#ctl').append(s1.el,s2.el,sw.el);P.onResize(draw);
+function draw(){var a=KAI.rad(s1.get()),b=KAI.rad(s2.get()),W=sw.get(),S=Math.sin(a+b),T1=W*Math.cos(b)/S,T2=W*Math.cos(a)/S,K=[-2,2],f=0.02,c=KAI.clear(P.content);
+var v1=[-T1*Math.cos(a)*f,T1*Math.sin(a)*f],v2=[T2*Math.cos(b)*f,T2*Math.sin(b)*f],vw=[0,-W*f];
+P.line(c,K,[K[0]-5*Math.cos(a),K[1]+5*Math.sin(a)],{stroke:'var(--axis)','stroke-width':3});P.line(c,K,[K[0]+5*Math.cos(b),K[1]+5*Math.sin(b)],{stroke:'var(--axis)','stroke-width':3});
+function at(o,v){return [o[0]+v[0],o[1]+v[1]];}
+P.arrow(c,K,at(K,v1),{stroke:'var(--blue)',width:3.4});P.arrow(c,K,at(K,v2),{stroke:'var(--verm)',width:3.4});P.arrow(c,K,at(K,vw),{stroke:'var(--green)',width:3.4});P.dot(c,K,5,{fill:'var(--ink)'});
+var O=[3,-3],q1=at(O,v1),q2=at(q1,v2);P.arrow(c,O,q1,{stroke:'var(--blue)'});P.arrow(c,q1,q2,{stroke:'var(--verm)'});P.arrow(c,q2,at(q2,vw),{stroke:'var(--green)'});
+lab(P,c,at(K,v1),'T₁','var(--blue)');lab(P,c,at(K,v2),'T₂','var(--verm)');lab(P,c,at(K,vw),'W','var(--green)');
+out([['<span class="blue">T₁ = W cos θ₂ / sin(θ₁+θ₂)</span>',fmt(T1,1)+' N'],['<span class="verm">T₂ = W cos θ₁ / sin(θ₁+θ₂)</span>',fmt(T2,1)+' N'],['ΣFₓ',fmt(-T1*Math.cos(a)+T2*Math.cos(b),6)],['ΣF_y',fmt(T1*Math.sin(a)+T2*Math.sin(b)-W,6)]],'At 30° and 60° with W = 100 N: T₁ = 50 N, T₂ = 86.6 N. Small angles give huge tensions (arrows may leave the frame).');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

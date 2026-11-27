@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reflecting a line in a mirror line, and the angle bisectors</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Reflecting a line in a mirror line, and the angle bisectors</h1><p>Drag the four points: the blue pair gives the line <span class="v">L</span>, the dark pair the mirror <span class="v">M</span>. The reflected line <span class="v">L′</span> makes the same angle with <span class="v">M</span> as <span class="v">L</span> does, and <span class="v">M</span> bisects the angle between them.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-7,8],y:[-5,6]});
+function hd(pos,col,name){return KAI.handle(P,{pos:pos,color:col,constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+var D=[[-4,-2],[6,3],[-3,3],[4,-1]],hs=[hd(D[0],'var(--ink)','mirror point 1'),hd(D[1],'var(--ink)','mirror point 2'),hd(D[2],'var(--blue)','line point 1'),hd(D[3],'var(--blue)','line point 2')];
+var bis=KAI.check({label:'Show the bisectors of L and M',checked:false,onChange:draw});
+KAI.$('#ctl').append(bis.el,KAI.button({label:'Reset',onClick:function(){D.forEach(function(q,i){hs[i].set(q[0],q[1]);});draw();}}));P.onResize(draw);
+function seg(c,p,u,at){P.line(c,[p[0]-40*u[0],p[1]-40*u[1]],[p[0]+40*u[0],p[1]+40*u[1]],at);}
+function draw(){var p=hs.map(function(x){return x.pos();}),c=KAI.clear(P.content),m0=p[0],mu=[p[1][0]-m0[0],p[1][1]-m0[1]],ml=Math.hypot(mu[0],mu[1]),lu=[p[3][0]-p[2][0],p[3][1]-p[2][1]],ll=Math.hypot(lu[0],lu[1]);
+if(ml<1e-9||ll<1e-9){out([],'Two points of one line coincide: move one of them.');return;}
+mu=[mu[0]/ml,mu[1]/ml];lu=[lu[0]/ll,lu[1]/ll];var n=[-mu[1],mu[0]];function refl(q){var d=(q[0]-m0[0])*n[0]+(q[1]-m0[1])*n[1];return [q[0]-2*d*n[0],q[1]-2*d*n[1]];}
+var q1=refl(p[2]),q2=refl(p[3]),ru=[q2[0]-q1[0],q2[1]-q1[1]],rl=Math.hypot(ru[0],ru[1]);ru=[ru[0]/rl,ru[1]/rl];
+seg(c,m0,mu,{stroke:'var(--ink)','stroke-width':2.6});seg(c,p[2],lu,{stroke:'var(--blue)','stroke-width':2.6});seg(c,q1,ru,{stroke:'var(--purple)','stroke-width':2.6,'stroke-dasharray':'8 4'});
+P.line(c,p[2],q1,{stroke:'var(--axis)','stroke-dasharray':'3 4'});P.line(c,p[3],q2,{stroke:'var(--axis)','stroke-dasharray':'3 4'});[q1,q2].forEach(function(q){P.dot(c,q,4,{fill:'var(--purple)'});});
+var D1=mu[0]*lu[1]-mu[1]*lu[0],rows=[],note;
+function ang(a,b){return KAI.deg(Math.acos(KAI.clamp(Math.abs(a[0]*b[0]+a[1]*b[1]),0,1)));}
+rows.push(['angle (L, M)',fmt(ang(lu,mu),2)+'°'],['angle (M, L′)',fmt(ang(mu,ru),2)+'°']);
+if(Math.abs(D1)<1e-9){note='L is parallel to M, so L′ is parallel to both and at the same distance on the other side.';}
+else{var w=[p[2][0]-m0[0],p[2][1]-m0[1]],t=(w[0]*lu[1]-w[1]*lu[0])/D1,X=[m0[0]+t*mu[0],m0[1]+t*mu[1]];P.dot(c,X,7,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.text(c,[X[0]+0.2,X[1]+0.45],'X',{fill:'var(--orange)'});rows.push(['common point X of L, M, L′','('+fmt(X[0],2)+', '+fmt(X[1],2)+')']);
+if(bis.get()){var s1=[lu[0]+mu[0],lu[1]+mu[1]],s2=[lu[0]-mu[0],lu[1]-mu[1]];[s1,s2].forEach(function(s){var l=Math.hypot(s[0],s[1]);if(l>1e-9)seg(c,X,[s[0]/l,s[1]/l],{stroke:'var(--green)','stroke-width':1.8,'stroke-dasharray':'2 4'});});rows.push(['bisectors of L and M','directions u<sub>L</sub> ± u<sub>M</sub>']);}
+note='L, M and L′ all pass through X, because a point on the mirror is its own image. The mirror is a bisector of the angle between L and L′; the bisectors of L and M are the directions u_L + u_M and u_L − u_M of the unit direction vectors.';}
+out(rows,note);}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

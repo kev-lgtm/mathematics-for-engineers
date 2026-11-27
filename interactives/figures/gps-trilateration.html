@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPS idea: finding a position from distances</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>GPS idea: finding a position from distances</h1><p>A receiver measures its distance to known beacons; each distance gives a circle. Drag the receiver <span class="v">R</span>, choose how many beacons are used, then add a clock error: it adds the same amount to every distance, and the circles stop meeting in one point.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-9,9],y:[-7,7]}),B=[[-5,-3],[5,-4],[1,5]],cols=['var(--blue)','var(--verm)','var(--green)'],nb=3;
+var hR=KAI.handle(P,{pos:[-1,1],color:'var(--ink)',constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return 'receiver at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});
+var sg=KAI.seg({legend:'Beacons used',value:'3',options:[{value:'1',label:'1'},{value:'2',label:'2'},{value:'3',label:'3'}],onChange:function(k){nb=+k;draw();}}),sb=KAI.slider({label:'clock error (added to every distance)',min:0,max:2,step:0.1,value:0,digits:1,onInput:function(){draw();}});
+KAI.$('#ctl').append(sg.el,sb.el);P.onResize(draw);
+function circle(c,O,r,at){var pts=[];for(var i=0;i<=120;i++){var t=i*Math.PI/60;pts.push([O[0]+r*Math.cos(t),O[1]+r*Math.sin(t)]);}P.polyline(c,pts,at);}
+function draw(){var R=hR.pos(),c=KAI.clear(P.content),bias=sb.get(),r=B.map(function(b){return Math.hypot(R[0]-b[0],R[1]-b[1])+bias;}),rows=[],note,ix=0;
+for(var i=0;i<nb;i++){circle(c,B[i],r[i],{stroke:cols[i],'stroke-width':2});P.dot(c,B[i],6,{fill:cols[i]});P.text(c,[B[i][0]+0.2,B[i][1]+0.4],'B'+(i+1),{fill:cols[i]});rows.push(['<span style="color:'+cols[i]+'">distance to B'+(i+1)+'</span>',fmt(r[i],2)]);}
+for(var i=0;i<nb;i++)for(var j=i+1;j<nb;j++){var dx=B[j][0]-B[i][0],dy=B[j][1]-B[i][1],d=Math.hypot(dx,dy);if(d>r[i]+r[j]||d<Math.abs(r[i]-r[j]))continue;var a=(r[i]*r[i]-r[j]*r[j]+d*d)/(2*d),hh=Math.sqrt(Math.max(0,r[i]*r[i]-a*a)),ux=dx/d,uy=dy/d;[1,-1].forEach(function(s){P.dot(c,[B[i][0]+a*ux-s*hh*uy,B[i][1]+a*uy+s*hh*ux],4,{fill:'var(--ink)'});});}
+if(nb===3){var m=[],q=[];for(var i=1;i<3;i++){m.push([2*(B[i][0]-B[0][0]),2*(B[i][1]-B[0][1])]);q.push(B[i][0]*B[i][0]+B[i][1]*B[i][1]-B[0][0]*B[0][0]-B[0][1]*B[0][1]-r[i]*r[i]+r[0]*r[0]);}
+var det=m[0][0]*m[1][1]-m[0][1]*m[1][0],E=[(q[0]*m[1][1]-m[0][1]*q[1])/det,(m[0][0]*q[1]-q[0]*m[1][0])/det],err=Math.hypot(E[0]-R[0],E[1]-R[1]);P.dot(c,E,7,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.text(c,[E[0]+0.2,E[1]-0.6],'estimate',{fill:'var(--orange)'});rows.push(['estimated position','('+fmt(E[0],2)+', '+fmt(E[1],2)+')'],['<b>position error</b>',fmt(err,3)]);
+note=bias<1e-9?'Three circles meet in exactly one point, the receiver: subtracting the circle equations pairwise leaves two linear equations.':'The clock error makes every circle too big (or too small) by the same amount, so the three circles no longer meet in a point and the estimate is off. Real GPS adds one more satellite to solve for the clock error as well.';}
+else note=nb===1?'One distance: the receiver could be anywhere on the circle.':'Two circles meet in two points (black dots): one of them is the receiver. A third beacon decides which.';
+P.dot(c,R,7,{fill:'var(--ink)',stroke:'var(--bg)','stroke-width':2});P.text(c,[R[0]+0.25,R[1]+0.45],'R',{});out(rows,note);}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Completing the square: from the general equation to the standard form</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Completing the square: from the general equation to the standard form</h1><p>Set the coefficients of <span class="v">Ax² + Cy² + Dx + Ey + F = 0</span>. Completing the square in <span class="v">x</span> and <span class="v">y</span> moves the centre to <span class="v">(h, k)</span> and reveals the type.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-9,9],y:[-6,6]}),V=[1,2,-4,4,-2],sl=[];
+[['A',-3,3,0.5],['C',-3,3,0.5],['D',-12,12,1],['E',-12,12,1],['F',-12,12,1]].forEach(function(s,i){sl.push(KAI.slider({label:s[0],min:s[1],max:s[2],step:s[3],value:V[i],digits:1,onInput:function(){draw();}}));KAI.$('#ctl').appendChild(sl[i].el);});
+KAI.$('#ctl').appendChild(KAI.button({label:'Reset (ellipse with centre (2, −1))',onClick:function(){sl.forEach(function(x,i){x.set(V[i]);});draw();}}));P.onResize(draw);
+function draw(){var A=sl[0].get(),C=sl[1].get(),D=sl[2].get(),E=sl[3].get(),F=sl[4].get(),c=KAI.clear(P.content),rows=[],note,runs=[],cur=[],type;
+function flush(){if(cur.length>1)runs.push(cur);cur=[];}
+if(A!==0&&C!==0){var h_=-D/(2*A),k=-E/(2*C),R=A*h_*h_+C*k*k-F;rows.push(['centre (h, k)','('+fmt(h_,2)+', '+fmt(k,2)+')'],['A(x−h)² + C(y−k)² =',fmt(R,3)]);P.dot(c,[h_,k],4,{fill:'var(--axis)'});
+for(var i=0;i<=3140;i+=4){var f=i/500,q=A*Math.cos(f)*Math.cos(f)+C*Math.sin(f)*Math.sin(f),v=R/q;if(v>1e-9&&v<400){var r=Math.sqrt(v);cur.push([h_+r*Math.cos(f),k+r*Math.sin(f)]);}else flush();}flush();
+for(var i=3140;i<=6283;i+=4){var f=i/1000,q=A*Math.cos(f)*Math.cos(f)+C*Math.sin(f)*Math.sin(f),v=R/q;if(v>1e-9&&v<400){var r=Math.sqrt(v);cur.push([h_+r*Math.cos(f),k+r*Math.sin(f)]);}else flush();}flush();
+if(A*C>0){if(Math.abs(R)<1e-9){type='a single point';}else if(R/A<0){type='no real points';}else{type=A===C?'circle':'ellipse';rows.push(['(x−h)²/a² + (y−k)²/b² = 1','a² = '+fmt(R/A,3)+', b² = '+fmt(R/C,3)]);}}
+else{if(Math.abs(R)<1e-9)type='two crossing lines';else{type='hyperbola';rows.push(['(x−h)²/a² − (y−k)²/b² = ±1','a² = '+fmt(Math.abs(R/A),3)+', b² = '+fmt(Math.abs(R/C),3)]);}}}
+else if(A===0&&C!==0&&D!==0){type='parabola (opens along x)';for(var y=-8;y<=8.001;y+=0.1)cur.push([-(C*y*y+E*y+F)/D,y]);flush();rows.push(['vertex','('+fmt(-(C*(-E/(2*C))*(-E/(2*C))+E*(-E/(2*C))+F)/D,2)+', '+fmt(-E/(2*C),2)+')']);}
+else if(C===0&&A!==0&&E!==0){type='parabola (opens along y)';for(var x=-12;x<=12.001;x+=0.1)cur.push([x,-(A*x*x+D*x+F)/E]);flush();rows.push(['vertex','('+fmt(-D/(2*A),2)+', '+fmt(-(A*(D/(2*A))*(D/(2*A))-D*D/(2*A)+F)/E,2)+')']);}
+else type='degenerate (lines or empty)';
+runs.forEach(function(r){P.polyline(c,r,{stroke:'var(--blue)','stroke-width':2.8});});rows.unshift(['type','<b>'+type+'</b>']);
+out(rows,'Group the terms: A(x² + (D/A)x) + C(y² + (E/C)y) = −F, add (D/2A)² and (E/2C)² inside the brackets, and the squares (x−h)², (y−k)² appear with h = −D/2A and k = −E/2C. If A or C is 0 the curve is a parabola.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

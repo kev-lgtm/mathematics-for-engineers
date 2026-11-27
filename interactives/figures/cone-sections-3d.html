@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conic sections: cutting a cone with a plane</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Conic sections: cutting a cone with a plane</h1><p>Tilt the cutting plane and move it up or down; rotate the scene by dragging. The orange curve is the intersection: a circle, an ellipse, a parabola or a hyperbola, depending only on the tilt.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A double cone cut by a plane, with the orange conic section'});
+var sb=KAI.slider({label:'tilt of the plane β',min:0,max:90,step:1,value:30,digits:0,unit:'°',onInput:function(){S.refresh();}}),sk=KAI.slider({label:'height of the plane k',min:-2,max:2,step:0.25,value:1,digits:2,onInput:function(){S.refresh();}});
+function pre(b,k){return function(){sb.set(b);sk.set(k);S.refresh();};}
+KAI.$('#ctl').append(sb.el,sk.el,KAI.button({label:'Circle (β = 0°)',onClick:pre(0,1.5)}),KAI.button({label:'Ellipse',onClick:pre(30,1)}),KAI.button({label:'Parabola (β = 45°)',onClick:pre(45,1)}),KAI.button({label:'Hyperbola',onClick:pre(70,0.5)}));
+S.onDraw(function(S){var b=KAI.rad(sb.get()),k=sk.get(),t=Math.tan(b),e=Math.SQRT2*Math.sin(b);S.grid(4);S.axes(4.3);
+for(var z=-3.5;z<=3.51;z+=0.5)if(Math.abs(z)>0.1){var pr=null;for(var i=0;i<=24;i++){var f=i*Math.PI/12,q=[Math.abs(z)*Math.cos(f),Math.abs(z)*Math.sin(f),z];if(pr)S.line(pr,q,{stroke:'var(--axis)','stroke-width':1,'stroke-opacity':0.8});pr=q;}}
+for(var m=0;m<12;m++){var f=m*Math.PI/6;S.line([-3.5*Math.cos(f),-3.5*Math.sin(f),-3.5],[3.5*Math.cos(f),3.5*Math.sin(f),3.5],{stroke:'var(--axis)','stroke-width':0.8,'stroke-opacity':0.7});}
+var X=Math.min(3,(4-Math.abs(k))/Math.max(t,0.01));S.poly([[-X,-3,k-t*X],[X,-3,k+t*X],[X,3,k+t*X],[-X,3,k-t*X]],{fill:'var(--orange-t)',stroke:'var(--orange)','stroke-width':1.2});
+[1,-1].forEach(function(sg){var pr=null;for(var i=0;i<=480;i++){var f=i*Math.PI/240,den=1-sg*t*Math.cos(f),r=den>1e-6?sg*k/den:-1,z=sg*r,q=[r*Math.cos(f),r*Math.sin(f),z];if(r>0&&r<6&&Math.abs(z)<=4){if(pr)S.line(pr,q,{stroke:'var(--verm)','stroke-width':3.6});pr=q;}else pr=null;}});
+var type=sb.get()===0?'circle':Math.abs(sb.get()-45)<1e-9?'parabola':sb.get()<45?'ellipse':'hyperbola',rows=[['type','<b>'+type+'</b>'],['tilt β',fmt(sb.get(),0)+'°'],['eccentricity e = √2·sin β',fmt(e,3)]],note;
+if(Math.abs(k)<1e-9)note='The plane passes through the apex: the section degenerates (a point, one line or two lines).';
+else note={circle:'A horizontal plane: a circle, e = 0.',ellipse:'The plane is flatter than the cone’s sides (β < 45°): a closed curve on one nappe, e < 1.',parabola:'The plane is parallel to a side of the cone (β = 45°): an open curve, e = 1.',hyperbola:'The plane is steeper than the sides (β > 45°): it cuts both nappes, giving the two branches, e > 1.'}[type];
+out(rows,note);});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

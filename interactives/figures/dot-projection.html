@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dot product, projection and reflection</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head">
+    <h1>Dot product, projection and reflection</h1>
+    <p>Drag the tips of <span class="v">u</span> and <span class="v">v</span> (or focus a tip and use the arrow keys). The green arrow is the projection of <span class="v">u</span> onto the line of <span class="v">v</span>; the dashed remainder is always perpendicular to <span class="v">v</span>.</p>
+  </header>
+  <div class="layout">
+    <div class="stage" id="stage"></div>
+    <div class="side">
+      <div class="card readout" id="out"></div>
+      <div class="card stack" id="ctl"></div>
+    </div>
+  </div>
+  <details class="try"><summary>Try this</summary><ol>
+    <li>Start position: <b>u</b> = (3, 2), <b>v</b> = (2, 1) gives u&middot;v = 8 and the projection (3.2, 1.6), as in the book.</li>
+    <li>Turn <b>u</b> until the dot product is 0: the projection shrinks to a point and the angle reads 90&deg;.</li>
+    <li>Swing <b>u</b> past 90&deg;: the dot product turns negative and the projection points backwards.</li>
+    <li>Switch on the reflection: the mirror image of <b>u</b> in the line of <b>v</b> is 2&middot;proj &minus; <b>u</b>, and it always has the same length as <b>u</b>.</li>
+  </ol></details>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+  var h = KAI.h, s = KAI.s, fmt = KAI.fmt;
+  var svg = s('svg', { role: 'img', 'aria-label': 'Plane with two draggable vectors u and v, the projection of u onto v and the perpendicular remainder' });
+  KAI.$('#stage').appendChild(svg);
+  var P = KAI.plane(svg, { x: [-5, 6], y: [-3, 5] });
+  var snap = function (p) { return [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]; };
+  var hu, hv;
+  var refl = KAI.check({ label: 'Show the reflection of <i>u</i> in the line of <i>v</i>', checked: false, onChange: draw });
+  var line = KAI.check({ label: 'Show the line of <i>v</i>', checked: true, onChange: draw });
+  KAI.$('#ctl').append(refl.el, line.el,
+    KAI.button({ label: 'Reset to the book example', onClick: function () { hu.set(3, 2); hv.set(2, 1); draw(); } }));
+  hu = KAI.handle(P, { pos: [3, 2], color: 'var(--ink)', constrain: snap, label: function (p) { return 'tip of u at ' + fmt(p[0], 1) + ', ' + fmt(p[1], 1); }, onMove: draw });
+  hv = KAI.handle(P, { pos: [2, 1], color: 'var(--blue)', constrain: snap, label: function (p) { return 'tip of v at ' + fmt(p[0], 1) + ', ' + fmt(p[1], 1); }, onMove: draw });
+  P.onResize(draw);
+
+  function lab(c, p, t, col) { P.text(c, [p[0] + 0.15, p[1] + 0.2], t, { fill: col }); }
+  function draw() {
+    var u = hu.pos(), v = hv.pos(), c = KAI.clear(P.content);
+    var vv = v[0] * v[0] + v[1] * v[1], d = u[0] * v[0] + u[1] * v[1], nu = Math.hypot(u[0], u[1]), nv = Math.sqrt(vv);
+    var t = vv > 1e-9 ? d / vv : 0, pr = [t * v[0], t * v[1]], rf = [2 * pr[0] - u[0], 2 * pr[1] - u[1]];
+    if (vv > 1e-9 && line.get()) { var L = 15 / nv; P.line(c, [-L * v[0], -L * v[1]], [L * v[0], L * v[1]], { stroke: 'var(--axis)', 'stroke-dasharray': '2 5', 'stroke-width': 1.3 }); }
+    P.line(c, pr, u, { stroke: 'var(--verm)', 'stroke-dasharray': '5 4', 'stroke-width': 1.8 });
+    if (refl.get() && vv > 1e-9) { P.line(c, u, rf, { stroke: 'var(--purple)', 'stroke-dasharray': '2 4', 'stroke-width': 1.2 }); P.arrow(c, [0, 0], rf, { stroke: 'var(--purple)' }); lab(c, rf, 'refl', 'var(--purple)'); }
+    P.arrow(c, [0, 0], pr, { stroke: 'var(--green)', width: 5 });
+    P.arrow(c, [0, 0], v, { stroke: 'var(--blue)' }); lab(c, v, 'v', 'var(--blue)');
+    P.arrow(c, [0, 0], u, { stroke: 'var(--ink)' }); lab(c, u, 'u', 'var(--ink)');
+    var cos = (nu > 1e-9 && nv > 1e-9) ? KAI.clamp(d / (nu * nv), -1, 1) : NaN, th = KAI.deg(Math.acos(cos));
+    var kind = isNaN(cos) ? 'a zero vector has no angle' : Math.abs(d) < 1e-9 ? 'perpendicular (u&middot;v = 0)' : d > 0 ? 'acute angle, u&middot;v &gt; 0' : 'obtuse angle, u&middot;v &lt; 0';
+    var o = KAI.clear(KAI.$('#out'));
+    [['u&middot;v', fmt(d, 2)], ['|u|, |v|', fmt(nu, 2) + ', ' + fmt(nv, 2)], ['angle &theta;', isNaN(th) ? '—' : fmt(th, 1) + '&deg;'],
+     ['proj<sub>v</sub>u', '(' + fmt(pr[0], 2) + ', ' + fmt(pr[1], 2) + ')'], ['u &minus; proj, &middot; v', fmt((u[0] - pr[0]) * v[0] + (u[1] - pr[1]) * v[1], 2)]]
+      .forEach(function (r) { o.appendChild(h('div', { class: 'kv' }, h('span', { html: r[0] }), h('b', { html: r[1] }))); });
+    if (refl.get()) o.appendChild(h('div', { class: 'kv' }, h('span', { class: 'purple', text: 'reflection' }), h('b', { html: '(' + fmt(rf[0], 2) + ', ' + fmt(rf[1], 2) + ')' })));
+    o.appendChild(h('p', { class: 'note', html: kind }));
+    KAI.live('Dot product ' + fmt(d, 2) + ', ' + (isNaN(th) ? 'no angle' : 'angle ' + fmt(th, 1) + ' degrees') + '.');
+  }
+  draw();
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torque: lever arm and the cross product</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Torque: lever arm and the cross product</h1><p>Drag the point where the force acts (<span class="v">P</span>) and the tip of the force arrow. The pivot is the origin. The torque is <span class="v">τ = r × F = |F|·d</span>, where <span class="v">d</span> is the distance from the pivot to the line of action.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-6,8],y:[-5,6]});
+function hd(pos,col,name){return KAI.handle(P,{pos:pos,color:col,constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+var hp=hd([4,1],'var(--blue)','point of application P'),hq=hd([3,4],'var(--verm)','tip of the force');
+KAI.$('#ctl').append(KAI.button({label:'Reset',onClick:function(){hp.set(4,1);hq.set(3,4);draw();}}));P.onResize(draw);
+function draw(){var r=hp.pos(),q=hq.pos(),c=KAI.clear(P.content),F=[q[0]-r[0],q[1]-r[1]],nF=Math.hypot(F[0],F[1]),nr=Math.hypot(r[0],r[1]);
+P.line(c,[-0.4,0.4],[0.4,-0.4],{stroke:'var(--ink)','stroke-width':2});P.dot(c,[0,0],6,{fill:'var(--ink)'});P.text(c,[0.2,-0.6],'pivot',{});
+if(nF<1e-9){out([],'The force arrow has length 0: drag its tip away from P.');return;}
+var tau=r[0]*F[1]-r[1]*F[0],d=Math.abs(tau)/nF,u=[F[0]/nF,F[1]/nF],tp=r[0]*u[0]+r[1]*u[1],foot=[r[0]-tp*u[0],r[1]-tp*u[1]];
+P.line(c,[r[0]-12*u[0],r[1]-12*u[1]],[r[0]+12*u[0],r[1]+12*u[1]],{stroke:'var(--axis)','stroke-dasharray':'5 4'});
+P.line(c,[0,0],r,{stroke:'var(--blue)','stroke-width':2.6});if(d>1e-9)P.line(c,[0,0],foot,{stroke:'var(--green)','stroke-width':3.2});P.dot(c,foot,4,{fill:'var(--green)'});
+P.arrow(c,r,q,{stroke:'var(--verm)',width:4});
+var phi=nr>1e-9?KAI.deg(Math.acos(KAI.clamp((r[0]*F[0]+r[1]*F[1])/(nr*nF),-1,1))):NaN;
+out([['r = OP, F','('+fmt(r[0],1)+', '+fmt(r[1],1)+'), ('+fmt(F[0],1)+', '+fmt(F[1],1)+')'],['<b>torque τ = r × F</b>',fmt(tau,2)],['<span class="green">lever arm d</span> = |τ| / |F|',fmt(d,3)],['|r| sin φ',isNaN(phi)?'—':fmt(nr*Math.sin(KAI.rad(phi)),3)],['angle φ between r and F',isNaN(phi)?'—':fmt(phi,1)+'°'],['turning','<b>'+(Math.abs(tau)<1e-9?'no rotation (line of action through the pivot)':tau>0?'counter-clockwise (+)':'clockwise (−)')+'</b>']],'The torque equals the component of F perpendicular to r, times |r|, which is the same as |F| times the lever arm d, the shortest distance from the pivot to the line of action (dashed). Pushing along the lever (φ = 0° or 180°) gives no torque.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

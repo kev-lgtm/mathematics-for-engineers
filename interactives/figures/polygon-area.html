@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polygon area: the shoelace formula</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Polygon area: the shoelace formula</h1><p>Drag the five vertices (in order around the polygon). The area is half the sum of the determinants <span class="v">xᵢyᵢ₊₁ − xᵢ₊₁yᵢ</span>. The sign tells the direction of travel: positive for counter-clockwise.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-7,8],y:[-6,7]}),D=[[-3,-1],[2,-2],[4,1],[1,4],[-2,3]];
+var hs=D.map(function(q,i){return KAI.handle(P,{pos:q,color:'var(--ink)',constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return 'vertex '+(i+1)+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});});
+var fan=KAI.check({label:'Split into triangles from vertex 1',checked:true,onChange:draw});
+KAI.$('#ctl').append(fan.el,KAI.button({label:'Reset',onClick:function(){D.forEach(function(q,i){hs[i].set(q[0],q[1]);});draw();}}));P.onResize(draw);
+function cross(o,a,b){return (a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);}
+function inter(a,b,c,d){var d1=cross(a,b,c),d2=cross(a,b,d),d3=cross(c,d,a),d4=cross(c,d,b);return d1*d2<0&&d3*d4<0;}
+function draw(){var p=hs.map(function(x){return x.pos();}),n=p.length,c=KAI.clear(P.content),S=0,rows=[],self=false;
+for(var i=0;i<n;i++){var u=p[i],v=p[(i+1)%n],t=u[0]*v[1]-v[0]*u[1];S+=t;rows.push(['x<sub>'+(i+1)+'</sub>y<sub>'+((i+1)%n+1)+'</sub> − x<sub>'+((i+1)%n+1)+'</sub>y<sub>'+(i+1)+'</sub>',fmt(t,2)]);}
+for(var i=0;i<n;i++)for(var j=i+2;j<n;j++){if(i===0&&j===n-1)continue;if(inter(p[i],p[i+1],p[j],p[(j+1)%n]))self=true;}
+S/=2;P.poly(c,p,{fill:S>=0?'var(--orange-t)':'var(--sky-t)',stroke:self?'var(--verm)':'var(--blue)','stroke-width':2.6});
+if(fan.get())for(var i=1;i<n-1;i++){P.line(c,p[0],p[i],{stroke:'var(--axis)','stroke-dasharray':'4 4','stroke-width':1.3});P.line(c,p[0],p[i+1],{stroke:'var(--axis)','stroke-dasharray':'4 4','stroke-width':1.3});}
+p.forEach(function(q,i){P.text(c,[q[0]+0.25,q[1]+0.35],String(i+1),{});});
+var out2=[['signed area ½Σ',fmt(S,3)],['<b>area |½Σ|</b>',fmt(Math.abs(S),3)],['direction',S>0?'counter-clockwise (+)':S<0?'clockwise (−)':'degenerate']];
+if(fan.get()){var parts=[];for(var i=1;i<n-1;i++)parts.push(fmt(cross(p[0],p[i],p[i+1])/2,2));out2.push(['triangles from vertex 1',parts.join(' + ')]);}
+out2=out2.concat(rows);out(out2,self?'The sides cross each other: the formula now gives the signed area, counting the regions with opposite orientations against each other, not the area of a simple polygon.':'Each term is twice the signed area of the triangle (origin, vertex i, vertex i+1); the triangles outside the polygon cancel. The same total comes from splitting the polygon into triangles from one vertex.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

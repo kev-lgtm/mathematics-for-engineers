@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adding, subtracting and scaling vectors</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Adding, subtracting and scaling vectors</h1><p>Drag the tips of <span class="v">u</span> and <span class="v">v</span>. The sum is the diagonal of the parallelogram; the slider scales <span class="v">u</span>. Make <span class="v">u</span> and <span class="v">v</span> point the same way to turn the triangle inequality into an equality.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img','aria-label':'Plane with draggable vectors u and v, their sum, difference and a multiple of u'});KAI.nodeStage=KAI.$('#stage').appendChild(svg);
+function snap(k){return function(p){return [Math.round(p[0]*k)/k,Math.round(p[1]*k)/k];};}
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+function hd(P,pos,col,name,draw,k){k=k||2;return KAI.handle(P,{pos:pos,color:col,constrain:snap(k),step:1/k,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+function lab(P,c,p,t,col){P.text(c,[p[0]+0.15,p[1]+0.2],t,{fill:col||'var(--ink)'});}
+function reset(fn){return KAI.button({label:'Reset',onClick:fn});}
+var P=KAI.plane(svg,{x:[-4,7],y:[-3,6]}),hu,hv;
+var k=KAI.slider({label:'Scalar <i>k</i> in <i>k</i>u',min:-3,max:3,step:0.1,value:1,digits:1,onInput:function(){draw();}});
+var sub=KAI.check({label:'Show <i>u</i> − <i>v</i>',checked:false,onChange:draw});
+KAI.$('#ctl').append(k.el,sub.el,reset(function(){hu.set(3,1);hv.set(1,2);k.set(1);draw();}));
+hu=hd(P,[3,1],'var(--ink)','tip of u',draw);hv=hd(P,[1,2],'var(--blue)','tip of v',draw);P.onResize(draw);
+function draw(){var u=hu.pos(),v=hv.pos(),c=KAI.clear(P.content),t=k.get(),w=[u[0]+v[0],u[1]+v[1]],d=[u[0]-v[0],u[1]-v[1]];
+P.poly(c,[[0,0],u,w,v],{fill:'var(--sky-t)',stroke:'none'});
+P.arrow(c,u,w,{stroke:'var(--blue)',dash:'4 4',opacity:0.6});P.arrow(c,v,w,{stroke:'var(--ink)',dash:'4 4',opacity:0.6});
+if(sub.get()){P.arrow(c,v,u,{stroke:'var(--purple)',dash:'4 4'});P.arrow(c,[0,0],d,{stroke:'var(--purple)'});lab(P,c,d,'u−v','var(--purple)');}
+P.arrow(c,[0,0],[t*u[0],t*u[1]],{stroke:'var(--green)',width:5});
+P.arrow(c,[0,0],w,{stroke:'var(--verm)',width:3.4});lab(P,c,w,'u+v','var(--verm)');
+P.arrow(c,[0,0],v,{stroke:'var(--blue)'});lab(P,c,v,'v','var(--blue)');P.arrow(c,[0,0],u,{stroke:'var(--ink)'});lab(P,c,u,'u');
+var nu=Math.hypot(u[0],u[1]),nv=Math.hypot(v[0],v[1]),nw=Math.hypot(w[0],w[1]),eq=Math.abs(nw-nu-nv)<1e-9;
+out([['u + v','('+fmt(w[0],1)+', '+fmt(w[1],1)+')'],['u − v','('+fmt(d[0],1)+', '+fmt(d[1],1)+')'],['<span class="green">k u</span>','('+fmt(t*u[0],2)+', '+fmt(t*u[1],2)+')'],['|u+v|',fmt(nw,3)],['|u| + |v|',fmt(nu+nv,3)]],
+eq?'Equality: u and v point the same way (or one is zero).':'|u+v| &lt; |u|+|v|: the straight route is shorter than the detour.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

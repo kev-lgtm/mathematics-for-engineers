@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A sphere and a plane: circle, tangent or no contact</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A sphere and a plane: circle, tangent or no contact</h1><p>Set the sphere's centre and radius and a plane by its normal direction <span class="v">n</span> and its signed distance <span class="v">δ</span> from the centre; rotate by dragging. Compare <span class="v">|δ|</span> with the radius <span class="v">r</span>.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A sphere and a plane with their intersection circle'});
+function S_(l,mn,mx,v,st,dg){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:dg===undefined?1:dg,onInput:function(){S.refresh();}});}
+var cx=S_('centre x',-2,2,0,0.5),cy=S_('centre y',-2,2,0,0.5),cz=S_('centre z',-2,2,0,0.5),sr=S_('radius r',0.5,3,2,0.5),na=S_('normal a',-3,3,1,1,0),nb=S_('normal b',-3,3,1,1,0),nc=S_('normal c',-3,3,1,1,0),sd=S_('signed distance δ',-4,4,1,0.25,2);
+KAI.$('#ctl').append(sr.el,cx.el,cy.el,cz.el,na.el,nb.el,nc.el,sd.el,KAI.button({label:'Slide the plane to tangent',onClick:function(){sd.set(sd.get()<0?-sr.get():sr.get());S.refresh();}}));
+function ring(C,e1,e2,r,at){var pr=null;for(var i=0;i<=48;i++){var t=i*Math.PI/24,q=ad(C,ad(sc(r*Math.cos(t),e1),sc(r*Math.sin(t),e2)));if(pr)S.line(pr,q,at);pr=q;}}
+S.onDraw(function(S){var C=[cx.get(),cy.get(),cz.get()],r=sr.get(),n=[na.get(),nb.get(),nc.get()],N=nm(n),dl=sd.get();S.grid(4);S.axes(4.3);
+[[[1,0,0],[0,1,0]],[[1,0,0],[0,0,1]],[[0,1,0],[0,0,1]]].forEach(function(e){ring(C,e[0],e[1],r,{stroke:'var(--blue)','stroke-width':1.3,'stroke-opacity':0.8});});S.dot(C,4,{fill:'var(--blue)'});
+if(N<1e-9){out([],'The normal needs at least one nonzero component.');return;}
+var nh=sc(1/N,n),F=ad(C,sc(dl,nh)),t0=Math.abs(nh[0])<0.9?[1,0,0]:[0,1,0],e1=sc(1/nm(cr(nh,t0)),cr(nh,t0)),e2=cr(nh,e1),H=3;
+S.poly([ad(F,ad(sc(H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(-H,e2))),ad(F,ad(sc(H,e1),sc(-H,e2)))],{fill:'var(--sky-t)',stroke:'var(--axis)','stroke-width':1.2});
+var ad_=Math.abs(dl),rows=[['distance centre–plane |δ|',fmt(ad_,3)],['radius r',fmt(r,3)]],note;
+S.line(C,F,{stroke:'var(--orange)','stroke-width':3,'stroke-dasharray':'4 4'});
+if(ad_<r-1e-9){var rc=Math.sqrt(r*r-ad_*ad_);ring(F,e1,e2,rc,{stroke:'var(--verm)','stroke-width':4});rows.unshift(['relation','<b>the plane cuts the sphere in a circle</b>']);rows.push(['circle radius √(r² − δ²)',fmt(rc,3)],['circle centre','('+fmt(F[0],2)+', '+fmt(F[1],2)+', '+fmt(F[2],2)+')']);note='|δ| < r: the intersection is a circle whose centre is the foot of the perpendicular from the sphere’s centre.';}
+else if(Math.abs(ad_-r)<1e-9){S.dot(F,7,{fill:'var(--verm)',stroke:'var(--bg)','stroke-width':2});rows.unshift(['relation','<b>tangent plane</b>']);rows.push(['point of tangency','('+fmt(F[0],2)+', '+fmt(F[1],2)+', '+fmt(F[2],2)+')']);note='|δ| = r: the plane touches the sphere at one point, and the radius to it is perpendicular to the plane.';}
+else{rows.unshift(['relation','<b>no common point</b>']);note='|δ| > r: the plane misses the sphere.';}
+out(rows,note);});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

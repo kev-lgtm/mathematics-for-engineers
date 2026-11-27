@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitting a line to data (least squares)</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Fitting a line to data (least squares)</h1><p>Drag the four data points. The red segments are the vertical residuals; the line <span class="v">y = mx + b</span> is the one that makes the sum of their squares as small as possible.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img','aria-label':'Four draggable data points, the least squares line and the vertical residuals'});KAI.nodeStage=KAI.$('#stage').appendChild(svg);
+function snap(k){return function(p){return [Math.round(p[0]*k)/k,Math.round(p[1]*k)/k];};}
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+function hd(P,pos,col,name,draw,k){k=k||2;return KAI.handle(P,{pos:pos,color:col,constrain:snap(k),step:1/k,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+function lab(P,c,p,t,col){P.text(c,[p[0]+0.15,p[1]+0.2],t,{fill:col||'var(--ink)'});}
+function reset(fn){return KAI.button({label:'Reset',onClick:fn});}
+var P=KAI.plane(svg,{x:[-1,8],y:[-1,8]}),D=[[1,2],[2,3],[3,5],[4,4]];
+var hs=D.map(function(q,i){return hd(P,q,'var(--ink)','data point '+(i+1),draw);});
+KAI.$('#ctl').append(reset(function(){D.forEach(function(q,i){hs[i].set(q[0],q[1]);});draw();}));P.onResize(draw);
+function draw(){var p=hs.map(function(x){return x.pos();}),n=p.length,c=KAI.clear(P.content),mx=0,my=0;p.forEach(function(q){mx+=q[0]/n;my+=q[1]/n;});
+var sxx=0,sxy=0;p.forEach(function(q){sxx+=(q[0]-mx)*(q[0]-mx);sxy+=(q[0]-mx)*(q[1]-my);});
+if(sxx<1e-9){out([],'All x-values are equal: a function y = mx + b cannot fit (the best line is vertical).');return;}
+var m=sxy/sxx,b=my-m*mx,sse=0;P.line(c,[-1,m*-1+b],[8,m*8+b],{stroke:'var(--blue)','stroke-width':2.8});
+p.forEach(function(q){var r=q[1]-(m*q[0]+b);sse+=r*r;P.line(c,q,[q[0],m*q[0]+b],{stroke:'var(--verm)','stroke-width':2});});
+P.dot(c,[mx,my],6,{fill:'var(--green)',stroke:'var(--bg)','stroke-width':2});
+out([['slope m',fmt(m,3)],['intercept b',fmt(b,3)],['sum of squares',fmt(sse,3)],['<span class="green">centre of mass</span>','('+fmt(mx,2)+', '+fmt(my,2)+')']],'The best line always passes through the centre of mass of the data.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

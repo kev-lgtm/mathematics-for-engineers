@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A block on an incline: resolving the weight</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A block on an incline: resolving the weight</h1><p>Tilt the ramp and watch the weight split into a component along the slope and one pressing into it. The block slides when <span class="v">tan θ &gt; μ</span>.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-6,8],y:[-2,9]});
+function S_(l,mn,mx,v,st,dg,u){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:dg,unit:u,onInput:function(){draw();}});}
+var st=S_('slope angle θ',0,60,30,1,0,'°'),sm=S_('mass m',1,10,5,1,0,' kg'),su=S_('friction coefficient μ',0,1,0.3,0.05,2,'');
+KAI.$('#ctl').append(st.el,sm.el,su.el);P.onResize(draw);
+function draw(){var th=KAI.rad(st.get()),m=sm.get(),mu=su.get(),g=9.8,W=m*g,c=KAI.clear(P.content),u=[Math.cos(th),Math.sin(th)],n=[-Math.sin(th),Math.cos(th)],O=[-5,0],L=9,k=0.07;
+P.poly(c,[O,[O[0]+L*u[0],O[1]+L*u[1]],[O[0]+L*u[0],0]],{fill:'var(--sky-t)',stroke:'var(--blue)','stroke-width':2.4});
+var cen=[O[0]+4.5*u[0]+0.6*n[0],O[1]+4.5*u[1]+0.6*n[1]],h=0.6,corner=function(a,b){return [cen[0]+a*u[0]*h+b*n[0]*h,cen[1]+a*u[1]*h+b*n[1]*h];};
+P.poly(c,[corner(-1,-1),corner(1,-1),corner(1,1),corner(-1,1)],{fill:'var(--orange-t)',stroke:'var(--orange)','stroke-width':2.2});
+var par=W*Math.sin(th),per=W*Math.cos(th),fmax=mu*per,slips=par>fmax+1e-9,fr=slips?fmax:par;
+function arr(v,col,dash,w){P.arrow(c,cen,[cen[0]+v[0]*k,cen[1]+v[1]*k],{stroke:col,width:w||3.2,dash:dash});}
+arr([-par*u[0],-par*u[1]],'var(--orange)','5 4',2.4);arr([-per*n[0],-per*n[1]],'var(--orange)','5 4',2.4);
+arr([0,-W],'var(--verm)');arr([per*n[0],per*n[1]],'var(--blue)');if(fr>1e-9)arr([fr*u[0],fr*u[1]],'var(--green)');
+P.text(c,[cen[0]+0.3,cen[1]-W*k-0.3],'W',{fill:'var(--verm)'});P.text(c,[cen[0]+per*n[0]*k+0.15,cen[1]+per*n[1]*k+0.2],'N',{fill:'var(--blue)'});
+var crit=KAI.deg(Math.atan(mu));
+out([['<span class="verm">weight W = mg</span>',fmt(W,1)+' N'],['along the slope W sin θ',fmt(par,1)+' N'],['<span class="blue">normal force N = W cos θ</span>',fmt(per,1)+' N'],['max friction μN',fmt(fmax,1)+' N'],['<b>'+(slips?'the block slides':'the block stays')+'</b>',slips?'a = '+fmt(g*(Math.sin(th)-mu*Math.cos(th)),2)+' m/s²':'friction '+fmt(fr,1)+' N balances'],['critical angle arctan μ',fmt(crit,1)+'°']],'W splits into W sin θ (down the slope) and W cos θ (into it); the component along the slope is balanced by friction only while W sin θ ≤ μ·W cos θ, that is tan θ ≤ μ.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

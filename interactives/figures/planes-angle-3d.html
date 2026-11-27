@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two planes: angle, intersection line, parallel or perpendicular</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Two planes: angle, intersection line, parallel or perpendicular</h1><p>Choose a plane and set its coefficients <span class="v">ax + by + cz + d = 0</span>. Rotate the scene by dragging. The angle between the planes is the angle between their normals; the planes meet in a line along <span class="v">n₁ × n₂</span>.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'Two planes in space with their normals and line of intersection'});
+var Q=[[0,0,1,0],[1,0,1,-1]],DEF=JSON.stringify(Q),cur=0,sl=[];
+var sg=KAI.seg({legend:'Edit plane',value:'0',options:[{value:'0',label:'Plane 1'},{value:'1',label:'Plane 2'}],onChange:function(k){cur=+k;sync();}});
+['a','b','c','d'].forEach(function(n,i){sl.push(KAI.slider({label:n,min:i<3?-4:-6,max:i<3?4:6,step:1,value:0,digits:0,onInput:function(v){Q[cur][i]=v;S.refresh();}}));});
+KAI.$('#ctl').append(sg.el);sl.forEach(function(x){KAI.$('#ctl').appendChild(x.el);});
+KAI.$('#ctl').appendChild(KAI.button({label:'Reset planes and view',onClick:function(){Q=JSON.parse(DEF);sync();S.reset();}}));
+function sync(){sl.forEach(function(x,i){x.set(Q[cur][i]);});S.refresh();}
+function patch(q,fill,col){var n=q.slice(0,3),N=nm(n),nh=sc(1/N,n),F=sc(-q[3]/(N*N),n),t=Math.abs(nh[0])<0.9?[1,0,0]:[0,1,0],e1=sc(1/nm(cr(nh,t)),cr(nh,t)),e2=cr(nh,e1),H=3;
+S.poly([ad(F,ad(sc(H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(-H,e2))),ad(F,ad(sc(H,e1),sc(-H,e2)))],{fill:fill,stroke:col,'stroke-width':1.4});
+S.arrow(F,ad(F,sc(1.5,nh)),{stroke:col,width:3.4});}
+S.onDraw(function(S){var a=Q[0],b=Q[1],n1=a.slice(0,3),n2=b.slice(0,3),N1=nm(n1),N2=nm(n2);S.grid(4);S.axes(4.3);
+if(N1<1e-9||N2<1e-9){out([],'Each plane needs a nonzero normal: at least one of a, b, c must be nonzero.');return;}
+patch(a,'var(--sky-t)','var(--blue)');patch(b,'var(--orange-t)','var(--verm)');
+var d=cr(n1,n2),Nd=nm(d),cs=Math.abs(dt(n1,n2))/(N1*N2),ph=KAI.deg(Math.acos(KAI.clamp(cs,0,1))),rows=[['n₁, n₂','('+n1.join(',')+'), ('+n2.join(',')+')'],['angle between planes',fmt(ph,1)+'°']],note;
+if(Nd<1e-9){var k=n2[0]?n2[0]/n1[0]:n2[1]?n2[1]/n1[1]:n2[2]/n1[2],same=Math.abs(b[3]-k*a[3])<1e-9;rows.unshift(['relation','<b>'+(same?'coincident':'parallel')+'</b>']);note=same?'n₁ ∥ n₂ and the equations agree: one plane.':'n₁ ∥ n₂ but the planes are shifted: parallel, no common point.';}
+else{var p=sc(1/(Nd*Nd),ad(sc(-a[3],cr(n2,d)),sc(-b[3],cr(d,n1)))),u=sc(1/Nd,d);S.line(ad(p,sc(-4,u)),ad(p,sc(4,u)),{stroke:'var(--ink)','stroke-width':3.6});S.text(ad(p,sc(3.4,u)),'L');
+rows.unshift(['relation','<b>'+(Math.abs(dt(n1,n2))<1e-9?'perpendicular, meet in a line':'intersecting in a line')+'</b>']);rows.push(['direction n₁×n₂',tri(d)],['a point of L',tri(p)]);note=Math.abs(dt(n1,n2))<1e-9?'n₁·n₂ = 0: the planes are perpendicular (90°).':'The planes meet in the line L. Its direction is perpendicular to both normals.';}
+out(rows,note);});
+sync();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

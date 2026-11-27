@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The magnetic field around a straight wire</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>The magnetic field around a straight wire</h1><p>A long straight wire along the z-axis carries a current <span class="v">I</span>. The field circles the wire (right-hand rule) with magnitude <span class="v">B = μ₀I / (2πr)</span>. Move the point <span class="v">P</span>; rotate the scene by dragging.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A long straight wire with circular magnetic field lines and the field vector at a point'});
+function S_(l,mn,mx,v,st,dg,u){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:dg,unit:u,onInput:function(){S.refresh();}});}
+var si=S_('current I',-10,10,5,1,0,' A'),sr=S_('distance r from the wire',0.5,3,1.5,0.25,2,''),sp=S_('azimuth of P',0,360,40,5,0,'°'),sz=S_('height of P',-3,3,1,0.5,1,'');
+KAI.$('#ctl').append(si.el,sr.el,sp.el,sz.el);
+function ring(r,z,at){var pr=null;for(var i=0;i<=48;i++){var t=i*Math.PI/24,q=[r*Math.cos(t),r*Math.sin(t),z];if(pr)S.line(pr,q,at);pr=q;}}
+S.onDraw(function(S){var I=si.get(),r=sr.get(),ph=KAI.rad(sp.get()),z=sz.get(),sg=I>=0?1:-1;S.grid(4);S.axes(4.3);
+[-3,-1.5,0,1.5,3].forEach(function(zz){[1,2].forEach(function(k){ring(r*k*(k===2?1.0:1),zz,{stroke:'var(--axis)','stroke-width':1,'stroke-opacity':k===1?0.9:0.5,'stroke-dasharray':'3 4'});});});
+S.line([0,0,-4.2],[0,0,4.2],{stroke:'var(--ink)','stroke-width':5});if(I!==0)S.arrow([0,0,0],[0,0,sg*2.2],{stroke:'var(--orange)',width:4});S.text([0,0,4.2],'I',{fill:'var(--orange)'});
+var Pt=[r*Math.cos(ph),r*Math.sin(ph),z],tg=[-Math.sin(ph)*sg,Math.cos(ph)*sg,0],B=0.2*Math.abs(I)/r,L=Math.min(2.8,Math.max(0.15,B*1.2));
+S.line([0,0,z],Pt,{stroke:'var(--axis)','stroke-width':1.4});S.dot(Pt,6,{fill:'var(--blue)'});S.text(Pt,'P',{fill:'var(--blue)'});if(I!==0)S.arrow(Pt,ad(Pt,sc(L,tg)),{stroke:'var(--verm)',width:4});
+out([['field strength B',fmt(B,3)+' μT'],['direction of B',I===0?'no current':'tangent to the circle, '+(sg>0?'counter-clockwise':'clockwise')+' seen from above'],['B at distance 2r',fmt(B/2,3)+' μT']],'With μ₀/(2π) = 2·10⁻⁷ T·m/A, a current of 5 A gives 1 μT at 1 m. The field is perpendicular to both the wire and the line from the wire to P (B is along k × r̂ for I along +z), and it falls off like 1/r: doubling the distance halves it. The dashed rings are field lines at distance r and 2r.');});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

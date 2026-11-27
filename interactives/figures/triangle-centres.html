@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Triangle centres and the Euler line</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Triangle centres and the Euler line</h1><p>Drag the vertices <span class="v">A</span>, <span class="v">B</span>, <span class="v">C</span>. The centroid <span class="v">G</span>, circumcentre <span class="v">O</span> and orthocentre <span class="v">H</span> always lie on one line (the Euler line), with <span class="v">GH = 2·OG</span>.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-7,8],y:[-6,7]});
+function hd(pos,name){return KAI.handle(P,{pos:pos,color:'var(--ink)',constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+var hs=[hd([-3,-2],'vertex A'),hd([4,-1],'vertex B'),hd([1,4],'vertex C')];
+var ck={};[['med','Medians (centroid G)',true],['alt','Altitudes (orthocentre H)',true],['circ','Circumcircle (centre O)',true],['inc','Incircle (centre I)',false],['eul','Euler line',true]].forEach(function(c){ck[c[0]]=KAI.check({label:c[1],checked:c[2],onChange:draw});KAI.$('#ctl').appendChild(ck[c[0]].el);});
+KAI.$('#ctl').appendChild(KAI.button({label:'Reset',onClick:function(){[[-3,-2],[4,-1],[1,4]].forEach(function(q,i){hs[i].set(q[0],q[1]);});draw();}}));P.onResize(draw);
+function circle(c,O,r,at){var pts=[];for(var i=0;i<=120;i++){var t=i*Math.PI/60;pts.push([O[0]+r*Math.cos(t),O[1]+r*Math.sin(t)]);}P.polyline(c,pts,at);}
+function lab(c,p,t,col){P.dot(c,p,5,{fill:col,stroke:'var(--bg)','stroke-width':1.5});P.text(c,[p[0]+0.2,p[1]+0.4],t,{fill:col});}
+function draw(){var V=hs.map(function(x){return x.pos();}),A=V[0],B=V[1],C=V[2],c=KAI.clear(P.content),ar=(B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0]);
+if(Math.abs(ar)<1e-9){out([],'The three points are on one line: there is no triangle.');return;}
+var a=Math.hypot(B[0]-C[0],B[1]-C[1]),b=Math.hypot(C[0]-A[0],C[1]-A[1]),cc=Math.hypot(A[0]-B[0],A[1]-B[1]),G=[(A[0]+B[0]+C[0])/3,(A[1]+B[1]+C[1])/3];
+var d=2*(A[0]*(B[1]-C[1])+B[0]*(C[1]-A[1])+C[0]*(A[1]-B[1])),s2=function(p){return p[0]*p[0]+p[1]*p[1];};
+var O=[(s2(A)*(B[1]-C[1])+s2(B)*(C[1]-A[1])+s2(C)*(A[1]-B[1]))/d,(s2(A)*(C[0]-B[0])+s2(B)*(A[0]-C[0])+s2(C)*(B[0]-A[0]))/d],H=[A[0]+B[0]+C[0]-2*O[0],A[1]+B[1]+C[1]-2*O[1]],I=[(a*A[0]+b*B[0]+cc*C[0])/(a+b+cc),(a*A[1]+b*B[1]+cc*C[1])/(a+b+cc)],R=Math.hypot(A[0]-O[0],A[1]-O[1]),r=Math.abs(ar)/(a+b+cc);
+P.poly(c,[A,B,C],{fill:'var(--sky-t)',stroke:'var(--blue)','stroke-width':2.4});
+if(ck.circ.get())circle(c,O,R,{stroke:'var(--green)','stroke-width':1.6});if(ck.inc.get())circle(c,I,r,{stroke:'var(--orange)','stroke-width':1.8});
+if(ck.med.get())[[A,B,C],[B,C,A],[C,A,B]].forEach(function(t){P.line(c,t[0],[(t[1][0]+t[2][0])/2,(t[1][1]+t[2][1])/2],{stroke:'var(--blue)','stroke-dasharray':'4 4','stroke-width':1.4});});
+if(ck.alt.get())[[A,B,C],[B,C,A],[C,A,B]].forEach(function(t){var u=[t[2][0]-t[1][0],t[2][1]-t[1][1]],k=((t[0][0]-t[1][0])*u[0]+(t[0][1]-t[1][1])*u[1])/(u[0]*u[0]+u[1]*u[1]);P.line(c,t[0],[t[1][0]+k*u[0],t[1][1]+k*u[1]],{stroke:'var(--verm)','stroke-dasharray':'4 4','stroke-width':1.4});});
+var eq=Math.hypot(H[0]-O[0],H[1]-O[1])<1e-9;if(ck.eul.get()&&!eq){var u=[H[0]-O[0],H[1]-O[1]],l=Math.hypot(u[0],u[1]);P.line(c,[O[0]-40*u[0]/l,O[1]-40*u[1]/l],[O[0]+40*u[0]/l,O[1]+40*u[1]/l],{stroke:'var(--purple)','stroke-width':2.2});}
+lab(c,G,'G','var(--blue)');lab(c,O,'O','var(--green)');lab(c,H,'H','var(--verm)');if(ck.inc.get())lab(c,I,'I','var(--orange)');
+['A','B','C'].forEach(function(n,i){P.text(c,[V[i][0]-0.5,V[i][1]-0.7],n,{});});
+var t=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+')';},og=Math.hypot(G[0]-O[0],G[1]-O[1]),gh=Math.hypot(H[0]-G[0],H[1]-G[1]);
+out([['<span class="blue">centroid G</span>',t(G)],['<span class="green">circumcentre O</span>',t(O)],['<span class="verm">orthocentre H</span>',t(H)],['incentre I',t(I)],['R, r',fmt(R,3)+', '+fmt(r,3)],['|GH| / |OG|',eq?'O = G = H':fmt(gh/og,3)]],eq?'Equilateral triangle: all the centres coincide.':'G divides OH in the ratio 1 : 2 for every triangle. For a right triangle, H is the right-angle vertex and O is the midpoint of the hypotenuse; for an obtuse one, H and O lie outside.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

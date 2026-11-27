@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive tools — Analytic Geometry, Part 2 · Mathematics for Engineering Students</title>
+<meta name="description" content="Interactive figures for the Analytic Geometry notes, Part 2: vectors, lines, conics, planes and surfaces in the plane and in space, 49 figures including 3D. Works offline.">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+
+<style>
+:root {
+  --bg: #F5F6FB;
+  --surface: #FFFFFF;
+  --ink: #14173A;
+  --muted: #5B607F;
+  --line: #D9DCEC;
+  --accent: #3B3FD8;
+  --accent2: #E8457C;
+  --oi-blue: #0072B2;
+  --oi-green: #00785A;
+  --oi-verm: #B34700;
+  --oi-orange: #E69F00;
+  --oi-sky: #56B4E9;
+  --title: #19196E;
+  --grad: linear-gradient(120deg, var(--accent), var(--accent2));
+  --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --display: "Big Shoulders Display", "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --row-color: #F4A261;
+  --col-color: #56B4E9;
+  --cell-color: #2A9D8F;
+}
+:root{color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg: #0F1226;--surface: #171B38;--ink: #EEF0FF;--muted: #9AA0C4;--line: #262B52;--accent: #8C93FF;--accent2: #FF7AA8;--title: #B8C0FF;--row-color: #E9C46A;--col-color: #7EC8E3;--cell-color: #2A9D8F;}}
+:root[data-theme="dark"]{color-scheme:dark;--bg: #0F1226;--surface: #171B38;--ink: #EEF0FF;--muted: #9AA0C4;--line: #262B52;--accent: #8C93FF;--accent2: #FF7AA8;--title: #B8C0FF;--row-color: #E9C46A;--col-color: #7EC8E3;--cell-color: #2A9D8F;}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 1.05rem/1.6 var(--sans); -webkit-font-smoothing: antialiased;
+}
+a { color: var(--oi-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 20px;
+}
+.topbar-in {
+  max-width: 880px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; gap: 12px 20px;
+  align-items: center; justify-content: space-between;
+}
+.brand {
+  font-family: var(--display); font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  font-size: 1.05rem; color: var(--ink);
+}
+.topbar nav { display: flex; flex-wrap: wrap; gap: 12px; font-size: .88rem; font-weight: 500; color: var(--muted); }
+.topbar nav a { color: inherit; }
+.topbar nav a:hover { color: var(--accent); }
+
+h1 {
+  font-family: var(--display); font-weight: 600;
+  font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.15;
+  color: var(--title); margin: 1.4em 0 .3em;
+}
+h2 {
+  font-family: var(--display); font-weight: 600;
+  font-size: 1.45rem; color: var(--title); margin: 2.2em 0 .5em;
+  border-bottom: 2px solid var(--line); padding-bottom: .25em;
+}
+h2 .num { color: var(--accent); margin-right: .35em; }
+.lead { color: var(--muted); font-size: 1.05rem; max-width: 42ch; margin: 0 0 1.5em; }
+
+/* Interactive card */
+.interactive {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px 20px;
+  margin: 1.2em 0 2em;
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.interactive .box-label {
+  font-size: .75rem; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 6px;
+}
+.interactive .hint {
+  font-size: .95rem; color: var(--muted); margin: 0 0 14px;
+}
+
+/* Matrix grid (shared) */
+.matrix-grid {
+  display: inline-grid;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: .95rem;
+  user-select: none;
+}
+.matrix-grid .cell {
+  width: 52px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.matrix-grid .cell:hover { border-color: var(--accent); }
+.matrix-grid .cell.row-hl { background: color-mix(in srgb, var(--row-color) 28%, var(--bg)); }
+.matrix-grid .cell.col-hl { background: color-mix(in srgb, var(--col-color) 28%, var(--bg)); }
+.matrix-grid .cell.both-hl {
+  background: color-mix(in srgb, var(--cell-color) 40%, var(--bg));
+  border-color: var(--cell-color);
+  font-weight: 600;
+  color: var(--cell-color);
+}
+.matrix-grid .cell.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Editable number inputs inside matrices */
+.matrix-grid input.cell-in {
+  width: 52px; height: 40px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: .95rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0;
+}
+.matrix-grid input.cell-in:focus {
+  outline: 2px solid var(--accent);
+  border-color: transparent;
+}
+
+/* Controls */
+.controls {
+  display: flex; flex-wrap: wrap; gap: 8px 12px;
+  align-items: center; margin: 12px 0;
+}
+.controls button, .btn {
+  font-family: var(--sans);
+  font-size: .88rem; font-weight: 500;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.controls button:hover, .btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.controls button.active, .btn.active {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.controls label { font-size: .9rem; color: var(--muted); }
+.controls input[type="range"] {
+  width: 140px; accent-color: var(--accent); cursor: pointer;
+}
+.out {
+  font-family: var(--mono);
+  font-size: .95rem;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  margin-top: 10px;
+  min-height: 1.4em;
+}
+.out strong { color: var(--accent); }
+.warn { color: var(--oi-verm); font-weight: 500; }
+
+/* SVG canvases */
+.svg-wrap {
+  width: 100%;
+  max-width: 420px;
+  margin: 12px auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.svg-wrap svg { display: block; width: 100%; height: auto; }
+
+/* Two-column layouts */
+.pair {
+  display: flex; flex-wrap: wrap; gap: 20px;
+  align-items: flex-start; justify-content: center;
+  margin: 12px 0;
+}
+.pair > div { text-align: center; }
+.pair .caption {
+  font-size: .85rem; color: var(--muted); margin-top: 6px;
+}
+
+/* Legend chips */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px 16px;
+  font-size: .85rem; color: var(--muted); margin: 8px 0 4px;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.leg-row::before { background: var(--row-color); }
+.leg-col::before { background: var(--col-color); }
+.leg-cell::before { background: var(--cell-color); }
+
+footer {
+  max-width: 880px; margin: 0 auto;
+  padding: 28px 20px 48px;
+  border-top: 1px solid var(--line);
+  color: var(--muted); font-size: .9rem;
+}
+.toc-mini {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 16px 20px; margin: 1.5em 0;
+}
+.toc-mini ol { margin: 0; padding-left: 1.3em; }
+.toc-mini li { margin: .3em 0; }
+.toc-mini a { color: var(--ink); }
+.toc-mini a:hover { color: var(--accent); }
+
+@media (max-width: 600px) {
+  .wrap { padding: 0 14px 60px; }
+  .matrix-grid .cell, .matrix-grid input.cell-in { width: 44px; height: 36px; font-size: .88rem; }
+}
+
+/* ===== hub additions ===== */
+.jump{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 1.4em}
+.jump a{display:inline-block;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:.9rem;font-weight:500}
+.jump a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+h2.part{font-size:1.75rem;margin-top:2.2em;border-bottom:3px solid var(--accent)}
+h2.part .num{color:var(--muted);font-size:.8em}
+.exp-note{max-width:62ch;margin:0 0 1.1em;padding:10px 14px;border:1px solid var(--line);border-left:4px solid var(--oi-orange);border-radius:10px;background:var(--surface);color:var(--ink);font-size:.95rem}.exp-note b{color:var(--oi-orange)}
+.expnew{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--oi-orange);border:1px solid var(--oi-orange);border-radius:999px;padding:0 7px;margin-left:6px;vertical-align:middle}
+.part-note{color:var(--muted);max-width:62ch;margin:0 0 1em}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin:1.2em 0 2em}
+.fcard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--oi-green);border-radius:14px;padding:14px 16px 16px;display:grid;gap:8px;align-content:start;min-width:0}
+.fcard h3{margin:0;font-size:1.05rem;line-height:1.3}
+.fcard .fnum{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:2px}
+.fcard p{margin:0;font-size:.92rem;color:var(--muted);line-height:1.5}
+.fcard .try{color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.fcard .where{font-size:.8rem}
+.fcard .facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.fcard .btn{text-decoration:none;display:inline-block;cursor:pointer}
+.fbox iframe{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-top:6px}
+.fcard.open{grid-column:1/-1}
+.license{font-size:.82rem;color:var(--muted);max-width:70ch;margin:.6em auto 0}
+footer{text-align:center;padding:28px 20px 40px;font-size:.9rem;color:var(--muted)}
+footer p{margin:.3em 0}
+@media print{.topbar,.jump,.fbox{display:none!important}}
+
+
+/* analytic geometry hub */
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 1.2em}
+.filters span.lab{color:var(--muted);font-size:.9rem;margin-right:2px}
+.filters label{position:relative;display:inline-block}
+.filters input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.filters label span{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:.9rem;font-weight:500}
+.filters input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:600}
+.filters input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.dim{display:inline-block;font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--oi-blue);color:var(--oi-blue);border-radius:6px;padding:0 6px;margin-left:8px;vertical-align:middle}
+.fcard[data-dim="3D"]{border-left-color:var(--oi-blue)}
+h2.part .cnt{color:var(--muted);font-size:.6em;font-weight:500;margin-left:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.fcard.hidden{display:none}
+h2.part.hidden,.sec-note.hidden{display:none}
+
+/* theme-v1: Light / Auto / Dark switch */
+.theme-switch{display:none;align-items:center;gap:2px;padding:2px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.theme-ui .theme-switch{display:inline-flex}
+.theme-switch button{all:unset;box-sizing:border-box;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer}
+.theme-switch button:hover{color:var(--ink)}
+.theme-switch button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
+.theme-switch button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.theme-switch svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (forced-colors:active){.theme-switch button[aria-pressed="true"]{outline:2px solid CanvasText}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="../../analytic-geometry.html">Analytic Geometry · Interactive tools</a>
+    <nav aria-label="Site">
+      <a href="../../index.html">Home</a>
+      <a href="../../analytic-geometry.html">Notes</a>
+      <a href="../index.html">Linear Algebra tools</a>
+      <a href="#sec1">Figures</a>
+      <a href="analytic-geometry/index.html">Analytic Geometry tools</a>
+          <div class="theme-switch" role="group" aria-label="Colour theme"><button type="button" data-theme-set="light" aria-pressed="false" title="Light theme" aria-label="Light theme"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></button><button type="button" data-theme-set="auto" aria-pressed="false" title="Match my device" aria-label="Match my device setting"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button><button type="button" data-theme-set="dark" aria-pressed="false" title="Dark (navy) theme" aria-label="Dark theme"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button></div>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Interactive tools</h1>
+  <p class="lead">Live figures for the Analytic Geometry notes (Part 2, chapters 4 to 8): vectors, lines, conics, planes and surfaces. Nothing to install and no internet needed: drag the points, move the sliders, and turn the 3D pictures with the mouse or finger.</p>
+  <p class="exp-note" role="note"><b>Experimental.</b> These interactive figures are new and still being developed. Some things may not work perfectly yet, and more figures and features are coming. If something looks wrong, please let the author know.</p>
+  <p class="part-note">49 figures, 21 of them in 3D. Each card names the related section of the notes. Each figure is a single page that also works on its own: use <b>Preview here</b> to try it on this page, or <b>Open full page</b> for the full-size version. Points can be dragged, or focused with Tab and moved with the arrow keys (Shift = larger steps). Most figures also appear inside the notes, next to the figure they belong to (the card says where). A 3D picture turns when you drag it (or focus it and press the arrow keys; Home resets the view). On a phone, drag outside a 3D picture to scroll the page. The matching tools for Part 1 are on the <a href="../index.html">Linear Algebra page</a>.</p>
+  <nav class="jump" aria-label="Sections of this page">
+    <a href="#sec1">1 · Vectors and forces (9)</a>
+    <a href="#sec2">2 · Lines in the plane (10)</a>
+    <a href="#sec3">3 · Motion, optimisation and positioning (4)</a>
+    <a href="#sec4">4 · Conic sections (8)</a>
+    <a href="#sec5">5 · Planes, lines and spheres in space (14)</a>
+    <a href="#sec6">6 · Surfaces (4)</a>
+  </nav>
+  <fieldset class="filters" id="filters" style="border:0;padding:0;margin:0 0 1.2em"><legend class="sr-only">Show figures</legend>
+    <span class="lab">Show:</span>
+    <label><input type="radio" name="dim" value="all" checked><span>All (49)</span></label>
+    <label><input type="radio" name="dim" value="2D"><span>2D only (28)</span></label>
+    <label><input type="radio" name="dim" value="3D"><span>3D only (21)</span></label>
+  </fieldset>
+
+  <h2 class="part" id="sec1"><span class="num">1</span> Vectors and forces <span class="cnt">(9)</span></h2>
+  <div class="gal">
+    <article class="fcard" id="fig-vectors-add" data-dim="2D">
+      <h3><span class="fnum">Figure 1</span>Adding, subtracting and scaling vectors</h3>
+      <p>Drag the tips of u and v. The sum is the diagonal of the parallelogram; a slider scales u.</p>
+      <p class="try"><b>Try:</b> Drag v until it points the same way as u. When does |u + v| equal |u| + |v|?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-4-2-2">4.2.2 Vector Addition and Subtraction</a> &middot; <a href="../../analytic-geometry.html#fig:av">Figure 4.10</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/vectors-add.html?title=0" data-title="Adding, subtracting and scaling vectors">Preview here</button> <a class="btn" href="../figures/vectors-add.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-dot-projection" data-dim="2D">
+      <h3><span class="fnum">Figure 2</span>Dot product, projection and reflection</h3>
+      <p>Drag u and v. See u·v, the angle, the projection of u on v and the reflection of u in the line of v.</p>
+      <p class="try"><b>Try:</b> Make u perpendicular to v. What are u·v and the projection?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:proj">4.2.7 Projection of a Vector onto Another Vector</a> &middot; <a href="../../analytic-geometry.html#fig:pro">Figure 4.16</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/dot-projection.html?title=0" data-title="Dot product, projection and reflection">Preview here</button> <a class="btn" href="../figures/dot-projection.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-independence-plane" data-dim="2D">
+      <h3><span class="fnum">Figure 3</span>Linear independence and coordinates in the plane</h3>
+      <p>Write the target w as c₁v₁ + c₂v₂. The determinant of [v₁ v₂] tells whether the coefficients are unique.</p>
+      <p class="try"><b>Try:</b> Drag v₂ until it is parallel to v₁. What happens to the determinant and to c₁, c₂?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:linind">4.3 Linear Independence</a> &middot; <a href="../../analytic-geometry.html#fig:li2">Figure 4.19</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/independence-plane.html?title=0" data-title="Linear independence and coordinates in the plane">Preview here</button> <a class="btn" href="../figures/independence-plane.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-cross-product-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 4</span>Cross product, area and volume in 3D<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Set the components of u, v and a third vector a. u × v is perpendicular to both; its length is the parallelogram area.</p>
+      <p class="try"><b>Try:</b> Make u and v parallel. What happens to u × v and the area? Tick the box to see the volume.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-4-2-4">4.2.4 Cross Product in R³</a> &middot; <a href="../../analytic-geometry.html#fig:cv">Figure 4.13</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/cross-product-3d.html?title=0" data-title="Cross product, area and volume in 3D">Preview here</button> <a class="btn" href="../figures/cross-product-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-direction-cosines-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 5</span>Direction angles and direction cosines<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>A vector makes angles α, β, γ with the axes. The squares of the three cosines always add up to 1.</p>
+      <p class="try"><b>Try:</b> Try (1, 0, 0), then (1, 1, 1). Check cos²α + cos²β + cos²γ each time.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:dircos">4.2.9 Direction Cosines in R² and R³</a> &middot; <a href="../../analytic-geometry.html#fig:dircos">Figure 4.18</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/direction-cosines-3d.html?title=0" data-title="Direction angles and direction cosines">Preview here</button> <a class="btn" href="../figures/direction-cosines-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-torque-lever" data-dim="2D">
+      <h3><span class="fnum">Figure 6</span>Torque: lever arm and the cross product</h3>
+      <p>Drag the point where the force acts and the tip of the force arrow. The torque is the 2D cross product r × F.</p>
+      <p class="try"><b>Try:</b> Make F point along the lever (parallel to r). What is the torque?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c4-apps">4.4 Applications in Physics and Engineering</a> &middot; <a href="../../analytic-geometry.html#fig:torque_lever">Figure 4.24</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/torque-lever.html?title=0" data-title="Torque: lever arm and the cross product">Preview here</button> <a class="btn" href="../figures/torque-lever.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-incline-forces" data-dim="2D">
+      <h3><span class="fnum">Figure 7</span>A block on an incline: resolving the weight</h3>
+      <p>Tilt the ramp and watch the weight split into a part along the slope and a part pressing into it. Friction decides whether the block slides.</p>
+      <p class="try"><b>Try:</b> Raise the slope until the block starts to slide. Compare the angle with arctan μ.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:ramp">7.6.4 Mechanics: A Block on a Ramp</a> &middot; <a href="../../analytic-geometry.html#fig:ramp">Figure 7.21</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/incline-forces.html?title=0" data-title="A block on an incline: resolving the weight">Preview here</button> <a class="btn" href="../figures/incline-forces.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-cables-equilibrium" data-dim="2D">
+      <h3><span class="fnum">Figure 8</span>Two cables hold a sign: tensions and force triangle</h3>
+      <p>Change the cable angles and the weight. The three forces at the knot always close into a triangle.</p>
+      <p class="try"><b>Try:</b> Make both cable angles small. What happens to the tensions?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c4-apps">4.4 Applications in Physics and Engineering</a> &middot; <a href="../../analytic-geometry.html#fig:sign_cables">Figure 4.21</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/cables-equilibrium.html?title=0" data-title="Two cables hold a sign: tensions and force triangle">Preview here</button> <a class="btn" href="../figures/cables-equilibrium.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-wind-triangle" data-dim="2D">
+      <h3><span class="fnum">Figure 9</span>The wind triangle: heading, wind and ground track</h3>
+      <p>An aircraft's velocity plus the wind gives the ground velocity. Read ground speed, track and drift angle.</p>
+      <p class="try"><b>Try:</b> Set 'wind blowing from' equal to the heading. What are the ground speed and the drift?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c4-apps">4.4 Applications in Physics and Engineering</a> &middot; <a href="../../analytic-geometry.html#fig:wind">Figure 4.23</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/wind-triangle.html?title=0" data-title="The wind triangle: heading, wind and ground track">Preview here</button> <a class="btn" href="../figures/wind-triangle.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+  <h2 class="part" id="sec2"><span class="num">2</span> Lines in the plane <span class="cnt">(10)</span></h2>
+  <div class="gal">
+    <article class="fcard" id="fig-line-forms" data-dim="2D">
+      <h3><span class="fnum">Figure 10</span>One line, eight equations</h3>
+      <p>Drag two points. All eight forms of the line equation update together.</p>
+      <p class="try"><b>Try:</b> Make the line vertical. Which forms stop working, and why?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c5-forms">5.1 Forms of the Equation of a Line</a> &middot; <a href="../../analytic-geometry.html#fig:rosetta">Figure 5.4</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/line-forms.html?title=0" data-title="One line, eight equations">Preview here</button> <a class="btn" href="../figures/line-forms.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-lines-two" data-dim="2D">
+      <h3><span class="fnum">Figure 11</span>Two lines: intersection, parallel, angle</h3>
+      <p>Drag four points to place two lines. The number D = A₁B₂ − A₂B₁ decides between one point, parallel or equal.</p>
+      <p class="try"><b>Try:</b> Drag the points until D = 0. What do the two lines look like?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:intersect">5.2 Intersection of Two Lines</a> &middot; <a href="../../analytic-geometry.html#fig:intersect3">Figure 5.5</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/lines-two.html?title=0" data-title="Two lines: intersection, parallel, angle">Preview here</button> <a class="btn" href="../figures/lines-two.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-pencil-lines" data-dim="2D">
+      <h3><span class="fnum">Figure 12</span>A pencil of lines through a point</h3>
+      <p>The lines cos θ·L₁ + sin θ·L₂ = 0 all pass through the intersection of L₁ and L₂.</p>
+      <p class="try"><b>Try:</b> Tick 'Show the whole pencil'. Which θ gives L₁, and which gives L₂?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:intersect">5.2 Intersection of Two Lines</a> &middot; <a href="../../analytic-geometry.html#fig:intersect3">Figure 5.5</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/pencil-lines.html?title=0" data-title="A pencil of lines through a point">Preview here</button> <a class="btn" href="../figures/pencil-lines.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-point-line-distance" data-dim="2D">
+      <h3><span class="fnum">Figure 13</span>Distance from a point to a line, and its mirror image</h3>
+      <p>Drag the line and the point Q. Read the distance, the foot of the perpendicular and the mirror image Q′.</p>
+      <p class="try"><b>Try:</b> Slide R along the line. Where is |QR| smallest?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c5-dist">5.3 Distance From a Point to a Line</a> &middot; <a href="../../analytic-geometry.html#fig:point-line-distance">Figure 5.6</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/point-line-distance.html?title=0" data-title="Distance from a point to a line, and its mirror image">Preview here</button> <a class="btn" href="../figures/point-line-distance.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-bisectors-reflection" data-dim="2D">
+      <h3><span class="fnum">Figure 14</span>Angle bisectors and reflecting a line</h3>
+      <p>Two lines, their two angle bisectors, and the mirror image of one line in the other.</p>
+      <p class="try"><b>Try:</b> Make L₁ and L₂ perpendicular. Where does the mirror image of L₁ end up?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:bisect">5.6 Equidistant Points: Perpendicular and Angle Bisectors</a> &middot; <a href="../../analytic-geometry.html#fig:bisectors">Figure 5.11</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/bisectors-reflection.html?title=0" data-title="Angle bisectors and reflecting a line">Preview here</button> <a class="btn" href="../figures/bisectors-reflection.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-reflect-line-bisectors" data-dim="2D">
+      <h3><span class="fnum">Figure 15</span>Reflecting a line in a mirror line, and the angle bisectors</h3>
+      <p>Reflect a line L in a mirror line M. Compare the angles and the bisectors.</p>
+      <p class="try"><b>Try:</b> Rotate L towards M. Does L′ always make the same angle with M as L does?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c5-reflect">5.5 Reflecting a Point and a Line</a> &middot; <a href="../../analytic-geometry.html#fig:reflectline">Figure 5.10</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/reflect-line-bisectors.html?title=0" data-title="Reflecting a line in a mirror line, and the angle bisectors">Preview here</button> <a class="btn" href="../figures/reflect-line-bisectors.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-mirror-image" data-dim="2D">
+      <h3><span class="fnum">Figure 16</span>Mirror image and the law of reflection</h3>
+      <p>Light from A bounces on a mirror to B. Reflecting B in the mirror gives the shortest path.</p>
+      <p class="try"><b>Try:</b> Move the mirror points. Are the two angles at R always equal?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c5-reflect">5.5 Reflecting a Point and a Line</a> &middot; <a href="../../analytic-geometry.html#fig:laserbounce">Figure 5.14</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/mirror-image.html?title=0" data-title="Mirror image and the law of reflection">Preview here</button> <a class="btn" href="../figures/mirror-image.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-triangle-centres" data-dim="2D">
+      <h3><span class="fnum">Figure 17</span>Triangle centres and the Euler line</h3>
+      <p>Drag A, B, C. Show the medians, altitudes, circumcircle, incircle and the Euler line.</p>
+      <p class="try"><b>Try:</b> Drag C to make a right triangle, then an obtuse one. Where do H and O go?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:bisect">5.6 Equidistant Points: Perpendicular and Angle Bisectors</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/triangle-centres.html?title=0" data-title="Triangle centres and the Euler line">Preview here</button> <a class="btn" href="../figures/triangle-centres.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-polygon-area" data-dim="2D">
+      <h3><span class="fnum">Figure 18</span>Polygon area: the shoelace formula</h3>
+      <p>Drag five vertices. The area is half the sum of the determinants x_i y_{i+1} − x_{i+1} y_i.</p>
+      <p class="try"><b>Try:</b> Move a vertex so the polygon is no longer convex. Does the formula still work?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-4-2-5">4.2.5 Area of a Parallelogram and of a Triangle</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/polygon-area.html?title=0" data-title="Polygon area: the shoelace formula">Preview here</button> <a class="btn" href="../figures/polygon-area.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-line-fit" data-dim="2D">
+      <h3><span class="fnum">Figure 19</span>Fitting a line to data (least squares)</h3>
+      <p>Drag four data points. The line minimises the sum of the squared vertical residuals.</p>
+      <p class="try"><b>Try:</b> Drag one point far away from the others. How much does the line move?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-5-7-5">5.7.5 Fitting a Line to Data</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/line-fit.html?title=0" data-title="Fitting a line to data (least squares)">Preview here</button> <a class="btn" href="../figures/line-fit.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+  <h2 class="part" id="sec3"><span class="num">3</span> Motion, optimisation and positioning <span class="cnt">(4)</span></h2>
+  <div class="gal">
+    <article class="fcard" id="fig-meeting-overtaking" data-dim="2D">
+      <h3><span class="fnum">Figure 20</span>Meeting and overtaking: two lines in a position–time graph</h3>
+      <p>Each object at constant velocity is a line s = s₀ + vt. Where the lines cross, the objects meet.</p>
+      <p class="try"><b>Try:</b> Give both objects the same velocity. What happens to the meeting time?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-5-7-2">5.7.2 Motion at Constant Velocity: Meeting and Overtaking</a> &middot; <a href="../../analytic-geometry.html#fig:meeting">Figure 5.13</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/meeting-overtaking.html?title=0" data-title="Meeting and overtaking: two lines in a position–time graph">Preview here</button> <a class="btn" href="../figures/meeting-overtaking.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-closest-approach" data-dim="2D">
+      <h3><span class="fnum">Figure 21</span>Uniform motion and closest approach</h3>
+      <p>Two objects move at constant velocity. Run time and find when they are closest.</p>
+      <p class="try"><b>Try:</b> Press 'Jump to the closest approach'. Can you make the minimum distance 0?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:lnapps1">6.4.1 Uniform Motion and Closest Approach</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/closest-approach.html?title=0" data-title="Uniform motion and closest approach">Preview here</button> <a class="btn" href="../figures/closest-approach.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-linear-programming" data-dim="2D">
+      <h3><span class="fnum">Figure 22</span>Linear programming: feasible region and the optimal vertex</h3>
+      <p>Maximise c₁x + c₂y over a polygon given by three inequalities. The optimum sits at a vertex.</p>
+      <p class="try"><b>Try:</b> Slide the level line to the optimum, then change c₁ and c₂. How does the best vertex change?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#chap:lines">Chapter 5 Straight Lines in the Plane</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/linear-programming.html?title=0" data-title="Linear programming: feasible region and the optimal vertex">Preview here</button> <a class="btn" href="../figures/linear-programming.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-gps-trilateration" data-dim="2D">
+      <h3><span class="fnum">Figure 23</span>GPS idea: finding a position from distances</h3>
+      <p>Each measured distance is a circle. Several beacons narrow the position down to a point.</p>
+      <p class="try"><b>Try:</b> Use two beacons, then three. Then add a clock error. What changes?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-3-4">8.3.4 Hyperbolas: Positioning and Inverse Proportion</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/gps-trilateration.html?title=0" data-title="GPS idea: finding a position from distances">Preview here</button> <a class="btn" href="../figures/gps-trilateration.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+  <h2 class="part" id="sec4"><span class="num">4</span> Conic sections <span class="cnt">(8)</span></h2>
+  <div class="gal">
+    <article class="fcard" id="fig-completing-square" data-dim="2D">
+      <h3><span class="fnum">Figure 24</span>Completing the square: from the general equation to the standard form</h3>
+      <p>Set the coefficients of Ax² + Cy² + Dx + Ey + F = 0 and read off the type, centre and semi-axes.</p>
+      <p class="try"><b>Try:</b> Set C = 0 while E ≠ 0. What kind of curve is it?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:classify8">8.1.5 Classifying a Second-Degree Equation</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/completing-square.html?title=0" data-title="Completing the square: from the general equation to the standard form">Preview here</button> <a class="btn" href="../figures/completing-square.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-conic-strings" data-dim="2D">
+      <h3><span class="fnum">Figure 25</span>Drawing conics with a string: foci and directrix</h3>
+      <p>Move P along an ellipse, hyperbola or parabola and watch the defining distance property.</p>
+      <p class="try"><b>Try:</b> Switch between the three curves. Which quantity stays constant on each?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c8-curves">8.1 Second Order Curves</a> &middot; <a href="../../analytic-geometry.html#fig:hyperbolas">Figure 8.4</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/conic-strings.html?title=0" data-title="Drawing conics with a string: foci and directrix">Preview here</button> <a class="btn" href="../figures/conic-strings.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-conic-family" data-dim="2D">
+      <h3><span class="fnum">Figure 26</span>One family of curves: eccentricity and the focus–directrix property</h3>
+      <p>Every conic has |PF| = e·|PD|. Change e and watch circle, ellipse, parabola and hyperbola appear.</p>
+      <p class="try"><b>Try:</b> Slide e from 0 to 2.5 slowly. What happens at e = 1?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:eccentricity8">8.1.4 One Family: Eccentricity and the Focus–Directrix Property</a> &middot; <a href="../../analytic-geometry.html#fig:eccfamily">Figure 8.5</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/conic-family.html?title=0" data-title="One family of curves: eccentricity and the focus–directrix property">Preview here</button> <a class="btn" href="../figures/conic-family.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-conic-tangent" data-dim="2D">
+      <h3><span class="fnum">Figure 27</span>Tangent and normal lines of a conic</h3>
+      <p>Choose a curve, shift its centre and move P. The tangent is perpendicular to the gradient.</p>
+      <p class="try"><b>Try:</b> Move P around the curve. Is the normal always perpendicular to the tangent?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c8-curves">8.1 Second Order Curves</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/conic-tangent.html?title=0" data-title="Tangent and normal lines of a conic">Preview here</button> <a class="btn" href="../figures/conic-tangent.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-conic-reflection" data-dim="2D">
+      <h3><span class="fnum">Figure 28</span>The reflection property of ellipse, parabola and hyperbola</h3>
+      <p>A ray from a focus hits the curve; the mirror is the tangent line.</p>
+      <p class="try"><b>Try:</b> Choose the parabola and tick 'Show a fan of rays'. Where do the reflected rays go?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-3-1">8.3.1 Reflectors, Antennas and Telescopes</a> &middot; <a href="../../analytic-geometry.html#fig:reflect8">Figure 8.15</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/conic-reflection.html?title=0" data-title="The reflection property of ellipse, parabola and hyperbola">Preview here</button> <a class="btn" href="../figures/conic-reflection.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-conic-rotated" data-dim="2D">
+      <h3><span class="fnum">Figure 29</span>A tilted conic: the xy term and the principal axes</h3>
+      <p>Set Ax² + Bxy + Cy² = 1. A nonzero B tilts the curve; the eigenvalues give the semi-axes.</p>
+      <p class="try"><b>Try:</b> Set B = 0. What happens to the tilt and to the principal axes?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:classify8">8.1.5 Classifying a Second-Degree Equation</a> &middot; <a href="../../analytic-geometry.html#fig:tiltedellipse">Figure 8.6</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/conic-rotated.html?title=0" data-title="A tilted conic: the xy term and the principal axes">Preview here</button> <a class="btn" href="../figures/conic-rotated.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-kepler-orbit" data-dim="2D">
+      <h3><span class="fnum">Figure 30</span>A planet on an ellipse: Kepler's laws</h3>
+      <p>The Sun is at a focus. In equal times the planet sweeps equal areas.</p>
+      <p class="try"><b>Try:</b> Press Play, then raise the eccentricity. Where is the planet fastest?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-3-2">8.3.2 Orbits: Kepler and Newton</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/kepler-orbit.html?title=0" data-title="A planet on an ellipse: Kepler's laws">Preview here</button> <a class="btn" href="../figures/kepler-orbit.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-cone-sections-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 31</span>Conic sections: cutting a cone with a plane<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Tilt and move a cutting plane through a cone. The cut is a circle, ellipse, parabola or hyperbola.</p>
+      <p class="try"><b>Try:</b> Press 'Parabola', then tilt the plane further. What curve appears?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-2-3">8.2.3 The Cone</a> &middot; <a href="../../analytic-geometry.html#fig:cone">Figure 8.9</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/cone-sections-3d.html?title=0" data-title="Conic sections: cutting a cone with a plane">Preview here</button> <a class="btn" href="../figures/cone-sections-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+  <h2 class="part" id="sec5"><span class="num">5</span> Planes, lines and spheres in space <span class="cnt">(14)</span></h2>
+  <div class="gal">
+    <article class="fcard" id="fig-coordinates-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 32</span>Cylindrical and spherical coordinates<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Move the sliders of either coordinate system and see the point being built.</p>
+      <p class="try"><b>Try:</b> Choose cylindrical and change only z. Which coordinates change?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c8-surfaces">8.2 Second Order Surfaces</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/coordinates-3d.html?title=0" data-title="Cylindrical and spherical coordinates">Preview here</button> <a class="btn" href="../figures/coordinates-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-plane-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 33</span>A plane in space: normal, intercepts and distance<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Set a, b, c, d in ax + by + cz + d = 0. See the normal, the intercepts and the distance from the origin.</p>
+      <p class="try"><b>Try:</b> Set d = 0. Where is the plane now? Tick the distance and move d again.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-7-1">7.1 Equations of a Plane</a> &middot; <a href="../../analytic-geometry.html#fig:intercepts">Figure 7.5</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/plane-3d.html?title=0" data-title="A plane in space: normal, intercepts and distance">Preview here</button> <a class="btn" href="../figures/plane-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-plane-three-points-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 34</span>The plane through three points (intercept example)<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Move A, B, C. The normal is n = AB × AC and the plane equation follows.</p>
+      <p class="try"><b>Try:</b> Move C onto the line AB. What happens to n?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c7-find">7.2 Finding the Equation of a Plane</a> &middot; <a href="../../analytic-geometry.html#fig:three_points">Figure 7.8</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/plane-three-points-3d.html?title=0" data-title="The plane through three points (intercept example)">Preview here</button> <a class="btn" href="../figures/plane-three-points-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-three-point-plane-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 35</span>The plane through three points (normal form)<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>The same idea with n = (B − A) × (C − A) and the form n · (x − A) = 0.</p>
+      <p class="try"><b>Try:</b> Move A to the origin. What happens to the plane equation?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c7-find">7.2 Finding the Equation of a Plane</a> &middot; <a href="../../analytic-geometry.html#fig:plane_case1">Figure 7.9</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/three-point-plane-3d.html?title=0" data-title="The plane through three points (normal form)">Preview here</button> <a class="btn" href="../figures/three-point-plane-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-planes-angle-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 36</span>Two planes: angle, intersection line, parallel or perpendicular<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Edit two planes. Read the angle between their normals and the direction of the common line.</p>
+      <p class="try"><b>Try:</b> Make the normals parallel, then perpendicular. What does the relation say?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-7-3-1">7.3.1 The Angle Between Two Planes</a> &middot; <a href="../../analytic-geometry.html#fig:plane_angle">Figure 7.10</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/planes-angle-3d.html?title=0" data-title="Two planes: angle, intersection line, parallel or perpendicular">Preview here</button> <a class="btn" href="../figures/planes-angle-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-three-planes-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 37</span>Three planes: point, line, prism or no solution<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>The solution set of a 3 × 3 system, with the ranks of A and [A | c].</p>
+      <p class="try"><b>Try:</b> Press 'Prism (none)'. Every two planes meet, yet there is no solution. Why?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:planes_intersect">7.3.3 Intersecting Planes and the Line of Intersection</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/three-planes-3d.html?title=0" data-title="Three planes: point, line, prism or no solution">Preview here</button> <a class="btn" href="../figures/three-planes-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-line-plane-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 38</span>A line meets a plane: intersection point, angle and shadow<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Edit a plane and a line. See the intersection point, the angle and the shadow of the line on the plane.</p>
+      <p class="try"><b>Try:</b> Make the direction perpendicular to the normal. Is the line parallel to the plane or inside it?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:c7-lineplane">7.4 A Line and a Plane</a> &middot; <a href="../../analytic-geometry.html#fig:line_plane_angle">Figure 7.13</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/line-plane-3d.html?title=0" data-title="A line meets a plane: intersection point, angle and shadow">Preview here</button> <a class="btn" href="../figures/line-plane-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-skew-lines-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 39</span>Two lines in space: intersecting, parallel or skew<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Edit two lines. Read the relation and the distance between them.</p>
+      <p class="try"><b>Try:</b> Change line 2 until the lines intersect. Then make them parallel.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:posrel">6.3 Positional Relationship of Straight Lines in Space</a> &middot; <a href="../../analytic-geometry.html#fig:64">Figure 6.7</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/skew-lines-3d.html?title=0" data-title="Two lines in space: intersecting, parallel or skew">Preview here</button> <a class="btn" href="../figures/skew-lines-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-sphere-plane-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 40</span>A sphere and a plane: circle, tangent or no contact<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Set the sphere and a plane. The plane cuts a circle, touches, or misses.</p>
+      <p class="try"><b>Try:</b> Press 'Slide the plane to tangent', then increase the signed distance δ.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-2-1">8.2.1 The Sphere</a> &middot; <a href="../../analytic-geometry.html#fig:sphere">Figure 8.7</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/sphere-plane-3d.html?title=0" data-title="A sphere and a plane: circle, tangent or no contact">Preview here</button> <a class="btn" href="../figures/sphere-plane-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-ray-sphere-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 41</span>A ray meets a sphere: the discriminant decides<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>A ray and a sphere lead to a quadratic in t. Its discriminant counts the hits.</p>
+      <p class="try"><b>Try:</b> Reduce the radius until the discriminant is 0. Then point the ray away from the sphere.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-2-1">8.2.1 The Sphere</a> &middot; <a href="../../analytic-geometry.html#fig:sphere">Figure 8.7</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/ray-sphere-3d.html?title=0" data-title="A ray meets a sphere: the discriminant decides">Preview here</button> <a class="btn" href="../figures/ray-sphere-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-triangulation-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 42</span>Triangulation: two noisy bearings in space<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Two observers measure the direction to a target. With noise the rays miss; the midpoint is the estimate.</p>
+      <p class="try"><b>Try:</b> Increase the errors of both observers. How does the estimate move?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:lnapps">6.4 Applications in Physics and Engineering</a> &middot; <a href="../../analytic-geometry.html#fig:ln-skew">Figure 6.10</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/triangulation-3d.html?title=0" data-title="Triangulation: two noisy bearings in space">Preview here</button> <a class="btn" href="../figures/triangulation-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-perspective-camera-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 43</span>A pinhole camera: how a 3D point lands on the image<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>The image of (X, Y, Z) is (fX/Y, fZ/Y). Parallel edges meet in the image.</p>
+      <p class="try"><b>Try:</b> Increase the distance D. How does the image of the cube change? Turn the cube.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#ch:planes">Chapter 7 Planes in Space</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/perspective-camera-3d.html?title=0" data-title="A pinhole camera: how a 3D point lands on the image">Preview here</button> <a class="btn" href="../figures/perspective-camera-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-rotation-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 44</span>A rotation in space: axis, angle and matrix<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Set an axis and an angle. The rotation matrix comes from Rodrigues' formula.</p>
+      <p class="try"><b>Try:</b> Press the 120° preset about (1, 1, 1). Where do e₁, e₂, e₃ go?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#ch:c4">Chapter 4 Vector Algebra</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/rotation-3d.html?title=0" data-title="A rotation in space: axis, angle and matrix">Preview here</button> <a class="btn" href="../figures/rotation-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-wire-field-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 45</span>The magnetic field around a straight wire<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>The field circles the wire and falls off like 1/r.</p>
+      <p class="try"><b>Try:</b> Double the distance r. What happens to B?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec:lnapps">6.4 Applications in Physics and Engineering</a> &middot; <a href="../../analytic-geometry.html#fig:ln-wire">Figure 6.11</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/wire-field-3d.html?title=0" data-title="The magnetic field around a straight wire">Preview here</button> <a class="btn" href="../figures/wire-field-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+  <h2 class="part" id="sec6"><span class="num">6</span> Surfaces <span class="cnt">(4)</span></h2>
+  <div class="gal">
+    <article class="fcard" id="fig-cylinders-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 46</span>Cylindrical surfaces: elliptic, hyperbolic and parabolic<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>A plane curve slid along the z-axis. The equation has no z.</p>
+      <p class="try"><b>Try:</b> Switch between the three cylinders. Why does z not appear in any equation?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-2-2">8.2.2 The Cylinder</a> &middot; <a href="../../analytic-geometry.html#fig:cylinders">Figure 8.8</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/cylinders-3d.html?title=0" data-title="Cylindrical surfaces: elliptic, hyperbolic and parabolic">Preview here</button> <a class="btn" href="../figures/cylinders-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-quadric-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 47</span>Second-order surfaces: slices of a quadric<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Pick a surface, set its semi-axes and move a horizontal slice.</p>
+      <p class="try"><b>Try:</b> Keep the slice height fixed and go through the six surfaces. Which slices are ellipses, hyperbolas or empty?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-2-8">8.2.8 Summary of the Quadric Surfaces</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/quadric-3d.html?title=0" data-title="Second-order surfaces: slices of a quadric">Preview here</button> <a class="btn" href="../figures/quadric-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-ruled-surfaces-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 48</span>Ruled surfaces: curved surfaces made of straight lines<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>A one-sheet hyperboloid and a hyperbolic paraboloid are covered by two families of straight lines.</p>
+      <p class="try"><b>Try:</b> Show only family 1, then only family 2. Pick a highlighted line and check that it lies on the surface.</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#sec-8-3-5">8.3.5 Quadric Surfaces in Structures, Fluids and the Sky</a> &middot; <a href="../../analytic-geometry.html#fig:rulings8">Figure 8.16</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/ruled-surfaces-3d.html?title=0" data-title="Ruled surfaces: curved surfaces made of straight lines">Preview here</button> <a class="btn" href="../figures/ruled-surfaces-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+    <article class="fcard" id="fig-solid-slice-3d" data-dim="3D">
+      <h3><span class="fnum">Figure 49</span>Slicing a cube or a tetrahedron with a plane<span class="dim" title="Rotate it by dragging">3D</span></h3>
+      <p>Cut a solid with ax + by + cz = k. The section is a triangle, square, pentagon or hexagon.</p>
+      <p class="try"><b>Try:</b> On the cube, press the four shape buttons. On the tetrahedron, which shapes are impossible?</p>
+      <p class="where">Related in the notes: <a href="../../analytic-geometry.html#ch:planes">Chapter 7 Planes in Space</a></p>
+      <div class="facts"><button type="button" class="btn fprev" data-src="../figures/solid-slice-3d.html?title=0" data-title="Slicing a cube or a tetrahedron with a plane">Preview here</button> <a class="btn" href="../figures/solid-slice-3d.html">Open full page</a></div>
+      <div class="fbox"></div>
+    </article>
+  </div>
+
+</main>
+
+<footer>
+  <p><a href="../../analytic-geometry.html">← Back to the Analytic Geometry notes</a> · <a href="../index.html">Linear Algebra tools</a> · <a href="../../index.html">Home</a></p>
+  <p class="license">© 2026 Kaveh Eftekharinasab, Higher Mathematics Department, Kyiv Aviation Institute. Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>: you may share and adapt this material with attribution, under the same license.</p>
+</footer>
+<script src="../figures/assets/kai-host.js"></script>
+<script>
+document.querySelectorAll('.fprev').forEach(function(b){
+  b.addEventListener('click',function(){
+    var card=b.closest('.fcard'), box=card.querySelector('.fbox');
+    if(box.firstChild){box.innerHTML='';b.textContent='Preview here';card.classList.remove('open');return;}
+    var f=document.createElement('iframe'); f.src=b.dataset.src; f.title=b.dataset.title; f.loading='lazy'; f.height=480;
+    box.appendChild(f); b.textContent='Close preview'; card.classList.add('open');
+  });
+});
+(function(){
+  var radios=document.querySelectorAll('#filters input');
+  function apply(){
+    var v=document.querySelector('#filters input:checked').value;
+    document.querySelectorAll('.fcard').forEach(function(c){c.classList.toggle('hidden',v!=='all'&&c.dataset.dim!==v);});
+    document.querySelectorAll('h2.part').forEach(function(h){
+      var gal=h.nextElementSibling, any=gal.querySelector('.fcard:not(.hidden)');
+      h.classList.toggle('hidden',!any); gal.style.display=any?'':'none';
+    });
+  }
+  radios.forEach(function(r){r.addEventListener('change',apply);});
+})();
+</script>
+<script>/* mfe-theme-ui */
+(function(){
+  var K="mfe-theme",root=document.documentElement,btns=[].slice.call(document.querySelectorAll("[data-theme-set]"));
+  var COL={light:"#F5F6FB",dark:"#0F1226"};
+  function stored(){try{var t=localStorage.getItem(K);return t==="light"||t==="dark"?t:"auto"}catch(e){return root.getAttribute("data-theme")||"auto"}}
+  function show(t){
+    if(t==="auto")root.removeAttribute("data-theme");else root.setAttribute("data-theme",t);
+    btns.forEach(function(b){b.setAttribute("aria-pressed",String(b.getAttribute("data-theme-set")===t))});
+    [].forEach.call(document.querySelectorAll('meta[name="theme-color"]'),function(m){
+      if(!m.hasAttribute("data-orig"))m.setAttribute("data-orig",m.getAttribute("content"));
+      m.setAttribute("content",t==="auto"?m.getAttribute("data-orig"):COL[t]);});
+    [].forEach.call(document.querySelectorAll("iframe"),function(f){try{f.contentWindow.postMessage({kai:"theme",theme:t},"*")}catch(e){}});
+  }
+  function choose(t){try{if(t==="auto")localStorage.removeItem(K);else localStorage.setItem(K,t)}catch(e){}show(t)}
+  btns.forEach(function(b){b.addEventListener("click",function(){choose(b.getAttribute("data-theme-set"))})});
+  window.addEventListener("storage",function(e){if(e.key===K||e.key===null)show(stored())});
+  root.classList.add("theme-ui");
+  show(stored());
+})();
+</script>
+</body>
+</html>

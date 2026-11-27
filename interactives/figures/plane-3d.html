@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A plane in space: normal, intercepts and distance</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A plane in space: normal, intercepts and distance</h1><p>Set the coefficients of <span class="v">ax + by + cz + d = 0</span> and rotate the scene by dragging. The purple arrow is the normal <span class="v">n = (a, b, c)</span>; the dashed segment is the shortest way from the origin to the plane.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A plane in space with its normal vector and intercepts'});
+var P0=[6,4,3,-12],sl=['a','b','c','d'].map(function(n,i){return KAI.slider({label:n,min:i<3?-6:-12,max:i<3?6:12,step:1,value:P0[i],digits:0,onInput:function(){S.refresh();}});});
+var hs=KAI.check({label:'Show the distance from the origin',checked:true,onChange:function(){S.refresh();}});
+sl.forEach(function(x){KAI.$('#ctl').appendChild(x.el);});KAI.$('#ctl').append(hs.el,KAI.button({label:'Reset (intercepts 2, 3, 4)',onClick:function(){sl.forEach(function(x,i){x.set(P0[i]);});S.reset();}}));
+S.onDraw(function(S){var n=[sl[0].get(),sl[1].get(),sl[2].get()],D=sl[3].get(),N=nm(n);S.grid(4);S.axes(4.3);
+if(N<1e-9){out([],D===0?'0 = 0 holds everywhere: not a plane.':'No point satisfies this: not a plane. At least one of a, b, c must be nonzero.');return;}
+var nh=sc(1/N,n),F=sc(-D/(N*N),n),t=Math.abs(nh[0])<0.9?[1,0,0]:[0,1,0],e1=sc(1/nm(cr(nh,t)),cr(nh,t)),e2=cr(nh,e1),H=2.7;
+S.poly([ad(F,ad(sc(H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(-H,e2))),ad(F,ad(sc(H,e1),sc(-H,e2)))],{fill:'var(--sky-t)',stroke:'var(--blue)','stroke-width':1.4});
+var rows=[['normal n','('+n.join(', ')+')'],['|n|',fmt(N,3)],['distance from O',fmt(Math.abs(D)/N,3)]],ic=[];
+[0,1,2].forEach(function(i){if(n[i]!==0){var v=-D/n[i],p=[0,0,0];p[i]=v;ic.push(['x','y','z'][i]+'='+fmt(v,2));if(Math.abs(v)<4.3)S.dot(p,5,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':1.5});}else ic.push(['x','y','z'][i]+': parallel');});
+rows.push(['axis intercepts',ic.join(', ')],['direction cosines',fmt(nh[0],2)+', '+fmt(nh[1],2)+', '+fmt(nh[2],2)]);
+S.arrow(F,ad(F,sc(1.6,nh)),{stroke:'var(--purple)',width:4});S.text(ad(F,sc(1.6,nh)),'n',{fill:'var(--purple)'});
+if(hs.get()&&D!==0){S.line([0,0,0],F,{stroke:'var(--orange)','stroke-dasharray':'5 4','stroke-width':3});S.dot(F,5,{fill:'var(--orange)'});S.text(F,'F',{fill:'var(--orange)'});}
+out(rows,D===0?'d = 0: the plane passes through the origin.':'Hesse form: |d| / |n| is the distance from the origin to the plane. Intercepts are where the plane meets the axes (orange dots).');});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

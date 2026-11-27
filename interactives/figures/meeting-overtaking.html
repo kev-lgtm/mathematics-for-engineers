@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting and overtaking: two lines in a position–time graph</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Meeting and overtaking: two lines in a position–time graph</h1><p>Each object moving at constant velocity is a straight line <span class="v">s = s₀ + vt</span> in the (time, position) plane. They meet where the lines cross; parallel lines (equal velocities) never meet. The vertical axis is marked in units of 50 km, the horizontal axis in hours.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P0=KAI.plane(svg,{x:[-1,10],y:[-2,6]}),K=50,P={content:P0.content,onResize:P0.onResize};
+['line','dot','text','polyline','arrow','poly'].forEach(function(m){P[m]=function(){var a=[].slice.call(arguments).map(function(x,i){return (i>0&&Array.isArray(x)&&x.length===2&&typeof x[0]==='number')?[x[0],x[1]/K]:x;});return P0[m].apply(P0,a);};});
+function S_(l,mn,mx,v,st,u){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:0,unit:u,onInput:function(){draw();}});}
+var s1=S_('A: start s₁',-100,200,0,10,' km'),v1=S_('A: velocity v₁',-80,100,60,5,' km/h'),s2=S_('B: start s₂',-100,300,150,10,' km'),v2=S_('B: velocity v₂',-80,100,-40,5,' km/h');
+KAI.$('#ctl').append(s1.el,v1.el,s2.el,v2.el);P.onResize(draw);
+function draw(){var c=KAI.clear(P.content),a=s1.get(),va=v1.get(),b=s2.get(),vb=v2.get();
+P.line(c,[-1,a-va],[10,a+10*va],{stroke:'var(--blue)','stroke-width':1.4,'stroke-opacity':0.4});P.line(c,[-1,b-vb],[10,b+10*vb],{stroke:'var(--verm)','stroke-width':1.4,'stroke-opacity':0.4});
+P.line(c,[0,a],[10,a+10*va],{stroke:'var(--blue)','stroke-width':3});P.line(c,[0,b],[10,b+10*vb],{stroke:'var(--verm)','stroke-width':3});P.dot(c,[0,a],6,{fill:'var(--blue)'});P.dot(c,[0,b],6,{fill:'var(--verm)'});P.text(c,[0.2,a+12],'A',{fill:'var(--blue)'});P.text(c,[0.2,b+12],'B',{fill:'var(--verm)'});
+var rows=[['gap now (t = 0)',fmt(Math.abs(b-a),0)+' km'],['relative velocity v₁ − v₂',fmt(va-vb,0)+' km/h']],note;
+if(va===vb){rows.push(['result','<b>'+(a===b?'same line: always together':'never meet')+'</b>']);note='Equal velocities: the lines are parallel, so the gap stays constant.';}
+else{var t=(b-a)/(va-vb),s=a+va*t;rows.push(['meeting time t = (s₂ − s₁)/(v₁ − v₂)',fmt(t,2)+' h'],['meeting place',fmt(s,1)+' km']);
+if(t>=0&&t<=10){P.dot(c,[t,s],8,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.line(c,[t,-100],[t,s],{stroke:'var(--orange)','stroke-dasharray':'4 4'});P.text(c,[t+0.2,s-25],'meet',{fill:'var(--orange)'});}
+note=t<0?'t* is negative: they met in the past; from now on the gap only grows.':t>10?'They meet after 10 h (off the graph).':(va>vb&&a<b)||(va<vb&&a>b)?'The faster object catches up and passes (overtaking) when the lines cross.':'The objects approach each other and meet when the lines cross.';}
+out(rows,note);}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

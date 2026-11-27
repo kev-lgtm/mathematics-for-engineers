@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One line, eight equations</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>One line, eight equations</h1><p>Drag the two points <span class="v">P₁</span> and <span class="v">P₂</span>. Every form below describes the same line; the slider walks along the parametric form.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-6,8],y:[-5,7]});
+function hd(pos,name){return KAI.handle(P,{pos:pos,color:'var(--blue)',constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+var h1=hd([1,2],'P₁'),h2=hd([5,5],'P₂'),st=KAI.slider({label:'parameter t',min:-1,max:2,step:0.05,value:0.5,digits:2,onInput:function(){draw();}});
+KAI.$('#ctl').append(st.el,KAI.button({label:'Reset',onClick:function(){h1.set(1,2);h2.set(5,5);draw();}}));P.onResize(draw);
+function sg(v){return v<0?'−':'+';}function f(v){return fmt(Math.abs(v),3);}
+function draw(){var a=h1.pos(),b=h2.pos(),c=KAI.clear(P.content),dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy);
+if(l<1e-9){out([],'P₁ and P₂ coincide: move one of them.');return;}
+P.line(c,[a[0]-40*dx/l,a[1]-40*dy/l],[a[0]+40*dx/l,a[1]+40*dy/l],{stroke:'var(--blue)','stroke-width':2.6});P.arrow(c,a,b,{stroke:'var(--verm)',width:3});
+var t=st.get(),T=[a[0]+t*dx,a[1]+t*dy];P.dot(c,T,6,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.dot(c,a,5,{fill:'var(--blue)'});P.text(c,[a[0]+0.2,a[1]-0.6],'P₁',{});P.text(c,[b[0]+0.2,b[1]-0.6],'P₂',{});
+var A=dy,B=-dx,C=-(A*a[0]+B*a[1]),m=B?-A/B:null,bb=B?-C/B:null,N=Math.hypot(A,B),s=C>0?-1:1,hc=A/(s*N),hs=B/(s*N),hp=-C/(s*N),rows=[];
+rows.push(['1 general',fmt(A,2)+'x '+sg(B)+' '+f(B)+'y '+sg(C)+' '+f(C)+' = 0']);
+rows.push(['2 slope–intercept',m===null?'x = '+fmt(a[0],2)+' (vertical)':'y = '+fmt(m,3)+'x '+sg(bb)+' '+f(bb)]);
+rows.push(['3 point–slope',m===null?'x = '+fmt(a[0],2):'y − '+fmt(a[1],2)+' = '+fmt(m,3)+'(x − '+fmt(a[0],2)+')']);
+rows.push(['4 two-point',(dx&&dy)?'(y − '+fmt(a[1],2)+')/'+fmt(dy,2)+' = (x − '+fmt(a[0],2)+')/'+fmt(dx,2):'one of the denominators is 0']);
+rows.push(['5 intercepts',(A&&B&&C)?'x/'+fmt(-C/A,2)+' + y/'+fmt(-C/B,2)+' = 1':'no intercept form (axis-parallel or through O)']);
+rows.push(['6 parametric','(x, y) = ('+fmt(a[0],2)+', '+fmt(a[1],2)+') + t·('+fmt(dx,2)+', '+fmt(dy,2)+')']);
+rows.push(['7 normal (Hesse)',fmt(hc,3)+'x '+sg(hs)+' '+f(hs)+'y = '+fmt(hp,3)+'  (distance from O)']);
+rows.push(['8 vector','n·(r − P₁) = 0, n = ('+fmt(A,2)+', '+fmt(B,2)+')']);
+rows.push(['point at t = '+fmt(t,2),'('+fmt(T[0],2)+', '+fmt(T[1],2)+')']);out(rows,'The red arrow is the direction vector d = P₂ − P₁; the normal n = (A, B) is d turned by 90°. In the Hesse form (cos α)x + (sin α)y = p, p is the distance from the origin to the line.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The plane through three points</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>The plane through three points</h1><p>Choose a point and set its coordinates with the sliders; rotate by dragging. Two edge vectors of the triangle give the normal <span class="v">n = AB × AC</span>, and the plane equation follows.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A triangle with vertices A, B, C and the plane through it'});
+var Q={A:[2,0,0],B:[0,3,0],C:[0,0,4]},cur='A',sl=[],DEF=JSON.stringify(Q);
+var sg=KAI.seg({legend:'Edit point',value:'A',options:[{value:'A',label:'A'},{value:'B',label:'B'},{value:'C',label:'C'}],onChange:function(k){cur=k;sync();}});
+['x','y','z'].forEach(function(n,i){sl.push(KAI.slider({label:n,min:-3,max:4,step:0.5,value:0,digits:1,onInput:function(v){Q[cur][i]=v;S.refresh();}}));});
+KAI.$('#ctl').append(sg.el);sl.forEach(function(x){KAI.$('#ctl').appendChild(x.el);});KAI.$('#ctl').appendChild(KAI.button({label:'Reset (intercepts 2, 3, 4)',onClick:function(){Q=JSON.parse(DEF);sync();S.reset();}}));
+function sync(){sl.forEach(function(x,i){x.set(Q[cur][i]);});S.refresh();}
+S.onDraw(function(S){var A=Q.A,B=Q.B,C=Q.C,AB=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],AC=[C[0]-A[0],C[1]-A[1],C[2]-A[2]],n=cr(AB,AC),N=nm(n);S.grid(4);S.axes(4.3);
+if(N<1e-9){[['A',A],['B',B],['C',C]].forEach(function(p){S.dot(p[1],6,{fill:'var(--blue)'});S.text(p[1],p[0]);});out([],'The three points are on one line (AB × AC = 0): infinitely many planes contain them.');return;}
+var G=sc(1/3,ad(A,ad(B,C))),nh=sc(1/N,n),t0=Math.abs(nh[0])<0.9?[1,0,0]:[0,1,0],e1=sc(1/nm(cr(nh,t0)),cr(nh,t0)),e2=cr(nh,e1),H=3.4;
+S.poly([ad(G,ad(sc(H,e1),sc(H,e2))),ad(G,ad(sc(-H,e1),sc(H,e2))),ad(G,ad(sc(-H,e1),sc(-H,e2))),ad(G,ad(sc(H,e1),sc(-H,e2)))],{fill:'var(--sky-t)',stroke:'var(--axis)','stroke-width':1.1});
+S.poly([A,B,C],{fill:'var(--orange-t)',stroke:'var(--orange)','stroke-width':2.6});S.arrow(G,ad(G,sc(1.7,nh)),{stroke:'var(--purple)',width:4});S.text(ad(G,sc(1.7,nh)),'n',{fill:'var(--purple)'});
+[['A',A,'var(--blue)'],['B',B,'var(--verm)'],['C',C,'var(--green)']].forEach(function(p){S.dot(p[1],6,{fill:p[2],stroke:'var(--bg)','stroke-width':1.5});S.text(p[1],p[0],{fill:p[2]});});
+var d=-dt(n,A);out([['AB, AC',tri(AB)+', '+tri(AC)],['<span class="purple">n = AB × AC</span>',tri(n)],['<b>plane</b>',fmt(n[0],2)+'x '+(n[1]<0?'−':'+')+' '+fmt(Math.abs(n[1]),2)+'y '+(n[2]<0?'−':'+')+' '+fmt(Math.abs(n[2]),2)+'z '+(d<0?'−':'+')+' '+fmt(Math.abs(d),2)+' = 0'],['triangle area |n| / 2',fmt(N/2,3)],['distance from the origin',fmt(Math.abs(d)/N,3)]],'Any one of the points fixes d once n is known: d = −n·A. With A = (2,0,0), B = (0,3,0), C = (0,0,4) the plane is 12x + 8y + 6z = 24, i.e. x/2 + y/3 + z/4 = 1.');});
+sync();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

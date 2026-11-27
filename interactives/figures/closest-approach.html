@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uniform motion and closest approach</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Uniform motion and closest approach</h1><p>Two objects move in straight lines at constant velocity. Drag the starting points, set the velocities, and run the clock. The closest approach is where the relative position is perpendicular to the relative velocity.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-8,8],y:[-6,6]});
+function hd(pos,col,name){return KAI.handle(P,{pos:pos,color:col,constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+var hA=hd([-6,-3],'var(--blue)','start of object 1'),hB=hd([5,-4],'var(--verm)','start of object 2');
+function mkS(l,v){return KAI.slider({label:l,min:-3,max:3,step:0.25,value:v,digits:2,onInput:function(){draw();}});}
+var v1x=mkS('object 1: v<sub>x</sub>',1.5),v1y=mkS('object 1: v<sub>y</sub>',1),v2x=mkS('object 2: v<sub>x</sub>',-1),v2y=mkS('object 2: v<sub>y</sub>',1.5),st=KAI.slider({label:'time t',min:0,max:8,step:0.1,value:0,digits:1,onInput:function(){draw();}});
+var jump=KAI.button({label:'Jump to the closest approach',onClick:function(){var q=calc();if(q.ts>=0&&q.ts<=8){st.set(q.ts);draw();}}});
+KAI.$('#ctl').append(st.el,v1x.el,v1y.el,v2x.el,v2y.el,jump);P.onResize(draw);
+function calc(){var a=hA.pos(),b=hB.pos(),va=[v1x.get(),v1y.get()],vb=[v2x.get(),v2y.get()],r=[b[0]-a[0],b[1]-a[1]],v=[vb[0]-va[0],vb[1]-va[1]],vv=v[0]*v[0]+v[1]*v[1];
+return {a:a,b:b,va:va,vb:vb,r:r,v:v,vv:vv,ts:vv>1e-9?-(r[0]*v[0]+r[1]*v[1])/vv:NaN};}
+function draw(){var q=calc(),c=KAI.clear(P.content),t=st.get();
+P.line(c,q.a,[q.a[0]+8*q.va[0],q.a[1]+8*q.va[1]],{stroke:'var(--blue)','stroke-dasharray':'5 5','stroke-width':1.4});P.line(c,q.b,[q.b[0]+8*q.vb[0],q.b[1]+8*q.vb[1]],{stroke:'var(--verm)','stroke-dasharray':'5 5','stroke-width':1.4});
+var A=[q.a[0]+t*q.va[0],q.a[1]+t*q.va[1]],B=[q.b[0]+t*q.vb[0],q.b[1]+t*q.vb[1]];
+if(q.ts>=0&&q.ts<=8){var Ac=[q.a[0]+q.ts*q.va[0],q.a[1]+q.ts*q.va[1]],Bc=[q.b[0]+q.ts*q.vb[0],q.b[1]+q.ts*q.vb[1]];P.line(c,Ac,Bc,{stroke:'var(--green)','stroke-width':3});P.dot(c,Ac,4,{fill:'var(--green)'});P.dot(c,Bc,4,{fill:'var(--green)'});}
+P.line(c,A,B,{stroke:'var(--orange)','stroke-width':2.2});P.dot(c,A,7,{fill:'var(--blue)',stroke:'var(--bg)','stroke-width':2});P.dot(c,B,7,{fill:'var(--verm)',stroke:'var(--bg)','stroke-width':2});
+var cur=Math.hypot(B[0]-A[0],B[1]-A[1]),rows=[['distance now (t = '+fmt(t,1)+')',fmt(cur,3)]],note;
+if(q.vv<1e-9){rows.push(['relative velocity','0: constant distance']);note='Both objects have the same velocity, so the distance never changes.';}
+else{var cx=Math.abs(q.r[0]*q.v[1]-q.r[1]*q.v[0])/Math.sqrt(q.vv),dm=q.ts>=0?cx:Math.hypot(q.r[0],q.r[1]);rows.push(['closest at t*',fmt(q.ts,2)],['minimum distance',q.ts>=0?fmt(cx,3):fmt(dm,3)+' (at t = 0)']);note=q.ts>=0?'t* = −(r·v)/|v|² with r = P₂ − P₁ and v = v₂ − v₁; the minimum distance is |r × v|/|v| (green segment).':'t* is negative: the objects are already moving apart, so the closest moment is now (t = 0).';}
+out(rows,note);}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

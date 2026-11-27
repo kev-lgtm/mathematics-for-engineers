@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three planes: point, line, prism or no solution</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Three planes: point, line, prism or no solution</h1><p>Choose a plane and set its coefficients <span class="v">ax + by + cz + d = 0</span>; rotate by dragging. The picture shows the solution set of the 3 × 3 system, which depends on the ranks of the coefficient matrix and the augmented matrix.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'Three planes in space and their common points'});
+var PR={pt:[[1,0,0,-1],[0,1,0,-1],[0,0,1,-1]],ln:[[1,1,0,-2],[1,-1,0,0],[1,0,0,-1]],pr:[[1,0,0,0],[0,1,0,0],[1,1,0,-2]],par:[[0,0,1,0],[0,0,1,-2],[1,0,0,0]]},Q=JSON.parse(JSON.stringify(PR.pt)),cur=0,sl=[];
+var sg=KAI.seg({legend:'Edit plane',value:'0',options:[{value:'0',label:'Plane 1'},{value:'1',label:'Plane 2'},{value:'2',label:'Plane 3'}],onChange:function(k){cur=+k;sync();}});
+['a','b','c','d'].forEach(function(n,i){sl.push(KAI.slider({label:n,min:i<3?-3:-6,max:i<3?3:6,step:1,value:0,digits:0,onInput:function(v){Q[cur][i]=v;S.refresh();}}));});
+KAI.$('#ctl').append(sg.el);sl.forEach(function(x){KAI.$('#ctl').appendChild(x.el);});
+[['One point','pt'],['A line','ln'],['Prism (none)','pr'],['Two parallel','par']].forEach(function(p){KAI.$('#ctl').appendChild(KAI.button({label:p[0],onClick:function(){Q=JSON.parse(JSON.stringify(PR[p[1]]));sync();}}));});
+function sync(){sl.forEach(function(x,i){x.set(Q[cur][i]);});S.refresh();}
+function rank(M){M=M.map(function(r){return r.slice();});var r=0,cols=M[0].length;for(var c=0;c<cols&&r<M.length;c++){var p=r;for(var i=r;i<M.length;i++)if(Math.abs(M[i][c])>Math.abs(M[p][c]))p=i;if(Math.abs(M[p][c])<1e-9)continue;var t=M[r];M[r]=M[p];M[p]=t;for(var i=r+1;i<M.length;i++){var f=M[i][c]/M[r][c];for(var j=c;j<cols;j++)M[i][j]-=f*M[r][j];}r++;}return r;}
+function patch(q,fill,col){var n=q.slice(0,3),N=nm(n),nh=sc(1/N,n),F=sc(-q[3]/(N*N),n),t=Math.abs(nh[0])<0.9?[1,0,0]:[0,1,0],e1=sc(1/nm(cr(nh,t)),cr(nh,t)),e2=cr(nh,e1),H=2.6;
+S.poly([ad(F,ad(sc(H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(H,e2))),ad(F,ad(sc(-H,e1),sc(-H,e2))),ad(F,ad(sc(H,e1),sc(-H,e2)))],{fill:fill,stroke:col,'stroke-width':1.3});}
+function pairLine(a,b,at){var n1=a.slice(0,3),n2=b.slice(0,3),d=cr(n1,n2),Nd=nm(d);if(Nd<1e-9)return null;var p=sc(1/(Nd*Nd),ad(sc(-a[3],cr(n2,d)),sc(-b[3],cr(d,n1)))),u=sc(1/Nd,d);S.line(ad(p,sc(-4,u)),ad(p,sc(4,u)),at);return {p:p,u:u};}
+S.onDraw(function(S){S.grid(4);S.axes(4.3);
+if(Q.some(function(q){return nm(q.slice(0,3))<1e-9;})){out([],'Every plane needs a nonzero normal: at least one of a, b, c must be nonzero.');return;}
+patch(Q[0],'var(--sky-t)','var(--blue)');patch(Q[1],'var(--orange-t)','var(--verm)');patch(Q[2],'var(--green-t)','var(--green)');
+var A=Q.map(function(q){return q.slice(0,3);}),Ab=Q.map(function(q){return [q[0],q[1],q[2],-q[3]];}),rA=rank(A),rB=rank(Ab),rows=[['rank A, rank [A|c]',rA+', '+rB]],note,res;
+[[0,1],[0,2],[1,2]].forEach(function(p){pairLine(Q[p[0]],Q[p[1]],{stroke:'var(--ink)','stroke-width':1.6,'stroke-dasharray':'4 4'});});
+if(rA<rB){var par=[[0,1],[0,2],[1,2]].some(function(p){return nm(cr(A[p[0]],A[p[1]]))<1e-9;});res='no solution';note=par&&rA===2?'Two planes are parallel and different, so no point lies on all three.':rA===2?'Triangular prism: the planes meet pairwise in three parallel lines, but not all in one.':'All three planes are parallel and different.';}
+else if(rA===3){var det=dt(A[0],cr(A[1],A[2])),x=sc(1/det,ad(sc(-Q[0][3],cr(A[1],A[2])),ad(sc(-Q[1][3],cr(A[2],A[0])),sc(-Q[2][3],cr(A[0],A[1])))));res='exactly one solution';S.dot(x,7,{fill:'var(--ink)',stroke:'var(--bg)','stroke-width':2});S.text(x,'X');rows.push(['the point',tri(x)]);note='Rank 3: the normals are independent and the planes meet in a single point.';}
+else if(rA===2){res='a line of solutions';var L=null;[[0,1],[0,2],[1,2]].forEach(function(p){if(!L)L=pairLine(Q[p[0]],Q[p[1]],{stroke:'var(--ink)','stroke-width':4});});rows.push(['direction',tri(L.u)]);note='Rank 2 and consistent: the three planes share a whole line (one free parameter).';}
+else{res='a whole plane of solutions';note='Rank 1 and consistent: all three equations describe the same plane (two free parameters).';}
+rows.unshift(['solution set','<b>'+res+'</b>']);out(rows,note);});
+sync();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

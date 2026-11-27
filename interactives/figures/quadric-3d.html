@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second-order surfaces: slices of a quadric</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Second-order surfaces: slices of a quadric</h1><p>Pick a surface and set its semi-axes; rotate by dragging. The blue rings are horizontal slices and the thin curves run along the surface. Move the orange slice up and down to see what every cross-section looks like.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A second order surface drawn from horizontal slices'});
+var T={ell:['Ellipsoid','x²/a² + y²/b² + z²/c² = 1',function(u){return Math.abs(u)<=1?Math.sqrt(1-u*u):NaN;}],hy1:['Hyperboloid, 1 sheet','x²/a² + y²/b² − z²/c² = 1',function(u){return Math.sqrt(1+u*u);}],hy2:['Hyperboloid, 2 sheets','x²/a² + y²/b² − z²/c² = −1',function(u){return Math.abs(u)>=1?Math.sqrt(u*u-1):NaN;}],cone:['Elliptic cone','x²/a² + y²/b² = z²/c²',function(u){return Math.abs(u);}],par:['Elliptic paraboloid','x²/a² + y²/b² = z/c',function(u){return u>=0?Math.sqrt(u):NaN;}],cyl:['Elliptic cylinder','x²/a² + y²/b² = 1',function(){return 1;}]};
+var cur='ell';
+var sg=KAI.seg({legend:'Surface',value:'ell',options:Object.keys(T).map(function(k){return {value:k,label:T[k][0].replace('Hyperboloid, ','Hyp. ').replace('Elliptic ','').replace('Ellipsoid','Ellipsoid')};}),onChange:function(k){cur=k;S.refresh();}});
+var sa=KAI.slider({label:'a',min:0.5,max:3,step:0.5,value:2,digits:1,onInput:function(){S.refresh();}}),sb=KAI.slider({label:'b',min:0.5,max:3,step:0.5,value:1.5,digits:1,onInput:function(){S.refresh();}}),sc_=KAI.slider({label:'c',min:0.5,max:3,step:0.5,value:2,digits:1,onInput:function(){S.refresh();}}),sz=KAI.slider({label:'slice height z',min:-3,max:3,step:0.1,value:0.8,digits:1,onInput:function(){S.refresh();}});
+KAI.$('#ctl').append(sg.el,sa.el,sb.el,sc_.el,sz.el);
+function ring(rho,z,a,b,at){var pts=[];for(var k=0;k<=36;k++){var t=k*Math.PI/18;pts.push([a*rho*Math.cos(t),b*rho*Math.sin(t),z]);}for(var k=0;k<36;k++)S.line(pts[k],pts[k+1],at);}
+S.onDraw(function(S){var a=sa.get(),b=sb.get(),c=sc_.get(),f=T[cur][2],zs=sz.get();S.grid(4);S.axes(4.3);
+for(var z=-3;z<=3.001;z+=0.5){var r=f(z/c);if(!isNaN(r)&&r>1e-6)ring(r,z,a,b,{stroke:'var(--blue)','stroke-width':1.2,'stroke-opacity':0.7});}
+for(var m=0;m<8;m++){var t=m*Math.PI/4,prev=null;for(var z=-3;z<=3.001;z+=0.15){var r=f(z/c);if(isNaN(r)){prev=null;continue;}var q=[a*r*Math.cos(t),b*r*Math.sin(t),z];if(prev)S.line(prev,q,{stroke:'var(--axis)','stroke-width':0.9});prev=q;}}
+var rs=f(zs/c),sl='';if(isNaN(rs))sl='no points at this height';else if(rs<1e-6){S.dot([0,0,zs],6,{fill:'var(--orange)'});sl='a single point';}else{ring(rs,zs,a,b,{stroke:'var(--orange)','stroke-width':3.4});sl=(Math.abs(a-b)<1e-9?'circle':'ellipse')+', semi-axes '+fmt(a*rs,2)+' and '+fmt(b*rs,2);}
+out([['surface','<b>'+T[cur][0]+'</b>'],['equation',T[cur][1]],['slice at z = '+fmt(zs,1),sl]],cur==='ell'?'With a = b = c it is a sphere; every slice is a circle of radius √(r² − z²).':cur==='cyl'?'Every slice is the same ellipse: the surface is that curve slid along the z-axis.':cur==='cone'?'The slice shrinks to a point at z = 0 and grows linearly: a double cone.':cur==='hy2'?'No points for |z| < c: the two sheets never touch.':cur==='par'?'Slices only exist above z = 0 and grow like √z.':'Slices never shrink to a point: the waist is the ellipse at z = 0.');});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

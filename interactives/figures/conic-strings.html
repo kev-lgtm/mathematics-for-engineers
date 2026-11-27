@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drawing conics with a string: foci and directrix</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Drawing conics with a string: foci and directrix</h1><p>Move <span class="v">P</span> along the curve. Ellipse: the two string lengths add up to <span class="v">2a</span>. Hyperbola: they differ by <span class="v">2a</span>. Parabola: the distance to the focus equals the distance to the directrix.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-9,9],y:[-6,6]}),type='ell';
+var sg=KAI.seg({legend:'Curve',value:'ell',options:[{value:'ell',label:'Ellipse'},{value:'hyp',label:'Hyperbola'},{value:'par',label:'Parabola'}],onChange:function(k){type=k;if(k==='hyp'){sa.set(2);sc_.set(4);}else if(k==='ell'){sa.set(5);sc_.set(4);}else sa.set(5);draw();}});
+var sa=KAI.slider({label:'a (parabola: p = a/2)',min:1,max:6,step:0.5,value:5,digits:1,onInput:function(){draw();}}),sc_=KAI.slider({label:'focal distance c',min:0.5,max:7,step:0.5,value:4,digits:1,onInput:function(){draw();}}),sq=KAI.slider({label:'position of <i>P</i>',min:-100,max:100,step:1,value:40,digits:0,onInput:function(){draw();}});
+KAI.$('#ctl').append(sg.el,sa.el,sc_.el,sq.el);P.onResize(draw);
+function draw(){var a=sa.get(),cc=sc_.get(),q=sq.get(),c=KAI.clear(P.content),f=function(q){return null;},rows,note,Pt,pts=[],pts2=[],F1,F2;
+if(type==='ell'){if(cc>=a){out([],'An ellipse needs c &lt; a. Decrease c or increase a.');return;}var b=Math.sqrt(a*a-cc*cc);f=function(q){var t=q*Math.PI/100;return [a*Math.cos(t),b*Math.sin(t)];};F1=[-cc,0];F2=[cc,0];}
+else if(type==='hyp'){if(cc<=a){out([],'A hyperbola needs c &gt; a. Increase c or decrease a.');return;}var b2=Math.sqrt(cc*cc-a*a);f=function(q){var u=q*0.02;return [a*Math.cosh(u),b2*Math.sinh(u)];};F1=[-cc,0];F2=[cc,0];}
+else{var p=a/2;f=function(q){var s=q*0.02;return [p*s*s,2*p*s];};F1=[p,0];}
+for(var k=-100;k<=100;k+=2){var z=f(k);pts.push(z);pts2.push([-z[0],z[1]]);}
+P.polyline(c,pts,{stroke:'var(--blue)','stroke-width':2.8});if(type==='hyp')P.polyline(c,pts2,{stroke:'var(--blue)','stroke-width':2.8});
+Pt=f(q);P.dot(c,F1,6,{fill:'var(--ink)'});if(F2)P.dot(c,F2,6,{fill:'var(--ink)'});P.text(c,[F1[0]+0.2,0.4],type==='par'?'F':'F₁');if(F2)P.text(c,[F2[0]+0.2,0.4],'F₂');
+P.line(c,F1,Pt,{stroke:'var(--blue)','stroke-width':2.4});var d1=Math.hypot(Pt[0]-F1[0],Pt[1]-F1[1]);
+if(F2){P.line(c,F2,Pt,{stroke:'var(--verm)','stroke-width':2.4});var d2=Math.hypot(Pt[0]-F2[0],Pt[1]-F2[1]);rows=[['<span class="blue">|PF₁|</span>',fmt(d1,3)],['<span class="verm">|PF₂|</span>',fmt(d2,3)],[type==='ell'?'|PF₁| + |PF₂|':'| |PF₁| − |PF₂| |',fmt(type==='ell'?d1+d2:Math.abs(d1-d2),3)],['2a',fmt(2*a,3)]];note=type==='ell'?'The pencil keeps the string taut, so the total length 2a never changes.':'The difference of the two distances is the constant 2a (the right branch shown; the left branch is the mirror image).';}
+else{var p2=a/2;P.line(c,[-p2,-14],[-p2,14],{stroke:'var(--axis)','stroke-dasharray':'5 4'});P.line(c,Pt,[-p2,Pt[1]],{stroke:'var(--verm)','stroke-width':2.4});rows=[['<span class="blue">|PF|</span>',fmt(d1,3)],['<span class="verm">|PD| to directrix</span>',fmt(Pt[0]+p2,3)]];note='Every point is as far from the focus as from the directrix x = −p (eccentricity 1).';}
+P.dot(c,Pt,6,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.text(c,[Pt[0]+0.2,Pt[1]+0.45],'P',{fill:'var(--orange)'});out(rows,note);}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

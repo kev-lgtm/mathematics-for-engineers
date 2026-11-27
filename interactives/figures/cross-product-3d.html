@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross product, area and volume in 3D</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Cross product, area and volume in 3D</h1>
+  <p>Choose a vector and set its components with the sliders. Rotate the scene by dragging it (or focus it and use the arrow keys). <span class="v">u × v</span> is perpendicular to both; its length is the area of the shaded parallelogram.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+  <details class="try"><summary>Try this</summary><ol>
+    <li>Start: <b>u</b> = (2,1,0), <b>v</b> = (1,2,0) gives <b>u</b>×<b>v</b> = (0,0,3), area 3, as in the book.</li>
+    <li>Swap the roles with <i>show v × u</i>: the arrow flips (right-hand rule).</li>
+    <li>Make <b>v</b> a multiple of <b>u</b>: the parallelogram collapses and the cross product is <b>0</b>.</li>
+    <li>Switch on the box and lift <b>a</b> into the plane of <b>u</b>, <b>v</b>: the volume drops to 0, so the three vectors are coplanar.</li>
+  </ol></details>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+  var h = KAI.h, fmt = KAI.fmt, svg = KAI.s('svg', { role: 'img' });
+  KAI.$('#stage').appendChild(svg);
+  var S = KAI.scene3(svg, { range: 4.2, label: 'Three-dimensional scene with the vectors u and v, their cross product and, optionally, a parallelepiped' });
+  var V = { u: [2, 1, 0], v: [1, 2, 0], a: [1, 0, 2] }, cur = 'u', sl = [];
+  var DEF = JSON.stringify(V);
+  var seg = KAI.seg({ legend: 'Edit vector', value: 'u', options: [{ value: 'u', label: '<i>u</i>' }, { value: 'v', label: '<i>v</i>' }, { value: 'a', label: '<i>a</i>' }], onChange: function (k) { cur = k; sync(); } });
+  ['x', 'y', 'z'].forEach(function (nm, i) { sl.push(KAI.slider({ label: 'component ' + nm, min: -3, max: 3, step: 0.5, value: 0, digits: 1, onInput: function (v) { V[cur][i] = v; S.refresh(); } })); });
+  var vu = KAI.check({ label: 'Show <i>v</i> × <i>u</i> (dashed)', checked: false, onChange: function () { S.refresh(); } });
+  var bx = KAI.check({ label: 'Show the box spanned by <i>u</i>, <i>v</i>, <i>a</i>', checked: false, onChange: function () { S.refresh(); } });
+  KAI.$('#ctl').append(seg.el, sl[0].el, sl[1].el, sl[2].el, vu.el, bx.el,
+    KAI.button({ label: 'Reset vectors and view', onClick: function () { V = JSON.parse(DEF); sync(); S.reset(); } }));
+  function sync() { sl.forEach(function (s, i) { s.set(V[cur][i]); }); S.refresh(); }
+  var cr = function (p, q) { return [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]]; };
+  var dt = function (p, q) { return p[0] * q[0] + p[1] * q[1] + p[2] * q[2]; };
+  var ad = function (p, q) { return [p[0] + q[0], p[1] + q[1], p[2] + q[2]]; };
+  var sc = function (k, p) { return [k * p[0], k * p[1], k * p[2]]; };
+  var tri = function (p) { return '(' + fmt(p[0], 1) + ', ' + fmt(p[1], 1) + ', ' + fmt(p[2], 1) + ')'; };
+  S.onDraw(function (S) {
+    var u = V.u, v = V.v, a = V.a, O = [0, 0, 0], n = cr(u, v), nn = Math.sqrt(dt(n, n)), uv = ad(u, v), sh = nn > 4 ? 4 / nn : 1, T = dt(a, n);
+    S.grid(4); S.axes(4.2);
+    if (bx.get()) {
+      var P = [O, u, v, a, uv, ad(u, a), ad(v, a), ad(uv, a)];
+      [[0, 1, 4, 2], [3, 5, 7, 6], [0, 1, 5, 3], [2, 4, 7, 6], [0, 2, 6, 3], [1, 4, 7, 5]].forEach(function (f) { S.poly(f.map(function (i) { return P[i]; }), { fill: 'var(--orange-t)', stroke: 'var(--orange)', 'stroke-width': 1 }); });
+      S.arrow(O, a, { stroke: 'var(--orange)' }); S.text(a, 'a', { fill: 'var(--orange)' });
+    }
+    S.poly([O, u, uv, v], { fill: 'var(--sky-t)', stroke: 'var(--blue)', 'stroke-width': 1.2 });
+    if (nn > 1e-9) { S.arrow(O, sc(sh, n), { stroke: 'var(--green)', width: 4 }); S.text(sc(sh, n), 'u×v', { fill: 'var(--green)' }); if (vu.get()) { S.arrow(O, sc(-sh, n), { stroke: 'var(--purple)', dash: '5 4', width: 3 }); S.text(sc(-sh, n), 'v×u', { fill: 'var(--purple)' }); } }
+    S.arrow(O, u, { stroke: 'var(--ink)' }); S.text(u, 'u'); S.arrow(O, v, { stroke: 'var(--blue)' }); S.text(v, 'v', { fill: 'var(--blue)' });
+    var nu = Math.sqrt(dt(u, u)), nv = Math.sqrt(dt(v, v)), th = nu * nv > 1e-9 ? KAI.deg(Math.acos(KAI.clamp(dt(u, v) / (nu * nv), -1, 1))) : NaN;
+    var rows = [['<span class="green">u × v</span>', tri(n)], ['area = |u × v|', fmt(nn, 2)], ['angle between u, v', isNaN(th) ? '—' : fmt(th, 1) + '°'], ['(u×v)·u, (u×v)·v', fmt(dt(n, u), 2) + ', ' + fmt(dt(n, v), 2)]];
+    if (bx.get()) rows.push(['a·(u×v)', fmt(T, 2)], ['volume = |a·(u×v)|', fmt(Math.abs(T), 2)]);
+    var note = nn < 1e-9 ? 'u and v are parallel (or one is 0): the parallelogram has no area and u × v = 0.' : 'Right-hand rule: curl the fingers of your right hand from u towards v and the thumb points along u × v.' + (sh < 1 ? ' (The green arrow is drawn shortened.)' : '');
+    if (bx.get()) note += Math.abs(T) < 1e-9 ? ' Volume 0: u, v, a are coplanar.' : (T > 0 ? ' The triple product is positive: u, v, a form a right-handed system.' : ' The triple product is negative: u, v, a form a left-handed system.');
+    var o = KAI.clear(KAI.$('#out'));
+    rows.forEach(function (r) { o.appendChild(h('div', { class: 'kv' }, h('span', { html: r[0] }), h('b', { html: r[1] }))); });
+    o.appendChild(h('p', { class: 'note', html: note }));
+  });
+  sync();
+  KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

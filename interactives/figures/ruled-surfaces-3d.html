@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruled surfaces: curved surfaces made of straight lines</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Ruled surfaces: curved surfaces made of straight lines</h1><p>A one-sheet hyperboloid and a hyperbolic paraboloid are both covered by <i>two</i> families of straight lines. Choose a surface, set the shape, and move the highlighted line; rotate by dragging.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'A ruled surface drawn as two families of straight lines'}),type='hy';
+var sg=KAI.seg({legend:'Surface',value:'hy',options:[{value:'hy',label:'Hyperboloid, 1 sheet'},{value:'hp',label:'Hyperbolic paraboloid'}],onChange:function(k){type=k;S.refresh();}});
+function S_(l,mn,mx,v,st,dg){return KAI.slider({label:l,min:mn,max:mx,step:st,value:v,digits:dg||1,onInput:function(){S.refresh();}});}
+var sa=S_('a',1,2.5,2,0.5),sb=S_('b',1,2.5,2,0.5),sc_=S_('c',1,3,2,0.5),sn=S_('lines per family',4,20,12,2,0),sh=S_('highlighted line',0,100,20,1,0);
+var f1=KAI.check({label:'Family 1 (blue)',checked:true,onChange:function(){S.refresh();}}),f2=KAI.check({label:'Family 2 (red)',checked:true,onChange:function(){S.refresh();}});
+KAI.$('#ctl').append(sg.el,sa.el,sb.el,sc_.el,sn.el,sh.el,f1.el,f2.el);
+S.onDraw(function(S){var a=sa.get(),b=sb.get(),c=sc_.get(),n=sn.get(),v=sh.get()/100;S.grid(4);S.axes(4.3);var L1,L2,eq,note;
+if(type==='hy'){L1=function(t,w){var P=[a*Math.cos(t),b*Math.sin(t),0],d=[-a*Math.sin(t),b*Math.cos(t),c];return [ad(P,sc(-1.4,d)),ad(P,sc(1.4,d))];};L2=function(t,w){var P=[a*Math.cos(t),b*Math.sin(t),0],d=[-a*Math.sin(t),b*Math.cos(t),-c];return [ad(P,sc(-1.4,d)),ad(P,sc(1.4,d))];};
+for(var k=0;k<n;k++){var t=2*Math.PI*k/n;if(f1.get()){var e=L1(t);S.line(e[0],e[1],{stroke:'var(--blue)','stroke-width':1.3});}if(f2.get()){var e2=L2(t);S.line(e2[0],e2[1],{stroke:'var(--verm)','stroke-width':1.3});}}
+var th=2*Math.PI*v,h1=L1(th),h2=L2(th);if(f1.get())S.line(h1[0],h1[1],{stroke:'var(--blue)','stroke-width':4.4});if(f2.get())S.line(h2[0],h2[1],{stroke:'var(--verm)','stroke-width':4.4});
+eq='x²/a² + y²/b² − z²/c² = 1';note='Each line starts at the point (a cos t, b sin t, 0) of the waist ellipse and has direction (−a sin t, b cos t, ±c). Along it x²/a² + y²/b² = 1 + s² and z²/c² = s², so the equation holds for every s.';}
+else{var M=1.5,P1=function(l,m){return [a*(l+m)/2,b*(m-l)/2,c*l*m];},P2=function(l,m){return [a*(l+m)/2,b*(l-m)/2,c*l*m];};
+for(var k=0;k<=n;k++){var l=-M+2*M*k/n;if(f1.get())S.line(P1(l,-M),P1(l,M),{stroke:'var(--blue)','stroke-width':1.3});if(f2.get())S.line(P2(l,-M),P2(l,M),{stroke:'var(--verm)','stroke-width':1.3});}
+var lh=-M+2*M*v;if(f1.get())S.line(P1(lh,-M),P1(lh,M),{stroke:'var(--blue)','stroke-width':4.4});if(f2.get())S.line(P2(lh,-M),P2(lh,M),{stroke:'var(--verm)','stroke-width':4.4});
+eq='z/c = x²/a² − y²/b²';note='Factor the right side: z/c = (x/a − y/b)(x/a + y/b). Fixing x/a − y/b = λ (family 1) or x/a + y/b = λ (family 2) makes z linear, so each family is a set of straight lines.';}
+out([['surface','<b>'+(type==='hy'?'hyperboloid of one sheet':'hyperbolic paraboloid (saddle)')+'</b>'],['equation',eq]],note);});
+S.refresh();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

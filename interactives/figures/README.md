@@ -1,6 +1,6 @@
-# Interactive figures: Matrix Algebra, determinants and systems
+# Interactive figures: Linear Algebra and Analytic Geometry
 
-Thirteen self-contained HTML figures (the last four are experimental) plus a gallery page. No build step, no dependencies, no internet needed.
+Thirteen Linear Algebra figures (the last four are experimental) and 49 Analytic Geometry figures (21 of them 3D), each a self-contained HTML page, plus a gallery page for the Linear Algebra ones. The Analytic Geometry figures are listed on `interactives/analytic-geometry/index.html`. No build step, no dependencies, no internet needed.
 Everything works from `file://`, from GitHub Pages, and inside an `<iframe>`.
 
 ```
@@ -11,7 +11,8 @@ figures/
   truss.html            springs.html       robot-arm.html
   determinant.html      gauss-jordan.html  (new, experimental)
   linear-systems.html   curve-fit.html     (new, experimental)
-  assets/kai3d.js       small rotatable 3D view (used by determinant and linear-systems)
+  assets/kai3d.js       rotatable 3D pictures: KAI.view3 (determinant, linear-systems) and KAI.scene3 (all *-3d figures)
+  analytic geometry:    49 pages, e.g. line-forms.html, conic-family.html, three-planes-3d.html (see interactives/analytic-geometry/index.html)
   assets/kai.css        shared theme (colours, controls, light and dark)
   assets/kai.js         shared helpers (SVG plane, draggable handles, sliders, matrices)
   assets/kai-host.js    include on the page that embeds figures; sizes the iframes

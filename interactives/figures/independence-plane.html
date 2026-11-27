@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear independence and coordinates in the plane</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Linear independence and coordinates in the plane</h1><p>Drag <span class="v">v₁</span>, <span class="v">v₂</span> and the target <span class="v">w</span>. If the vectors are independent, <span class="v">w = c₁v₁ + c₂v₂</span> has exactly one solution; if they are parallel their combinations fill only a line.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img','aria-label':'Plane with vectors v1, v2 and a target w written as a combination'});KAI.nodeStage=KAI.$('#stage').appendChild(svg);
+function snap(k){return function(p){return [Math.round(p[0]*k)/k,Math.round(p[1]*k)/k];};}
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+function hd(P,pos,col,name,draw,k){k=k||2;return KAI.handle(P,{pos:pos,color:col,constrain:snap(k),step:1/k,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+function lab(P,c,p,t,col){P.text(c,[p[0]+0.15,p[1]+0.2],t,{fill:col||'var(--ink)'});}
+function reset(fn){return KAI.button({label:'Reset',onClick:fn});}
+var P=KAI.plane(svg,{x:[-5,6],y:[-4,6]});
+var hs=[hd(P,[2,1],'var(--blue)','tip of v1',draw),hd(P,[1,2],'var(--verm)','tip of v2',draw),hd(P,[3,3],'var(--ink)','target w',draw)];
+KAI.$('#ctl').append(reset(function(){[[2,1],[1,2],[3,3]].forEach(function(q,i){hs[i].set(q[0],q[1]);});draw();}));P.onResize(draw);
+function draw(){var v1=hs[0].pos(),v2=hs[1].pos(),w=hs[2].pos(),c=KAI.clear(P.content),det=v1[0]*v2[1]-v1[1]*v2[0],ind=Math.abs(det)>1e-9;
+if(ind){P.poly(c,[[0,0],v1,[v1[0]+v2[0],v1[1]+v2[1]],v2],{fill:'var(--sky-t)',stroke:'none'});}
+else{var d=Math.hypot(v1[0],v1[1])>1e-9?v1:v2;if(Math.hypot(d[0],d[1])>1e-9){var l=Math.hypot(d[0],d[1]);P.line(c,[-30*d[0]/l,-30*d[1]/l],[30*d[0]/l,30*d[1]/l],{stroke:'var(--green)','stroke-width':5,'stroke-opacity':0.5});}}
+var rows=[['det [v₁ v₂]',fmt(det,2)],['vectors are',ind?'<span class="ok">independent</span>':'<span class="bad">dependent</span>']],note;
+if(ind){var c1=(w[0]*v2[1]-w[1]*v2[0])/det,c2=(v1[0]*w[1]-v1[1]*w[0])/det,t1=[c1*v1[0],c1*v1[1]];P.arrow(c,[0,0],t1,{stroke:'var(--blue)',dash:'5 4'});P.arrow(c,t1,w,{stroke:'var(--verm)',dash:'5 4'});rows.push(['c₁, c₂',fmt(c1,2)+', '+fmt(c2,2)]);note='The coefficients are unique, and the combinations of v₁, v₂ fill the whole plane.';}
+else{var cr=Math.abs(w[0]*(Math.hypot(v1[0],v1[1])>1e-9?v1[1]:v2[1])-w[1]*(Math.hypot(v1[0],v1[1])>1e-9?v1[0]:v2[0]))<1e-9;note=cr?'w lies on the line: infinitely many coefficient pairs work.':'w is off the line: no coefficients work.';}
+P.arrow(c,[0,0],v1,{stroke:'var(--blue)'});lab(P,c,v1,'v₁','var(--blue)');P.arrow(c,[0,0],v2,{stroke:'var(--verm)'});lab(P,c,v2,'v₂','var(--verm)');P.arrow(c,[0,0],w,{stroke:'var(--ink)',width:3.4});lab(P,c,w,'w');out(rows,note);}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

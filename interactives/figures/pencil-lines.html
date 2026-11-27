@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A pencil of lines through a point</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A pencil of lines through a point</h1><p>The line <span class="v">cos θ·L₁ + sin θ·L₂ = 0</span> belongs to the pencil of lines through the intersection of <span class="v">L₁</span> and <span class="v">L₂</span>. Drag the four points, then turn θ to sweep through all the lines.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-6,8],y:[-5,7]});
+function hd(pos,col,name){return KAI.handle(P,{pos:pos,color:col,constrain:function(p){return [Math.round(p[0]*2)/2,Math.round(p[1]*2)/2];},step:0.5,label:function(p){return name+' at '+fmt(p[0],1)+', '+fmt(p[1],1);},onMove:draw});}
+var hs=[hd([1,2],'var(--blue)','line 1 first point'),hd([5,5],'var(--blue)','line 1 second point'),hd([-1,-3],'var(--verm)','line 2 first point'),hd([2,1],'var(--verm)','line 2 second point')];
+var st=KAI.slider({label:'angle θ',min:0,max:180,step:1,value:45,digits:0,unit:'°',onInput:function(){draw();}}),fam=KAI.check({label:'Show the whole pencil (every 15°)',checked:true,onChange:draw});
+KAI.$('#ctl').append(st.el,fam.el,KAI.button({label:'Reset points',onClick:function(){[[1,2],[5,5],[-1,-3],[2,1]].forEach(function(q,i){hs[i].set(q[0],q[1]);});draw();}}));P.onResize(draw);
+function ln(a,b){var A=b[1]-a[1],B=-(b[0]-a[0]);return [A,B,-(A*a[0]+B*a[1])];}
+function seg(c,L,at){var A=L[0],B=L[1],C=L[2];if(Math.abs(B)>=Math.abs(A))P.line(c,[-40,(A*40-C)/B],[40,(-A*40-C)/B],at);else P.line(c,[(B*40-C)/A,-40],[(-B*40-C)/A,40],at);}
+function draw(){var p=hs.map(function(x){return x.pos();}),c=KAI.clear(P.content),L1=ln(p[0],p[1]),L2=ln(p[2],p[3]);
+if(!(L1[0]||L1[1])||!(L2[0]||L2[1])){out([],'Two points of one line coincide: move one of them.');return;}
+var D=L1[0]*L2[1]-L2[0]*L1[1],th=KAI.rad(st.get()),cs=Math.cos(th),sn=Math.sin(th);
+if(fam.get())for(var g=0;g<180;g+=15){var f=KAI.rad(g);seg(c,[Math.cos(f)*L1[0]+Math.sin(f)*L2[0],Math.cos(f)*L1[1]+Math.sin(f)*L2[1],Math.cos(f)*L1[2]+Math.sin(f)*L2[2]],{stroke:'var(--axis)','stroke-width':1,'stroke-opacity':0.8});}
+seg(c,L1,{stroke:'var(--blue)','stroke-width':2.6});seg(c,L2,{stroke:'var(--verm)','stroke-width':2.6});
+var M=[cs*L1[0]+sn*L2[0],cs*L1[1]+sn*L2[1],cs*L1[2]+sn*L2[2]];seg(c,M,{stroke:'var(--green)','stroke-width':3.4});
+var rows=[['<span class="green">member</span>',fmt(M[0],2)+'x '+(M[1]<0?'−':'+')+' '+fmt(Math.abs(M[1]),2)+'y '+(M[2]<0?'−':'+')+' '+fmt(Math.abs(M[2]),2)+' = 0']],note;
+if(Math.abs(D)<1e-9){note='L₁ and L₂ are parallel: the "pencil" is a family of parallel lines (no common point).';}
+else{var X=[(L1[1]*L2[2]-L2[1]*L1[2])/D,(L1[2]*L2[0]-L2[2]*L1[0])/D];P.dot(c,X,7,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.text(c,[X[0]+0.2,X[1]+0.4],'X',{fill:'var(--orange)'});rows.push(['common point X','('+fmt(X[0],2)+', '+fmt(X[1],2)+')'],['member at X',fmt(M[0]*X[0]+M[1]*X[1]+M[2],6)]);note='Every member passes through X, because both L₁ and L₂ equal 0 there. θ = 0 gives L₁ and θ = 90° gives L₂.';}
+out(rows,note);}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

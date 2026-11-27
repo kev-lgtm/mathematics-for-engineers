@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The reflection property of ellipse, parabola and hyperbola</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>The reflection property of ellipse, parabola and hyperbola</h1><p>A ray leaves a focus and hits the curve at <span class="v">P</span>. The mirror is the tangent line, and the angle of incidence equals the angle of reflection. Drag <span class="v">P</span> with the slider and watch where the reflected ray goes.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-9,9],y:[-6,6]}),type='ell';
+var sg=KAI.seg({legend:'Curve',value:'ell',options:[{value:'ell',label:'Ellipse'},{value:'par',label:'Parabola'},{value:'hyp',label:'Hyperbola'}],onChange:function(k){type=k;draw();}});
+var sq=KAI.slider({label:'position of <i>P</i>',min:-100,max:100,step:1,value:35,digits:0,onInput:function(){draw();}}),fan=KAI.check({label:'Show a fan of rays',checked:false,onChange:draw});
+KAI.$('#ctl').append(sg.el,sq.el,fan.el);P.onResize(draw);
+function G(q){var Pt,n,F;if(type==='ell'){var t=q*Math.PI/100;Pt=[5*Math.cos(t),3*Math.sin(t)];n=[3*Math.cos(t),5*Math.sin(t)];F=[-4,0];}
+else if(type==='par'){var s=q*0.018;Pt=[1.5*s*s,3*s];n=[1,-s];F=[1.5,0];}
+else{var u=q*0.018;Pt=[2*Math.cosh(u),1.5*Math.sinh(u)];n=[1.5*Math.cosh(u),-2*Math.sinh(u)];F=[2.5,0];}
+var l=Math.hypot(n[0],n[1]);n=[n[0]/l,n[1]/l];var d=[Pt[0]-F[0],Pt[1]-F[1]],dl=Math.hypot(d[0],d[1]);d=[d[0]/dl,d[1]/dl];var dn=d[0]*n[0]+d[1]*n[1];return {P:Pt,n:n,F:F,d:d,dl:dl,r:[d[0]-2*dn*n[0],d[1]-2*dn*n[1]],dn:dn};}
+function ray(c,g,at,L){P.line(c,g.F,g.P,at);P.line(c,g.P,[g.P[0]+L*g.r[0],g.P[1]+L*g.r[1]],at);}
+function draw(){var c=KAI.clear(P.content),pts=[];for(var q=-100;q<=100;q+=2)pts.push(G(q).P);P.polyline(c,pts,{stroke:'var(--blue)','stroke-width':2.8});
+var f1=type==='ell'?[-4,0]:type==='par'?[1.5,0]:[2.5,0],f2=type==='ell'?[4,0]:type==='hyp'?[-2.5,0]:null;
+P.dot(c,f1,6,{fill:'var(--ink)'});P.text(c,[f1[0]+0.2,0.4],type==='ell'?'F₁':'F');if(f2){P.dot(c,f2,6,{fill:'var(--ink)'});P.text(c,[f2[0]+0.2,0.4],type==='ell'?'F₂':'F′');}
+if(type==='par')P.line(c,[-1.5,-12],[-1.5,12],{stroke:'var(--axis)','stroke-dasharray':'4 4'});
+if(fan.get())for(var q=-100;q<=100;q+=25){var gg=G(q),L=type==='ell'?Math.hypot(f2[0]-gg.P[0],f2[1]-gg.P[1]):10;ray(c,gg,{stroke:'var(--orange)','stroke-width':1,'stroke-opacity':0.55},L);}
+var g=G(sq.get()),P0=g.P,tg=[-g.n[1],g.n[0]];P.line(c,[P0[0]-2.2*tg[0],P0[1]-2.2*tg[1]],[P0[0]+2.2*tg[0],P0[1]+2.2*tg[1]],{stroke:'var(--green)','stroke-width':2});
+P.line(c,P0,[P0[0]+2*g.n[0],P0[1]+2*g.n[1]],{stroke:'var(--axis)','stroke-dasharray':'3 4'});P.line(c,P0,[P0[0]-2*g.n[0],P0[1]-2*g.n[1]],{stroke:'var(--axis)','stroke-dasharray':'3 4'});
+var L=type==='ell'?Math.hypot(f2[0]-P0[0],f2[1]-P0[1]):type==='par'?14:9;P.line(c,g.F,P0,{stroke:'var(--blue)','stroke-width':2.4});P.arrow(c,P0,[P0[0]+L*g.r[0],P0[1]+L*g.r[1]],{stroke:'var(--verm)',width:2.8});
+if(type==='hyp')P.line(c,P0,f2,{stroke:'var(--verm)','stroke-dasharray':'5 4','stroke-width':1.8});
+P.dot(c,P0,6,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});P.text(c,[P0[0]+0.2,P0[1]+0.45],'P',{fill:'var(--orange)'});
+var inc=KAI.deg(Math.acos(Math.min(1,Math.abs(g.dn)))),rf=KAI.deg(Math.acos(Math.min(1,Math.abs(g.r[0]*g.n[0]+g.r[1]*g.n[1]))));
+out([['angle of incidence',fmt(inc,2)+'°'],['angle of reflection',fmt(rf,2)+'°'],['reflected ray','<b>'+(type==='ell'?'passes through F₂':type==='par'?'is parallel to the axis ('+fmt(g.r[0],2)+', '+fmt(g.r[1],2)+')':'looks as if it came from F′ (dashed)')+'</b>']],
+type==='ell'?'Whispering gallery: every ray from F₁ is reflected to F₂, because |PF₁| + |PF₂| is constant.':type==='par'?'A parabolic mirror turns light from the focus into a parallel beam, and a dish collects a parallel beam into the focus.':'The reflected ray travels away along the line from F′ through P; the two foci play the same roles as for the ellipse.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

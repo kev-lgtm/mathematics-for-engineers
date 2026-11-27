@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A tilted conic: the xy term and the principal axes</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>A tilted conic: the xy term and the principal axes</h1><p>Set <span class="v">Ax² + Bxy + Cy² = 1</span>. A nonzero <span class="v">B</span> tilts the curve; rotating the axes removes the xy term and leaves <span class="v">λ₁x′² + λ₂y′² = 1</span>. The sign of <span class="v">B² − 4AC</span> tells the type.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var P=KAI.plane(svg,{x:[-5,5],y:[-4,4]});
+var sA=KAI.slider({label:'A',min:-3,max:3,step:0.25,value:3,digits:2,onInput:function(){draw();}}),sB=KAI.slider({label:'B',min:-6,max:6,step:0.25,value:-2,digits:2,onInput:function(){draw();}}),sC=KAI.slider({label:'C',min:-3,max:3,step:0.25,value:3,digits:2,onInput:function(){draw();}});
+var ax=KAI.check({label:'Show the principal axes x′, y′',checked:true,onChange:draw});
+KAI.$('#ctl').append(sA.el,sB.el,sC.el,ax.el,KAI.button({label:'Reset (ellipse tilted by 45°)',onClick:function(){sA.set(3);sB.set(-2);sC.set(3);draw();}}));P.onResize(draw);
+function draw(){var A=sA.get(),B=sB.get(),C=sC.get(),c=KAI.clear(P.content),disc=B*B-4*A*C,m=(A+C)/2,rr=Math.sqrt((A-C)*(A-C)/4+B*B/4),l1=m+rr,l2=m-rr,th=0.5*Math.atan2(B,A-C),type;
+var cl=1e-9,runs=[],cur=[];for(var k=0;k<=6283;k+=4){var f=k/1000,q=A*Math.cos(f)*Math.cos(f)+B*Math.cos(f)*Math.sin(f)+C*Math.sin(f)*Math.sin(f);if(q>0.02){var r=1/Math.sqrt(q);if(r<14){cur.push([r*Math.cos(f),r*Math.sin(f)]);continue;}}if(cur.length>1)runs.push(cur);cur=[];}if(cur.length>1)runs.push(cur);
+if(Math.abs(disc)<cl)type=(A+C>cl)?'parabolic type: two parallel lines':'no real points';else if(disc<0)type=(A+C>0)?'ellipse':'no real points (empty)';else type='hyperbola';
+if(ax.get()&&type!=='no real points (empty)'){[th,th+Math.PI/2].forEach(function(g,i){P.line(c,[-9*Math.cos(g),-9*Math.sin(g)],[9*Math.cos(g),9*Math.sin(g)],{stroke:i?'var(--verm)':'var(--green)','stroke-dasharray':'6 4','stroke-width':1.6});});P.text(c,[3.6*Math.cos(th),3.6*Math.sin(th)+0.25],"x′",{fill:'var(--green)'});P.text(c,[-3.4*Math.sin(th),3.4*Math.cos(th)+0.25],"y′",{fill:'var(--verm)'});}
+if(disc>cl&&Math.abs(C)>cl){[(-B+Math.sqrt(disc))/(2*C),(-B-Math.sqrt(disc))/(2*C)].forEach(function(t){var g=Math.atan(t);P.line(c,[-12*Math.cos(g),-12*Math.sin(g)],[12*Math.cos(g),12*Math.sin(g)],{stroke:'var(--axis)','stroke-dasharray':'2 5'});});}
+runs.forEach(function(r){P.polyline(c,r,{stroke:'var(--blue)','stroke-width':2.8});});
+var rows=[['type','<b>'+type+'</b>'],['B² − 4AC',fmt(disc,2)],['tilt angle θ',fmt(KAI.deg(th),1)+'°'],['eigenvalues λ₁, λ₂',fmt(l1,3)+', '+fmt(l2,3)]];
+if(type==='ellipse')rows.push(['semi-axes',fmt(1/Math.sqrt(l1),3)+' (along x′), '+fmt(1/Math.sqrt(l2),3)+' (along y′)']);
+out(rows,'B = 0 means no tilt. The axes x′, y′ point along the eigenvectors of [[A, B/2],[B/2, C]]; the sign of B² − 4AC = −4·det decides the type. Dotted lines: asymptotes.');}
+draw();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>

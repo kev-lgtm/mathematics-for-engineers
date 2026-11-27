@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>/* mfe-theme */(function(){try{var t=localStorage.getItem("mfe-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two lines in space: intersecting, parallel or skew</title>
+<link rel="stylesheet" href="assets/kai.css">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<meta name="author" content="Kaveh Eftekharinasab">
+</head>
+<body>
+<main class="fig">
+  <header class="fig-head"><h1>Two lines in space: intersecting, parallel or skew</h1><p>Choose a line and set its point and direction with the sliders; rotate the scene by dragging. The dashed red segment is the shortest connection between the lines (the common perpendicular); its length is the distance.</p></header>
+  <div class="layout"><div class="stage" id="stage"></div>
+    <div class="side"><div class="card readout" id="out"></div><div class="card stack" id="ctl"></div></div></div>
+</main>
+<script src="assets/kai.js"></script>
+<script src="assets/kai3d.js"></script>
+<script>
+(function () {
+var h=KAI.h,s=KAI.s,fmt=KAI.fmt,svg=s('svg',{role:'img'});KAI.$('#stage').appendChild(svg);
+function out(rows,note){var o=KAI.clear(KAI.$('#out'));rows.forEach(function(r){o.appendChild(h('div',{class:'kv'},h('span',{html:r[0]}),h('b',{html:r[1]})));});if(note)o.appendChild(h('p',{class:'note',html:note}));}
+var cr=function(p,q){return [p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];},dt=function(p,q){return p[0]*q[0]+p[1]*q[1]+p[2]*q[2];},ad=function(p,q){return [p[0]+q[0],p[1]+q[1],p[2]+q[2]];},sc=function(k,p){return [k*p[0],k*p[1],k*p[2]];},nm=function(p){return Math.sqrt(dt(p,p));},tri=function(p){return '('+fmt(p[0],2)+', '+fmt(p[1],2)+', '+fmt(p[2],2)+')';};
+var S=KAI.scene3(svg,{range:4.5,label:'Two lines in space with their common perpendicular'});
+var L={a:{p:[0,0,0],d:[1,0,0]},b:{p:[1,0,2],d:[0,1,0]}},cur='a',sl=[],DEF=JSON.stringify(L);
+var sg=KAI.seg({legend:'Edit line',value:'a',options:[{value:'a',label:'Line 1'},{value:'b',label:'Line 2'}],onChange:function(k){cur=k;sync();}});
+[['point x','p',0],['point y','p',1],['point z','p',2],['direction a','d',0],['direction b','d',1],['direction c','d',2]].forEach(function(n){sl.push(KAI.slider({label:n[0],min:-3,max:3,step:0.5,value:0,digits:1,onInput:function(v){L[cur][n[1]][n[2]]=v;S.refresh();}}));});
+KAI.$('#ctl').append(sg.el);sl.forEach(function(x){KAI.$('#ctl').appendChild(x.el);});
+KAI.$('#ctl').appendChild(KAI.button({label:'Reset lines and view',onClick:function(){L=JSON.parse(DEF);sync();S.reset();}}));
+function sync(){sl.forEach(function(x,i){x.set(i<3?L[cur].p[i]:L[cur].d[i-3]);});S.refresh();}
+function drawLine(l,col,name){var u=sc(1/nm(l.d),l.d);S.line(ad(l.p,sc(-4,u)),ad(l.p,sc(4,u)),{stroke:col,'stroke-width':3});S.arrow(l.p,ad(l.p,sc(1.3,u)),{stroke:col,width:4});S.dot(l.p,5,{fill:col});S.text(ad(l.p,sc(4,u)),name,{fill:col});}
+S.onDraw(function(S){var a=L.a,b=L.b,n1=nm(a.d),n2=nm(b.d);S.grid(4);S.axes(4.3);
+if(n1<1e-9||n2<1e-9){out([],'A direction vector must not be 0: change a, b or c.');return;}
+drawLine(a,'var(--blue)','L₁');drawLine(b,'var(--verm)','L₂');
+var n=cr(a.d,b.d),nn=nm(n),w=[b.p[0]-a.p[0],b.p[1]-a.p[1],b.p[2]-a.p[2]],ang=KAI.deg(Math.acos(KAI.clamp(Math.abs(dt(a.d,b.d))/(n1*n2),0,1))),rel,dist,rows=[],note;
+if(nn<1e-9){var wc=nm(cr(w,a.d));dist=wc/n1;rel=dist<1e-9?'coincident':'parallel';var u=sc(1/n1,a.d),F=ad(a.p,sc(dt(w,u),u));
+if(dist>1e-9){S.line(b.p,F,{stroke:'var(--verm)','stroke-dasharray':'5 4','stroke-width':3});S.dot(F,5,{fill:'var(--verm)'});}
+note=rel==='coincident'?'d₁ × d₂ = 0 and P₂ lies on L₁: the same line.':'d₁ × d₂ = 0 but P₂ is off L₁: parallel, distance |P₁P₂ × d₁| / |d₁|.';}
+else{var m=nn*nn,t=dt(cr(w,b.d),n)/m,q=dt(cr(w,a.d),n)/m,A=ad(a.p,sc(t,a.d)),B=ad(b.p,sc(q,b.d));dist=Math.abs(dt(w,n))/nn;rel=dist<1e-9?'intersecting':'skew';
+if(rel==='skew'){S.line(A,B,{stroke:'var(--verm)','stroke-dasharray':'5 4','stroke-width':3.4});S.dot(A,5,{fill:'var(--blue)'});S.dot(B,5,{fill:'var(--verm)'});S.text(A,'A');S.text(B,'B');rows.push(['A on L₁',tri(A)],['B on L₂',tri(B)]);note='Not parallel and not intersecting: skew. The distance is |P₁P₂ · (d₁×d₂)| / |d₁×d₂|, and AB points along d₁×d₂.';}
+else{S.dot(A,7,{fill:'var(--orange)',stroke:'var(--bg)','stroke-width':2});S.text(A,'X',{fill:'var(--orange)'});rows.push(['intersection',tri(A)]);note='Not parallel, and P₁P₂ · (d₁×d₂) = 0: the lines are coplanar and meet in one point.';}}
+rows.unshift(['relation','<b>'+rel+'</b>'],['distance',fmt(dist,3)]);rows.push(['d₁ × d₂',tri(n)],['angle between lines',fmt(ang,1)+'°']);out(rows,note);});
+sync();
+
+KAI.autoHeight();
+})();
+</script>
+</body>
+</html>
